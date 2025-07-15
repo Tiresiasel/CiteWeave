@@ -1,3 +1,5 @@
+> **This project is licensed under the Apache License 2.0. See the LICENSE file for details.**
+
 # Argument / Citation-Intent Classifier
 
 This module fine-tunes **SciBERT** (or any BERT-family model) on public
@@ -18,3 +20,4 @@ python train.py \
    --bsz 16 \
    --lr 2e-5 \
    --out_dir checkpoints/scicite_sciBERT
+```

@@ -1,3 +1,5 @@
+> **This project is licensed under the Apache License 2.0. See the LICENSE file for details.**
+
 # Citation-Argument Relation Classification Datasets
 
 This directory contains all the data files used for training and testing the citation-argument relation classifier.

@@ -1,3 +1,5 @@
+> **This project is licensed under the Apache License 2.0. See the LICENSE file for details.**
+
 # CiteWeave Data Structure Documentation
 
 This directory contains complete definitions and examples of all data structures used in the CiteWeave project.

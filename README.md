@@ -1,3 +1,5 @@
+> **This project is licensed under the Apache License 2.0. See the LICENSE file for details.**
+
 # Argument Graph Project
 
 This project provides a pipeline for extracting, classifying, and structuring argumentative claims and their relationships from PDF documents, storing them in a Neo4j graph database, and enabling advanced querying and citation resolution.

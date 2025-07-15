@@ -1,3 +1,5 @@
+> **This project is licensed under the Apache License 2.0. See the LICENSE file for details.**
+
 # Multi-Agent System for CiteWeave
 
 This folder contains the core logic for the multi-agent system that powers advanced academic query and analysis in CiteWeave. The system is designed for modularity, extensibility, and robust collaboration between specialized agents.
