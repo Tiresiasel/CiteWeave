@@ -76,10 +76,10 @@ class DatabaseIntegrator:
         """
         try:
             # Initialize Neo4j connection
-            neo4j_config = self.config_manager.get_neo4j_config()
+            neo4j_config = self.config_manager.neo4j_config
             self.graph_db = GraphDB(
                 uri=neo4j_config["uri"],
-                user=neo4j_config["user"],
+                user=neo4j_config["username"],
                 password=neo4j_config["password"]
             )
             logging.info("Neo4j connection initialized")

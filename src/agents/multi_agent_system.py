@@ -12,6 +12,9 @@ from typing import List, Dict, Optional, Any, Union, Tuple
 from dataclasses import dataclass, field
 from enum import Enum
 from datetime import datetime
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
@@ -19,10 +22,10 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-from graph_builder import GraphDB
-from vector_indexer import MultiLevelVectorIndexer
-from author_paper_index import AuthorPaperIndex
-from enhanced_llm_manager import EnhancedLLMManager
+from src.graph_builder import GraphDB
+from src.vector_indexer import VectorIndexer
+from src.author_paper_index import AuthorPaperIndex
+from src.enhanced_llm_manager import EnhancedLLMManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -53,8 +56,17 @@ class ActionType(Enum):
     """Types of actions agents can take"""
     CONTINUE = "continue"
     ASK_CLARIFICATION = "ask_clarification"
+    ASK_FUZZY_MATCH_CONFIRMATION = "ask_fuzzy_match_confirmation"
+    CONTINUE_NEXT_RETRIEVAL = "continue_next_retrieval"
     END_WITH_RESULTS = "end_with_results"
     END_WITH_ERROR = "end_with_error"
+
+class RetrievalPriority(Enum):
+    """Priority levels for different retrieval methods"""
+    EMBEDDING_VECTOR = "embedding_vector"
+    GRAPH_DATABASE = "graph_database"
+    PDF_CONTENT = "pdf_content"
+    AUTHOR_INDEX = "author_index"
 
 @dataclass
 class QueryState:
@@ -94,6 +106,18 @@ class QueryState:
     completed_routes: List[str] = field(default_factory=list)  # List of completed routes
     route_results: Dict[str, Any] = field(default_factory=dict)  # Results for each route
     
+    # New: Information sufficiency and retrieval prioritization
+    retrieval_priorities: List[RetrievalPriority] = field(default_factory=list)  # Ordered priority list
+    current_retrieval_index: int = 0  # Index of current retrieval being attempted
+    information_sufficient: bool = False  # Whether current info is sufficient to answer
+    sufficiency_assessment: str = ""  # Detailed assessment of information sufficiency
+    
+    # New: Fuzzy matching and confirmation
+    fuzzy_matches: List[Dict] = field(default_factory=list)  # Potential fuzzy matches found
+    fuzzy_match_candidates: Dict[str, List[str]] = field(default_factory=dict)  # Entity -> candidates
+    pending_confirmation: bool = False  # Whether waiting for user confirmation
+    fuzzy_match_question: str = ""  # Question to ask user about fuzzy matches
+    
     # Response
     final_response: str = ""
     response_language: str = "en"
@@ -126,7 +150,7 @@ class EnhancedMultiAgentSystem:
     
     def __init__(self, 
                  graph_db: GraphDB,
-                 vector_indexer: MultiLevelVectorIndexer,
+                 vector_indexer: VectorIndexer,
                  author_index: AuthorPaperIndex,
                  config_path: str = "config/model_config.json"):
         
@@ -135,6 +159,11 @@ class EnhancedMultiAgentSystem:
         self.author_index = author_index
         self.llm_manager = EnhancedLLMManager(config_path)
         
+        self.agent_trace_log = []
+        self._trace_step = 0
+        self._trace_enabled = True
+        self._trace_limit = 1000  # avoid memory explosion
+        
         # Build the workflow
         self.workflow = self._build_workflow()
         self.memory = MemorySaver()
@@ -142,15 +171,90 @@ class EnhancedMultiAgentSystem:
         
         logger.info("Enhanced Multi-Agent System initialized with multi-language support")
 
+    def log_agent_trace(self, agent_name, input_data, output_data, extra=None):
+        if not self._trace_enabled or len(self.agent_trace_log) > self._trace_limit:
+            return
+        self._trace_step += 1
+        entry = {
+            "step": self._trace_step,
+            "agent": agent_name,
+            "input": input_data,
+            "output": output_data,
+            "timestamp": datetime.now().isoformat(),
+        }
+        if extra:
+            entry.update(extra)
+        self.agent_trace_log.append(entry)
+
+    def export_trace_log(self, path):
+        with open(path, "w", encoding="utf-8") as f:
+            for entry in self.agent_trace_log:
+                f.write(json.dumps(entry, ensure_ascii=False) + "\n")
+
+    # --- Decorator for agent tracing ---
+    def agent_trace_decorator(agent_func):
+        async def wrapper(self, state, *args, **kwargs):
+            self.log_agent_trace(agent_func.__name__, input_data=state.__dict__, output_data=None)
+            result = await agent_func(self, state, *args, **kwargs)
+            self.log_agent_trace(agent_func.__name__, input_data=None, output_data=result.__dict__ if hasattr(result, "__dict__") else result)
+            return result
+        return wrapper
+
+    # --- Decorator for DB retrieval tracing ---
+    def db_trace_decorator(db_func):
+        def wrapper(self, *args, **kwargs):
+            query_info = {"args": args, "kwargs": kwargs}
+            result = db_func(self, *args, **kwargs)
+            # Try to serialize result (truncate if too long)
+            try:
+                result_repr = result
+                if isinstance(result, (list, dict)):
+                    result_repr = json.dumps(result, ensure_ascii=False)[:1000]
+                else:
+                    result_repr = str(result)[:1000]
+            except Exception:
+                result_repr = str(type(result))
+            if hasattr(self, 'log_agent_trace'):
+                self.log_agent_trace(db_func.__name__, input_data=query_info, output_data=result_repr)
+            return result
+        return wrapper
+
+    # --- Apply agent trace decorator to all agent methods ---
+    _language_processor_agent = agent_trace_decorator(_language_processor_agent)
+    _fuzzy_matcher_agent = agent_trace_decorator(_fuzzy_matcher_agent)
+    _smart_router_agent = agent_trace_decorator(_smart_router_agent)
+    _route_coordinator_agent = agent_trace_decorator(_route_coordinator_agent)
+    _sufficiency_judge_agent = agent_trace_decorator(_sufficiency_judge_agent)
+    _query_analyzer_agent = agent_trace_decorator(_query_analyzer_agent)
+    _paper_disambiguator_agent = agent_trace_decorator(_paper_disambiguator_agent)
+    _graph_citation_analyzer_agent = agent_trace_decorator(_graph_citation_analyzer_agent)
+    _vector_concept_searcher_agent = agent_trace_decorator(_vector_concept_searcher_agent)
+    _pdf_content_analyzer_agent = agent_trace_decorator(_pdf_content_analyzer_agent)
+    _author_collection_handler_agent = agent_trace_decorator(_author_collection_handler_agent)
+    _clarification_handler_agent = agent_trace_decorator(_clarification_handler_agent)
+    _fuzzy_confirmation_handler_agent = agent_trace_decorator(_fuzzy_confirmation_handler_agent)
+    _response_generator_agent = agent_trace_decorator(_response_generator_agent)
+
+    # --- Patch DB retrieval methods for tracing ---
+    GraphDB.find_papers_by_author_year = db_trace_decorator(GraphDB.find_papers_by_author_year)
+    GraphDB.find_papers_by_author = db_trace_decorator(GraphDB.find_papers_by_author)
+    GraphDB.find_citations = db_trace_decorator(GraphDB.find_citations)
+    VectorIndexer.search = db_trace_decorator(VectorIndexer.search)
+    AuthorPaperIndex.find_papers_by_author = db_trace_decorator(AuthorPaperIndex.find_papers_by_author)
+    AuthorPaperIndex.get_papers_pdf_paths = db_trace_decorator(AuthorPaperIndex.get_papers_pdf_paths)
+    AuthorPaperIndex.get_paper_pdf_path = db_trace_decorator(AuthorPaperIndex.get_paper_pdf_path)
+
     def _build_workflow(self) -> StateGraph:
         """Build the enhanced LangGraph workflow with multi-route parallel processing"""
         workflow = StateGraph(QueryState)
         
         # Add agent nodes
         workflow.add_node("language_processor", self._language_processor_agent)
+        workflow.add_node("fuzzy_matcher", self._fuzzy_matcher_agent)
         workflow.add_node("smart_router", self._smart_router_agent)
         workflow.add_node("paper_disambiguator", self._paper_disambiguator_agent)
         workflow.add_node("route_coordinator", self._route_coordinator_agent)
+        workflow.add_node("sufficiency_judge", self._sufficiency_judge_agent)
         
         # Specialized data source agents (can run in parallel)
         workflow.add_node("graph_citation_analyzer", self._graph_citation_analyzer_agent)
@@ -160,10 +264,21 @@ class EnhancedMultiAgentSystem:
         
         workflow.add_node("response_generator", self._response_generator_agent)
         workflow.add_node("clarification_handler", self._clarification_handler_agent)
+        workflow.add_node("fuzzy_confirmation_handler", self._fuzzy_confirmation_handler_agent)
         
         # Define workflow edges
         workflow.add_edge(START, "language_processor")
-        workflow.add_edge("language_processor", "smart_router")
+        workflow.add_edge("language_processor", "fuzzy_matcher")
+        
+        # Fuzzy matcher can go to different destinations
+        workflow.add_conditional_edges(
+            "fuzzy_matcher",
+            self._fuzzy_matching_routing,
+            {
+                "smart_router": "smart_router",
+                "fuzzy_confirmation": "fuzzy_confirmation_handler"
+            }
+        )
         
         # Smart routing can go to multiple destinations
         workflow.add_conditional_edges(
@@ -192,14 +307,25 @@ class EnhancedMultiAgentSystem:
         # After disambiguation, go to coordinator
         workflow.add_edge("paper_disambiguator", "route_coordinator")
         
-        # All data source agents return to coordinator for next route or completion
-        workflow.add_edge("graph_citation_analyzer", "route_coordinator")
-        workflow.add_edge("vector_concept_searcher", "route_coordinator")
-        workflow.add_edge("pdf_content_analyzer", "route_coordinator")
-        workflow.add_edge("author_collection_handler", "route_coordinator")
+        # All data source agents go to sufficiency judge
+        workflow.add_edge("graph_citation_analyzer", "sufficiency_judge")
+        workflow.add_edge("vector_concept_searcher", "sufficiency_judge")
+        workflow.add_edge("pdf_content_analyzer", "sufficiency_judge")
+        workflow.add_edge("author_collection_handler", "sufficiency_judge")
+        
+        # Sufficiency judge decides next action
+        workflow.add_conditional_edges(
+            "sufficiency_judge",
+            self._sufficiency_routing,
+            {
+                "continue_retrieval": "route_coordinator",
+                "generate_response": "response_generator"
+            }
+        )
         
         # Final response generation and clarification
         workflow.add_edge("clarification_handler", "response_generator")
+        workflow.add_edge("fuzzy_confirmation_handler", "smart_router")
         workflow.add_edge("response_generator", END)
         
         return workflow
@@ -246,6 +372,55 @@ class EnhancedMultiAgentSystem:
         
         return state
 
+    async def _fuzzy_matcher_agent(self, state: QueryState) -> QueryState:
+        """Agent 1.5: Fuzzy matching for entities like author names, paper titles"""
+        logger.info("Fuzzy matcher agent started")
+        
+        try:
+            # Extract potential entities that might need fuzzy matching
+            entities = await self._extract_entities_for_fuzzy_matching(state.processed_query)
+            
+            if not entities:
+                logger.info("No entities requiring fuzzy matching found")
+                return state
+            
+            # Check for fuzzy matches in different data sources
+            fuzzy_matches_found = False
+            
+            for entity_type, entity_value in entities.items():
+                if entity_type == "author_name":
+                    # Search for author names with fuzzy matching
+                    candidates = await self._fuzzy_match_authors(entity_value)
+                    if candidates:
+                        state.fuzzy_match_candidates[entity_value] = candidates
+                        fuzzy_matches_found = True
+                        
+                elif entity_type == "paper_title":
+                    # Search for paper titles with fuzzy matching
+                    candidates = await self._fuzzy_match_papers(entity_value)
+                    if candidates:
+                        state.fuzzy_match_candidates[entity_value] = candidates
+                        fuzzy_matches_found = True
+            
+            # If fuzzy matches found, prepare confirmation question
+            if fuzzy_matches_found:
+                state.pending_confirmation = True
+                state.fuzzy_match_question = await self._generate_fuzzy_confirmation_question(
+                    state.fuzzy_match_candidates, state.user_language
+                )
+                state.next_action = ActionType.ASK_FUZZY_MATCH_CONFIRMATION
+                
+                logger.info(f"Fuzzy matches found, requiring user confirmation: {state.fuzzy_match_candidates}")
+            else:
+                logger.info("No fuzzy matches requiring confirmation")
+                
+        except Exception as e:
+            error_msg = f"Fuzzy matching failed: {str(e)}"
+            state.errors.append(error_msg)
+            logger.error(error_msg)
+        
+        return state
+
     async def _smart_router_agent(self, state: QueryState) -> QueryState:
         """Agent 2: Intelligent multi-route analysis using powerful AI to determine which data sources needed"""
         logger.info("Smart router agent started - using powerful AI for routing decisions")
@@ -262,6 +437,13 @@ class EnhancedMultiAgentSystem:
             required_routes = await self._ai_route_analysis(state.processed_query, entities, routing_model)
             state.required_routes = required_routes
             
+            # NEW: Set retrieval priorities based on query analysis
+            retrieval_priorities = await self._determine_retrieval_priorities(
+                state.processed_query, entities, routing_model
+            )
+            state.retrieval_priorities = retrieval_priorities
+            state.current_retrieval_index = 0  # Start with highest priority
+            
             # Check if disambiguation is needed
             if self._needs_disambiguation(entities, required_routes):
                 state.next_action = ActionType.ASK_CLARIFICATION
@@ -277,7 +459,7 @@ class EnhancedMultiAgentSystem:
                 state.debug_messages.append(f"Low routing confidence ({confidence:.2f}), clarification needed")
             
             state.debug_messages.append(
-                f"Required routes: {required_routes}, Entities: {entities}, Confidence: {confidence:.2f}"
+                f"Required routes: {required_routes}, Retrieval priorities: {[p.value for p in retrieval_priorities]}, Entities: {entities}, Confidence: {confidence:.2f}"
             )
             
         except Exception as e:
@@ -285,30 +467,108 @@ class EnhancedMultiAgentSystem:
             state.errors.append(error_msg)
             # Fallback to basic routing
             state.required_routes = ["vector_search"]
+            state.retrieval_priorities = [RetrievalPriority.EMBEDDING_VECTOR]
             logger.error(error_msg)
         
         return state
 
     async def _route_coordinator_agent(self, state: QueryState) -> QueryState:
-        """Route Coordinator: Manages parallel execution of multiple data sources"""
+        """Route Coordinator: Manages prioritized retrieval execution"""
         logger.info("Route coordinator agent started")
         
         try:
-            # Check which routes still need to be processed
-            remaining_routes = [route for route in state.required_routes if route not in state.completed_routes]
-            
-            if not remaining_routes:
-                # All routes completed, ready for response generation
+            # NEW: Use prioritized retrieval instead of parallel execution
+            if state.current_retrieval_index >= len(state.retrieval_priorities):
+                # All priorities exhausted
                 state.next_action = ActionType.END_WITH_RESULTS
-                state.debug_messages.append("All routes completed, generating response")
+                state.debug_messages.append("All retrieval priorities exhausted, generating response")
+                return state
+            
+            # Get current priority retrieval method
+            current_priority = state.retrieval_priorities[state.current_retrieval_index]
+            
+            # Map priority to route name
+            priority_to_route = {
+                RetrievalPriority.EMBEDDING_VECTOR: "vector_search",
+                RetrievalPriority.GRAPH_DATABASE: "graph_analysis",
+                RetrievalPriority.PDF_CONTENT: "pdf_analysis",
+                RetrievalPriority.AUTHOR_INDEX: "author_collection"
+            }
+            
+            current_route = priority_to_route.get(current_priority, "vector_search")
+            
+            # Check if this route is needed and not completed
+            if current_route in state.required_routes and current_route not in state.completed_routes:
+                state.debug_messages.append(
+                    f"Processing priority {state.current_retrieval_index + 1}: {current_priority.value} -> {current_route}"
+                )
             else:
-                # Process next route (the workflow will handle parallel execution)
-                next_route = remaining_routes[0]
-                state.debug_messages.append(f"Processing route: {next_route}, Remaining: {remaining_routes}")
+                # Skip this priority and move to next
+                state.current_retrieval_index += 1
+                state.debug_messages.append(
+                    f"Skipping priority {current_priority.value}, moving to next"
+                )
+                # Recursive call to process next priority
+                return await self._route_coordinator_agent(state)
             
         except Exception as e:
             error_msg = f"Route coordination failed: {str(e)}"
             state.errors.append(error_msg)
+            logger.error(error_msg)
+        
+        return state
+
+    async def _sufficiency_judge_agent(self, state: QueryState) -> QueryState:
+        """Agent: Judge whether retrieved information is sufficient to answer the query"""
+        logger.info("Sufficiency judge agent started")
+        
+        try:
+            # Get current priority being processed
+            if state.current_retrieval_index < len(state.retrieval_priorities):
+                current_priority = state.retrieval_priorities[state.current_retrieval_index]
+                
+                # Collect retrieved information for assessment
+                retrieved_info = await self._collect_retrieved_information(state)
+                
+                # Use AI to assess information sufficiency
+                model = self.llm_manager.get_agent_model("query_analyzer")
+                sufficiency_assessment = await self._assess_information_sufficiency(
+                    state.processed_query, retrieved_info, model
+                )
+                
+                state.sufficiency_assessment = sufficiency_assessment["assessment"]
+                state.information_sufficient = sufficiency_assessment["is_sufficient"]
+                
+                if state.information_sufficient:
+                    # Information is sufficient, generate response
+                    state.next_action = ActionType.END_WITH_RESULTS
+                    state.debug_messages.append(
+                        f"Information sufficient after {current_priority.value}: {state.sufficiency_assessment}"
+                    )
+                else:
+                    # Need more information, move to next retrieval priority
+                    state.current_retrieval_index += 1
+                    if state.current_retrieval_index < len(state.retrieval_priorities):
+                        next_priority = state.retrieval_priorities[state.current_retrieval_index]
+                        state.next_action = ActionType.CONTINUE_NEXT_RETRIEVAL
+                        state.debug_messages.append(
+                            f"Information insufficient, trying next priority: {next_priority.value}"
+                        )
+                    else:
+                        # All priorities exhausted, generate response with available info
+                        state.next_action = ActionType.END_WITH_RESULTS
+                        state.debug_messages.append(
+                            "All retrieval priorities exhausted, generating response with available information"
+                        )
+            else:
+                # No more priorities to process
+                state.next_action = ActionType.END_WITH_RESULTS
+                
+        except Exception as e:
+            error_msg = f"Information sufficiency assessment failed: {str(e)}"
+            state.errors.append(error_msg)
+            # Fallback: continue with response generation
+            state.next_action = ActionType.END_WITH_RESULTS
             logger.error(error_msg)
         
         return state
@@ -443,7 +703,7 @@ class EnhancedMultiAgentSystem:
         
         try:
             # Use smart search which automatically determines granularity level
-            results = self.vector_indexer.smart_search(state.processed_query, limit=10)
+            results = self.vector_indexer.search(state.processed_query, limit=10)
             state.vector_results = results
             state.route_results["vector_search"] = results
             state.completed_routes.append("vector_search")
@@ -566,6 +826,37 @@ class EnhancedMultiAgentSystem:
         
         return state
 
+    async def _fuzzy_confirmation_handler_agent(self, state: QueryState) -> QueryState:
+        """Agent: Handle fuzzy match confirmation from user"""
+        logger.info("Fuzzy confirmation handler agent started")
+        
+        try:
+            # This handler would typically receive user input about fuzzy matches
+            # For now, we'll set a placeholder response
+            # In a real implementation, this would:
+            # 1. Present fuzzy match options to user
+            # 2. Wait for user selection
+            # 3. Update entities with confirmed matches
+            # 4. Continue to smart_router
+            
+            if state.fuzzy_match_question:
+                # Generate the confirmation question for user
+                state.final_response = state.fuzzy_match_question
+                state.next_action = ActionType.ASK_FUZZY_MATCH_CONFIRMATION
+                state.debug_messages.append("Fuzzy match confirmation question prepared")
+            else:
+                # No confirmation needed, continue to smart router
+                state.pending_confirmation = False
+                state.next_action = ActionType.CONTINUE
+                state.debug_messages.append("No fuzzy confirmation needed, continuing")
+            
+        except Exception as e:
+            error_msg = f"Fuzzy confirmation handling failed: {str(e)}"
+            state.errors.append(error_msg)
+            logger.error(error_msg)
+        
+        return state
+
     async def _response_generator_agent(self, state: QueryState) -> QueryState:
         """Agent 7: Generate final response"""
         logger.info("Response generator agent started")
@@ -576,6 +867,8 @@ class EnhancedMultiAgentSystem:
             # Generate response based on action type
             if state.next_action == ActionType.ASK_CLARIFICATION:
                 response = await self._generate_clarification_response(state)
+            elif state.next_action == ActionType.ASK_FUZZY_MATCH_CONFIRMATION:
+                response = state.fuzzy_match_question  # Use the pre-generated fuzzy match question
             else:
                 response = await self._generate_content_response(state)
             
@@ -605,7 +898,16 @@ class EnhancedMultiAgentSystem:
             )
             
         except Exception as e:
-            error_msg = f"Response generation failed: {str(e)}"
+            import traceback
+            error_msg = f"Response generation failed: {str(e)}\nTraceback:\n{traceback.format_exc()}"
+            # 打印 summary 内容（如果有）
+            try:
+                from src.enhanced_llm_manager import EnhancedLLMManager
+                if hasattr(self.llm_manager, 'get_memory'):
+                    mem = self.llm_manager.get_memory(state.thread_id, state.user_id)
+                    logger.error(f"Current memory.summary: {getattr(mem, 'summary', None)}")
+            except Exception as ee:
+                logger.error(f"Error printing memory.summary: {ee}")
             state.errors.append(error_msg)
             state.final_response = f"I encountered an error: {error_msg}"
             logger.error(error_msg)
@@ -648,7 +950,8 @@ Important: A single query may require MULTIPLE data sources. For example:
 Return a JSON list of required data sources. Be comprehensive - if a query could benefit from multiple sources, include them all.
 
 Response format: ["source1", "source2", ...]
-Available sources: graph_analysis, vector_search, pdf_analysis, author_collection"""),
+Available sources: graph_analysis, vector_search, pdf_analysis, author_collection
+For all key academic terms, author names, paper titles, and technical keywords, always provide the original English term in parentheses or slashes after the translated/localized term, regardless of the output language. This helps the reader match the original source."""),
                 ("user", "Query: {query}\nEntities: {entities}")
             ])
             
@@ -657,7 +960,6 @@ Available sources: graph_analysis, vector_search, pdf_analysis, author_collectio
             
             # Parse the response
             try:
-                import json
                 routes = json.loads(result.strip())
                 if isinstance(routes, list):
                     # Validate routes
@@ -744,6 +1046,20 @@ Available sources: graph_analysis, vector_search, pdf_analysis, author_collectio
         return False
 
     # Workflow Routing Methods
+    def _fuzzy_matching_routing(self, state: QueryState) -> str:
+        """Determine routing after fuzzy matching"""
+        if state.pending_confirmation and state.fuzzy_match_question:
+            return "fuzzy_confirmation"
+        else:
+            return "smart_router"
+    
+    def _sufficiency_routing(self, state: QueryState) -> str:
+        """Determine routing after information sufficiency assessment"""
+        if state.next_action == ActionType.CONTINUE_NEXT_RETRIEVAL:
+            return "continue_retrieval"
+        else:
+            return "generate_response"
+
     def _intelligent_multi_routing(self, state: QueryState) -> str:
         """Determine initial routing decision"""
         if state.next_action == ActionType.ASK_CLARIFICATION:
@@ -1253,7 +1569,299 @@ Note: Analysis based on metadata only - full text not available."""),
         """Synchronous wrapper for the async query method"""
         return asyncio.run(self.query(user_query, thread_id, user_id))
 
-# Example usage
+    # NEW: Helper methods for fuzzy matching and information sufficiency
+    
+    async def _extract_entities_for_fuzzy_matching(self, query: str) -> Dict[str, str]:
+        """Extract entities that might need fuzzy matching (authors, paper titles)"""
+        try:
+            model = self.llm_manager.get_agent_model("query_analyzer")
+            
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", """Extract potential author names and paper titles from the query that might need fuzzy matching.
+                
+Return JSON format:
+{{
+    "author_name": "extracted author name if any",
+    "paper_title": "extracted paper title if any"
+}}
+
+Only include fields if they are clearly mentioned in the query. Return empty JSON {{}} if no entities found."""),
+                ("user", "Query: {query}")
+            ])
+            
+            chain = prompt | model | StrOutputParser()
+            result = await chain.ainvoke({"query": query})
+            
+            # Parse JSON response
+            try:
+                entities = json.loads(result.strip())
+                # Filter out empty values (handle both strings and lists)
+                filtered_entities = {}
+                for k, v in entities.items():
+                    if v:  # Check if value exists
+                        if isinstance(v, str) and v.strip():  # For strings, check if non-empty after strip
+                            filtered_entities[k] = v.strip()
+                        elif isinstance(v, list) and v:  # For lists, check if non-empty
+                            filtered_entities[k] = v
+                        elif not isinstance(v, (str, list)) and v:  # For other types, just check truthiness
+                            filtered_entities[k] = v
+                return filtered_entities
+            except json.JSONDecodeError:
+                logger.warning(f"Failed to parse entity extraction result: {result}")
+                return {}
+                
+        except Exception as e:
+            logger.error(f"Entity extraction for fuzzy matching failed: {e}")
+            return {}
+    
+    async def _fuzzy_match_authors(self, author_name: str) -> List[str]:
+        """Find fuzzy matches for author names in the database"""
+        try:
+            # Use author index to find similar names
+            exact_matches = self.author_index.find_papers_by_author(author_name, exact_match=True)
+            if exact_matches:
+                return []  # Exact match found, no fuzzy matching needed
+            
+            # Try fuzzy matching
+            fuzzy_matches = self.author_index.find_papers_by_author(author_name, exact_match=False)
+            if fuzzy_matches:
+                # Extract unique author names from matches
+                authors = set()
+                for paper in fuzzy_matches[:5]:  # Limit to top 5 matches
+                    if "authors" in paper:
+                        for author in paper["authors"]:
+                            authors.add(author)
+                    elif "author" in paper:
+                        authors.add(paper["author"])
+                return list(authors)[:3]  # Return top 3 candidate authors
+            
+            return []
+            
+        except Exception as e:
+            logger.error(f"Author fuzzy matching failed: {e}")
+            return []
+    
+    async def _fuzzy_match_papers(self, paper_title: str) -> List[str]:
+        """Find fuzzy matches for paper titles"""
+        try:
+            # Use vector search for paper title similarity
+            results = self.vector_indexer.search(paper_title, limit=5)
+            
+            # Extract potential paper titles from results
+            titles = set()
+            for result in results:
+                if "title" in result:
+                    titles.add(result["title"])
+            
+            return list(titles)[:3]  # Return top 3 candidate titles
+            
+        except Exception as e:
+            logger.error(f"Paper title fuzzy matching failed: {e}")
+            return []
+    
+    async def _generate_fuzzy_confirmation_question(self, candidates: Dict[str, List[str]], user_language: str) -> str:
+        """Generate a confirmation question for fuzzy matches"""
+        try:
+            model = self.llm_manager.get_agent_model("language_processor")
+            
+            # Format candidates for display
+            candidates_text = ""
+            for entity, matches in candidates.items():
+                candidates_text += f"\n{entity}: {', '.join(matches)}"
+            
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", f"""Generate a polite confirmation question in {user_language} asking the user to confirm which of the fuzzy matches they meant.
+
+Present the options clearly and ask them to specify which one they intended."""),
+                ("user", "Fuzzy matches found:\n{candidates}\n\nGenerate confirmation question.")
+            ])
+            
+            chain = prompt | model | StrOutputParser()
+            result = await chain.ainvoke({"candidates": candidates_text})
+            
+            return result.strip()
+            
+        except Exception as e:
+            logger.error(f"Fuzzy confirmation question generation failed: {e}")
+            return "Could you clarify which specific author or paper you're referring to?"
+    
+    async def _determine_retrieval_priorities(self, query: str, entities: Dict[str, Any], model) -> List[RetrievalPriority]:
+        """Determine the priority order for different retrieval methods based on query analysis"""
+        try:
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", """Based on the query and extracted entities, determine the priority order for different retrieval methods.
+                
+Available methods:
+1. embedding_vector - For concept definitions, semantic search
+2. graph_database - For citation relationships, author connections  
+3. pdf_content - For full document analysis
+4. author_index - For author-specific collections
+
+Return a JSON array of priorities in order (highest to lowest priority):
+["embedding_vector", "graph_database", "pdf_content", "author_index"]
+
+Consider:
+- For concept questions: prioritize embedding_vector
+- For citation/relationship questions: prioritize graph_database
+- For author-specific questions: prioritize author_index then pdf_content
+- For document content questions: prioritize pdf_content
+
+Return only the JSON array."""),
+                ("user", "Query: {query}\nEntities: {entities}")
+            ])
+            
+            chain = prompt | model | StrOutputParser()
+            result = await chain.ainvoke({"query": query, "entities": str(entities)})
+            
+            # Parse the result
+            try:
+                priority_strings = json.loads(result.strip())
+                priorities = []
+                for priority_str in priority_strings:
+                    if priority_str == "embedding_vector":
+                        priorities.append(RetrievalPriority.EMBEDDING_VECTOR)
+                    elif priority_str == "graph_database":
+                        priorities.append(RetrievalPriority.GRAPH_DATABASE)
+                    elif priority_str == "pdf_content":
+                        priorities.append(RetrievalPriority.PDF_CONTENT)
+                    elif priority_str == "author_index":
+                        priorities.append(RetrievalPriority.AUTHOR_INDEX)
+                
+                return priorities if priorities else [RetrievalPriority.EMBEDDING_VECTOR]
+                
+            except json.JSONDecodeError:
+                logger.warning(f"Failed to parse priorities: {result}")
+                return [RetrievalPriority.EMBEDDING_VECTOR, RetrievalPriority.GRAPH_DATABASE, RetrievalPriority.PDF_CONTENT]
+                
+        except Exception as e:
+            logger.error(f"Priority determination failed: {e}")
+            return [RetrievalPriority.EMBEDDING_VECTOR, RetrievalPriority.GRAPH_DATABASE, RetrievalPriority.PDF_CONTENT]
+    
+    async def _collect_retrieved_information(self, state: QueryState) -> Dict[str, Any]:
+        """Collect all retrieved information for sufficiency assessment"""
+        return {
+            "vector_results": state.vector_results,
+            "citation_relationships": state.citation_relationships,
+            "search_results": state.search_results,
+            "pdf_content_analysis": state.pdf_content_analysis,
+            "author_papers": state.author_papers,
+            "route_results": state.route_results
+        }
+    
+    async def _assess_information_sufficiency(self, query: str, retrieved_info: Dict[str, Any], model) -> Dict[str, Any]:
+        """Use AI to assess whether retrieved information is sufficient to answer the query"""
+        try:
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", """Assess whether the retrieved information is sufficient to provide a comprehensive answer to the user's query.
+
+Consider:
+1. Does the information directly address the query?
+2. Is there enough detail and context?
+3. Are key concepts and relationships covered?
+4. Would additional information significantly improve the answer?
+
+Return JSON format:
+{{
+    "is_sufficient": true/false,
+    "assessment": "detailed explanation of sufficiency",
+    "missing_aspects": ["list", "of", "missing", "information"]
+}}
+"""),
+                ("user", "Query: {query}\n\nRetrieved Information: {info}")
+            ])
+            
+            chain = prompt | model | StrOutputParser()
+            result = await chain.ainvoke({
+                "query": query, 
+                "info": json.dumps(retrieved_info, indent=2)
+            })
+            
+            # Parse JSON response
+            try:
+                assessment = json.loads(result.strip())
+                return assessment
+            except json.JSONDecodeError:
+                logger.warning(f"Failed to parse sufficiency assessment: {result}")
+                return {
+                    "is_sufficient": False,
+                    "assessment": "Could not assess information sufficiency",
+                    "missing_aspects": []
+                }
+                
+        except Exception as e:
+            logger.error(f"Information sufficiency assessment failed: {e}")
+            return {
+                "is_sufficient": False,
+                "assessment": f"Assessment failed: {str(e)}",
+                "missing_aspects": []
+            }
+
 if __name__ == "__main__":
-    # This would be used for testing
-    pass 
+    import os
+    import json
+    import asyncio
+
+    # Set up paths based on project root
+    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
+    config_dir = os.path.join(project_root, "config")
+    data_dir = os.path.join(project_root, "data")
+    test_case_path = os.path.join(project_root, "test_data", "simplified_test_cases.json")
+
+    # Import required modules
+    from src.graph_builder import GraphDB
+    from src.vector_indexer import VectorIndexer
+    from src.author_paper_index import AuthorPaperIndex
+
+    # Load Neo4j configuration
+    with open(os.path.join(config_dir, "neo4j_config.json"), "r", encoding="utf-8") as f:
+        neo4j_config = json.load(f)
+
+    # Initialize GraphDB
+    graph_db = GraphDB(
+        uri=neo4j_config["uri"],
+        user=neo4j_config["username"],
+        password=neo4j_config["password"]
+    )
+
+    # Initialize MultiLevelVectorIndexer
+    vector_indexer = VectorIndexer(
+        paper_root=os.path.join(data_dir, "papers"),
+        index_path=os.path.join(data_dir, "vector_index")
+    )
+
+    # Initialize AuthorPaperIndex
+    author_index = AuthorPaperIndex(
+        storage_root=os.path.join(data_dir, "papers"),
+        index_db_path=os.path.join(data_dir, "author_paper_index.db")
+    )
+
+    # Initialize the multi-agent system
+    from src.agents.multi_agent_system import EnhancedMultiAgentSystem
+    agent_system = EnhancedMultiAgentSystem(
+        graph_db=graph_db,
+        vector_indexer=vector_indexer,
+        author_index=author_index,
+        config_path=os.path.join(config_dir, "model_config.json")
+    )
+
+    # Load test cases
+    query = "总结一下数据库里的 Nicolai J. Foss's work?"
+
+    async def run_test():
+        print(f"Running test query: {query}")
+        result = await agent_system.query(
+            user_query=query,
+            thread_id="test_thread_001",
+            user_id="test_user"
+        )
+        print("Result:")
+        import json
+        from enum import Enum
+        def enum_to_str(obj):
+            if isinstance(obj, Enum):
+                return obj.value
+            raise TypeError(f"Object of type {obj.__class__.__name__} is not JSON serializable")
+        print(json.dumps(result, indent=2, ensure_ascii=False, default=enum_to_str))
+
+    # Run the async test
+    asyncio.run(run_test()) 

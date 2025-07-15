@@ -3,7 +3,7 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from citation_parser import CitationParser
+from src.citation_parser import CitationParser
 import json
 
 def test_unicode_citations():

@@ -11,10 +11,10 @@ import json
 # Add src to Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from enhanced_multi_agent_system import EnhancedMultiAgentSystem
-from graph_builder import GraphDB
-from vector_indexer import VectorIndexer
-from config_manager import ConfigManager
+from src.agents.multi_agent_system import EnhancedMultiAgentSystem
+from src.graph_builder import GraphDB
+from src.vector_indexer import VectorIndexer
+from src.config_manager import ConfigManager
 
 async def main():
     """Demo the enhanced multi-agent system"""
@@ -25,14 +25,14 @@ async def main():
     # Initialize configuration
     config_dir = os.path.join(os.path.dirname(__file__), "..", "config")
     config_manager = ConfigManager(config_dir)
-    neo4j_config = config_manager.get_neo4j_config()
+    neo4j_config = config_manager.neo4j_config
     
     # Initialize database connections
     print("📊 Initializing database connections...")
     
     graph_db = GraphDB(
         uri=neo4j_config["uri"],
-        user=neo4j_config["user"],
+        user=neo4j_config["username"],
         password=neo4j_config["password"]
     )
     

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 CiteWeave Multi-Agent System Query Test Runner
-自动化测试运行器 - 运行各种类型的学术论文查询测试用例
+Automated test runner - runs various types of academic paper query test cases
 """
 
 import json
@@ -14,18 +14,21 @@ from dataclasses import dataclass, field
 import pandas as pd
 
 # Add src to Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src'))
 
-from enhanced_multi_agent_system import EnhancedMultiAgentSystem
-from graph_builder import GraphDB
-from llm_evaluator import LLMEvaluator, EvaluationResult
-from vector_indexer import VectorIndexer
-from author_paper_index import AuthorPaperIndex
-from config_manager import ConfigManager
+from src.agents.multi_agent_system import EnhancedMultiAgentSystem
+from src.graph_builder import GraphDB
+from tests.query_evaluation.llm_evaluator import LLMEvaluator, EvaluationResult
+from src.vector_indexer import VectorIndexer
+from src.author_paper_index import AuthorPaperIndex
+from src.config_manager import ConfigManager
+
+project_root = os.getcwd()
+config_dir = os.path.join(project_root, "config")
+config_manager = ConfigManager(config_dir)
 
 @dataclass
 class TestResult:
-    """测试结果数据类"""
+    """Test result data class"""
     test_id: str
     category: str
     query_cn: str
@@ -34,7 +37,7 @@ class TestResult:
     complexity: str
     evaluation_criteria: List[str]
     
-    # 运行结果
+    # Execution results
     success: bool = False
     response: str = ""
     confidence: float = 0.0
@@ -44,69 +47,70 @@ class TestResult:
     errors: List[str] = field(default_factory=list)
     warnings: List[str] = field(default_factory=list)
     
-    # 评估结果
+    # Evaluation results
     evaluation_scores: Dict[str, float] = field(default_factory=dict)
     overall_score: float = 0.0
     execution_time: float = 0.0
     notes: str = ""
     
-    # LLM评估结果
+    # LLM evaluation results
     llm_evaluation: Optional[EvaluationResult] = None
-    enhanced_score: float = 0.0  # 包含LLM评估的增强评分
+    enhanced_score: float = 0.0  # Enhanced score including LLM evaluation
 
 class QueryTestRunner:
-    """查询测试运行器"""
+    """Query test runner"""
     
-    def __init__(self, config_dir: str = "../../config", enable_llm_evaluation: bool = True):
-        """初始化测试运行器"""
-        self.config_dir = config_dir
+    def __init__(self, config_dir: str = None, enable_llm_evaluation: bool = True):
+        """Initialize the test runner"""
+        # If config_dir is not provided, use the global config_dir
+        self.config_dir = config_dir or os.path.join(os.getcwd(), "config")
         self.agent_system = None
         self.test_cases = {}
         self.results = []
         self.enable_llm_evaluation = enable_llm_evaluation
         self.llm_evaluator = None
         
-        # 初始化LLM评估器
+        # Initialize LLM evaluator
         if self.enable_llm_evaluation:
             try:
                 model_config_path = os.path.join(self.config_dir, "model_config.json")
                 self.llm_evaluator = LLMEvaluator(model_config_path)
-                print("✅ LLM评估器初始化成功")
+                print("✅ LLM evaluator initialized successfully")
             except Exception as e:
-                print(f"⚠️ LLM评估器初始化失败，将使用基础评估: {e}")
+                print(f"⚠️ LLM evaluator initialization failed, will use basic evaluation: {e}")
                 self.enable_llm_evaluation = False
         
     async def initialize_system(self):
-        """初始化多智能体系统"""
+        """Initialize the multi-agent system"""
         try:
-            print("🔧 初始化测试环境...")
+            print("🔧 Initializing test environment...")
             
-            # 加载配置
-            config_manager = ConfigManager(self.config_dir)
-            neo4j_config = config_manager.get_neo4j_config()
+            # Load configuration
+            # config_manager = ConfigManager(self.config_dir) # This line is now redundant as config_manager is global
+            neo4j_config = config_manager.neo4j_config
             
-            # 初始化数据库连接
+            # Initialize database connection
             graph_db = GraphDB(
                 uri=neo4j_config["uri"],
-                user=neo4j_config["user"],
+                user=neo4j_config["username"],
                 password=neo4j_config["password"]
             )
             
-            # 获取项目根目录
-            project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+            # Get project root directory
+            # project_root = os.path.dirname(os.path.dirname(os.path.dirname(__file__))) # This line is now redundant
             
             vector_indexer = VectorIndexer(
                 paper_root=os.path.join(project_root, "data", "papers"),
                 index_path=os.path.join(project_root, "data", "vector_index")
             )
             
-            # 初始化作者索引
+            # Initialize author index
             author_index = AuthorPaperIndex(
                 storage_root=os.path.join(project_root, "data", "papers"),
                 index_db_path=os.path.join(project_root, "data", "author_paper_index.db")
             )
             
-            # 初始化智能体系统
+            # Initialize agent system
             self.agent_system = EnhancedMultiAgentSystem(
                 graph_db=graph_db,
                 vector_indexer=vector_indexer,
@@ -114,33 +118,33 @@ class QueryTestRunner:
                 config_path=os.path.join(self.config_dir, "model_config.json")
             )
             
-            print("✅ 系统初始化完成")
+            print("✅ System initialized successfully")
             return True
             
         except Exception as e:
-            print(f"❌ 系统初始化失败: {e}")
+            print(f"❌ System initialization failed: {e}")
             return False
     
     def load_test_cases(self, test_file: str = "simplified_test_cases.json"):
-        """加载测试用例"""
+        """Load test cases"""
         try:
             test_file_path = os.path.join(os.path.dirname(__file__), "..", "..", "test_data", test_file)
             with open(test_file_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
                 self.test_cases = data["test_cases_by_category"]
             
-            print(f"📁 加载了 {len(self.test_cases)} 个测试类别")
+            print(f"📁 Loaded {len(self.test_cases)} test categories")
             return True
             
         except Exception as e:
-            print(f"❌ 加载测试用例失败: {e}")
+            print(f"❌ Failed to load test cases: {e}")
             return False
     
     async def run_single_test(self, category: str, test_case: Dict[str, Any], language: str = "cn") -> TestResult:
-        """运行单个测试用例"""
+        """Run a single test case"""
         start_time = datetime.now()
         
-        # 创建测试结果对象
+        # Create test result object
         result = TestResult(
             test_id=test_case["id"],
             category=category,
@@ -152,17 +156,17 @@ class QueryTestRunner:
         )
         
         try:
-            # 选择查询语言
+            # Select query language
             query = test_case["query_cn"] if language == "cn" else test_case["query_en"]
             
-            # 运行查询
+            # Run query
             response = await self.agent_system.query(
                 user_query=query,
                 thread_id=f"test_{test_case['id']}",
                 user_id="test_runner"
             )
             
-            # 记录结果
+            # Record results
             result.success = True
             result.response = response.get("response", "")
             result.confidence = response.get("confidence", 0.0)
@@ -172,19 +176,23 @@ class QueryTestRunner:
             result.errors = response.get("errors", [])
             result.warnings = response.get("warnings", [])
             
-            # 计算执行时间
+            # Save agent trace log for this test case
+            trace_path = os.path.join("tests/query_evaluation/test_reports", f"agent_trace_{test_case['id']}.jsonl")
+            self.agent_system.export_trace_log(trace_path)
+            
+            # Calculate execution time
             end_time = datetime.now()
             result.execution_time = (end_time - start_time).total_seconds()
             
-            # 基础评估
+            # Basic evaluation
             result.overall_score = self._evaluate_response(result)
             
-            # LLM评估 (如果启用)
+            # LLM evaluation (if enabled)
             if result.success and result.response:
                 await self._perform_llm_evaluation(result)
-                # 使用增强评分作为最终评分
+                # Use enhanced score as final score
                 final_score = result.enhanced_score if result.enhanced_score > 0 else result.overall_score
-                print(f"✅ {test_case['id']}: 基础评分={result.overall_score:.1f}/10, 最终评分={final_score:.1f}/10")
+                print(f"✅ {test_case['id']}: Basic score={result.overall_score:.1f}/10, Final score={final_score:.1f}/10")
             else:
                 print(f"✅ {test_case['id']}: {result.overall_score:.2f}/10.0")
             
@@ -200,67 +208,67 @@ class QueryTestRunner:
         return result
     
     def _evaluate_response(self, result: TestResult) -> float:
-        """简单的响应评估函数"""
+        """Simple response evaluation function"""
         score = 0.0
         
-        # 基础分数 - 是否成功返回响应
+        # Basic score - whether a response is returned successfully
         if result.success and result.response:
             score += 3.0
         
-        # 置信度分数
+        # Confidence score
         score += result.confidence * 2.0
         
-        # 响应长度合理性 (100-2000字符为合理范围)
+        # Response length reasonability (100-2000 characters is a reasonable range)
         if 100 <= len(result.response) <= 2000:
             score += 2.0
         elif 50 <= len(result.response) < 100:
             score += 1.0
         
-        # 错误惩罚
+        # Error penalty
         if result.errors:
             score -= len(result.errors) * 0.5
         
-        # 警告惩罚
+        # Warning penalty
         if result.warnings:
             score -= len(result.warnings) * 0.2
         
-        # 复杂度调整
+        # Complexity adjustment
         if result.complexity == "high" and score >= 7.0:
-            score += 1.0  # 高复杂度问题的奖励
+            score += 1.0  # Reward for high complexity questions
         
-        return min(max(score, 0.0), 10.0)  # 限制在0-10范围内
+        return min(max(score, 0.0), 10.0)  # Limit between 0-10
     
     async def _enhanced_evaluate_response(self, result: TestResult) -> float:
-        """增强的响应评估函数 - 结合基础评估和LLM评估"""
-        # 基础评分 (0-10分)
+        """Enhanced response evaluation function - combines basic evaluation and LLM evaluation"""
+        # Basic score (0-10 points)
         basic_score = self._evaluate_response(result)
         
-        # 如果没有启用LLM评估或LLM评估失败，返回基础评分
+        # If LLM evaluation is not enabled or failed, return basic score
         if not self.enable_llm_evaluation or not result.llm_evaluation:
             return basic_score
         
-        # LLM评估权重配置
-        llm_weight = 0.7  # LLM评估权重70%
-        basic_weight = 0.3  # 基础评估权重30%
+        # LLM evaluation weight configuration
+        llm_weight = 0.7  # LLM evaluation weight 70%
+        basic_weight = 0.3  # Basic evaluation weight 30%
         
-        # 计算LLM综合评分 (取overall_score)
+        # Calculate LLM comprehensive score (overall_score)
         llm_score = result.llm_evaluation.overall_score
         
-        # 计算加权最终评分
+        # Calculate weighted final score
         enhanced_score = (llm_score * llm_weight) + (basic_score * basic_weight)
         
-        return min(max(enhanced_score, 0.0), 10.0)  # 限制在0-10范围内
+        return min(max(enhanced_score, 0.0), 10.0)  # Limit between 0-10
     
     async def _perform_llm_evaluation(self, result: TestResult):
-        """为单个测试结果执行LLM评估"""
+        """Perform LLM evaluation for a single test result"""
         if not self.enable_llm_evaluation or not self.llm_evaluator:
             return
         
         try:
-            # 选择查询语言
+            # Select query language
             query = result.query_cn if result.response_language == "zh" else result.query_en
             
-            # 执行LLM评估
+            # Execute LLM evaluation
             llm_eval = await self.llm_evaluator.evaluate_response(
                 query=query,
                 response=result.response,
@@ -268,29 +276,29 @@ class QueryTestRunner:
                 expected_criteria=result.evaluation_criteria
             )
             
-            # 保存评估结果
+            # Save evaluation results
             result.llm_evaluation = llm_eval
             
-            # 计算增强评分
+            # Calculate enhanced score
             result.enhanced_score = await self._enhanced_evaluate_response(result)
             
-            print(f"🤖 LLM评估完成 - 总体评分: {llm_eval.overall_score:.1f}/10")
+            print(f"🤖 LLM evaluation completed - Overall score: {llm_eval.overall_score:.1f}/10")
             
         except Exception as e:
-            print(f"⚠️ LLM评估失败: {e}")
+            print(f"⚠️ LLM evaluation failed: {e}")
             result.enhanced_score = result.overall_score
     
     async def run_category_tests(self, category: str, language: str = "cn") -> List[TestResult]:
-        """运行特定类别的所有测试"""
+        """Run all tests for a specific category"""
         if category not in self.test_cases:
-            print(f"❌ 未找到测试类别: {category}")
+            print(f"❌ Test category not found: {category}")
             return []
         
         category_info = self.test_cases[category]
         test_cases = category_info["test_cases"]
         
-        print(f"\n🔍 运行 '{category}' 类别测试 ({len(test_cases)} 个用例)")
-        print(f"📋 检索策略: {category_info['retrieval_strategy']}")
+        print(f"\n�� Running '{category}' category tests ({len(test_cases)} cases)")
+        print(f"📋 Retrieval strategy: {category_info['retrieval_strategy']}")
         print("-" * 60)
         
         results = []
@@ -299,14 +307,14 @@ class QueryTestRunner:
             results.append(result)
             self.results.append(result)
             
-            # 短暂延迟避免API限制
+            # Short delay to avoid API limits
             await asyncio.sleep(1)
         
         return results
     
     async def run_all_tests(self, language: str = "cn") -> List[TestResult]:
-        """运行所有测试用例"""
-        print(f"\n🚀 开始运行所有测试用例 (语言: {language})")
+        """Run all test cases"""
+        print(f"\n🚀 Starting to run all test cases (language: {language})")
         print("=" * 70)
         
         all_results = []
@@ -317,24 +325,24 @@ class QueryTestRunner:
         return all_results
     
     def generate_report(self, output_file: str = None) -> str:
-        """生成测试报告"""
+        """Generate test report"""
         if not self.results:
-            return "没有测试结果可以生成报告"
+            return "No test results to generate report"
         
-        # 计算统计信息
+        # Calculate statistics
         total_tests = len(self.results)
         successful_tests = sum(1 for r in self.results if r.success)
         avg_score = sum(r.overall_score for r in self.results) / total_tests
         avg_time = sum(r.execution_time for r in self.results) / total_tests
         
-        # LLM评估统计
+        # LLM evaluation statistics
         llm_evaluated_tests = sum(1 for r in self.results if r.llm_evaluation is not None)
         avg_enhanced_score = 0.0
         if llm_evaluated_tests > 0:
             enhanced_scores = [r.enhanced_score for r in self.results if r.enhanced_score > 0]
             avg_enhanced_score = sum(enhanced_scores) / len(enhanced_scores) if enhanced_scores else 0.0
         
-        # 按类别统计
+        # Category statistics
         category_stats = {}
         for result in self.results:
             if result.category not in category_stats:
@@ -350,33 +358,33 @@ class QueryTestRunner:
             stats['scores'].append(result.overall_score)
             stats['times'].append(result.execution_time)
             
-            # LLM评估统计
+            # LLM evaluation statistics
             if result.llm_evaluation is not None:
                 stats['llm_evaluated'] += 1
             if result.enhanced_score > 0:
                 stats['enhanced_scores'].append(result.enhanced_score)
         
-        # 生成报告
-        evaluation_mode = "增强评估 (基础评估 + LLM评估)" if self.enable_llm_evaluation else "基础评估"
+        # Generate report
+        evaluation_mode = "Enhanced evaluation (Basic evaluation + LLM evaluation)" if self.enable_llm_evaluation else "Basic evaluation"
         
         report = f"""
-# CiteWeave 多智能体系统测试报告
-生成时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
-评估模式: {evaluation_mode}
+# CiteWeave Multi-Agent System Test Report
+Generated time: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}
+Evaluation mode: {evaluation_mode}
 
-## 📊 测试总览
-- **总测试数**: {total_tests}
-- **成功数**: {successful_tests} ({successful_tests/total_tests*100:.1f}%)
-- **基础平均得分**: {avg_score:.2f}/10.0
-- **平均执行时间**: {avg_time:.2f}秒"""
+## 📊 Test Overview
+- **Total Tests**: {total_tests}
+- **Successful Tests**: {successful_tests} ({successful_tests/total_tests*100:.1f}%)
+- **Average Basic Score**: {avg_score:.2f}/10.0
+- **Average Execution Time**: {avg_time:.2f} seconds"""
 
-        # 添加LLM评估信息
+        # Add LLM evaluation information
         if self.enable_llm_evaluation:
             report += f"""
-- **LLM评估覆盖**: {llm_evaluated_tests}/{total_tests} ({llm_evaluated_tests/total_tests*100:.1f}%)
-- **增强平均得分**: {avg_enhanced_score:.2f}/10.0"""
+- **LLM Evaluation Coverage**: {llm_evaluated_tests}/{total_tests} ({llm_evaluated_tests/total_tests*100:.1f}%)
+- **Average Enhanced Score**: {avg_enhanced_score:.2f}/10.0"""
 
-        report += "\n\n## 📋 分类统计\n"
+        report += "\n\n## 📋 Category Statistics\n"
         
         for category, stats in category_stats.items():
             avg_cat_score = sum(stats['scores']) / len(stats['scores'])
@@ -385,77 +393,77 @@ class QueryTestRunner:
             
             report += f"""
 ### {category}
-- 测试数: {stats['total']}
-- 成功率: {success_rate:.1f}%
-- 基础平均得分: {avg_cat_score:.2f}/10.0  
-- 平均时间: {avg_cat_time:.2f}秒"""
+- Total Tests: {stats['total']}
+- Success Rate: {success_rate:.1f}%
+- Average Basic Score: {avg_cat_score:.2f}/10.0  
+- Average Time: {avg_cat_time:.2f} seconds"""
 
-            # 添加LLM评估信息
+            # Add LLM evaluation information
             if self.enable_llm_evaluation and stats['enhanced_scores']:
                 avg_enhanced_cat_score = sum(stats['enhanced_scores']) / len(stats['enhanced_scores'])
                 llm_coverage = stats['llm_evaluated'] / stats['total'] * 100
                 report += f"""
-- LLM评估覆盖: {stats['llm_evaluated']}/{stats['total']} ({llm_coverage:.1f}%)
-- 增强平均得分: {avg_enhanced_cat_score:.2f}/10.0"""
+- LLM Evaluation Coverage: {stats['llm_evaluated']}/{stats['total']} ({llm_coverage:.1f}%)
+- Average Enhanced Score: {avg_enhanced_cat_score:.2f}/10.0"""
             
             report += "\n"
         
-        report += "\n## 🔍 详细结果\n"
+        report += "\n## 🔍 Detailed Results\n"
         
         for result in self.results:
             status = "✅" if result.success else "❌"
             report += f"""
 ### {result.test_id} - {result.category} {status}
-- **查询**: {result.query_cn}
-- **基础得分**: {result.overall_score:.2f}/10.0"""
+- **Query**: {result.query_cn}
+- **Basic Score**: {result.overall_score:.2f}/10.0"""
 
-            # 添加增强评分信息
+            # Add enhanced score information
             if result.enhanced_score > 0:
                 report += f"""
-- **增强得分**: {result.enhanced_score:.2f}/10.0"""
+- **Enhanced Score**: {result.enhanced_score:.2f}/10.0"""
             
             report += f"""
-- **执行时间**: {result.execution_time:.2f}秒
-- **置信度**: {result.confidence:.2f}
+- **Execution Time**: {result.execution_time:.2f} seconds
+- **Confidence**: {result.confidence:.2f}
 """
             
-            # 添加LLM评估详情
+            # Add LLM evaluation details
             if result.llm_evaluation:
                 llm_eval = result.llm_evaluation
                 report += f"""
-#### 🤖 LLM评估详情
-- **准确性**: {llm_eval.accuracy_score:.1f}/10
-- **完整性**: {llm_eval.completeness_score:.1f}/10
-- **相关性**: {llm_eval.relevance_score:.1f}/10
-- **清晰度**: {llm_eval.clarity_score:.1f}/10
-- **LLM总体评分**: {llm_eval.overall_score:.1f}/10
-- **评估理由**: {llm_eval.reasoning}
-- **优点**: {llm_eval.strengths}
-- **不足**: {llm_eval.weaknesses}
-- **改进建议**: {llm_eval.suggestions}
+#### 🤖 LLM Evaluation Details
+- **Accuracy**: {llm_eval.accuracy_score:.1f}/10
+- **Completeness**: {llm_eval.completeness_score:.1f}/10
+- **Relevance**: {llm_eval.relevance_score:.1f}/10
+- **Clarity**: {llm_eval.clarity_score:.1f}/10
+- **LLM Overall Score**: {llm_eval.overall_score:.1f}/10
+- **Evaluation Reasoning**: {llm_eval.reasoning}
+- **Strengths**: {llm_eval.strengths}
+- **Weaknesses**: {llm_eval.weaknesses}
+- **Suggestions**: {llm_eval.suggestions}
 """
             
             if result.errors:
-                report += f"- **错误**: {'; '.join(result.errors)}\n"
+                report += f"- **Errors**: {'; '.join(result.errors)}\n"
             if result.warnings:
-                report += f"- **警告**: {'; '.join(result.warnings)}\n"
+                report += f"- **Warnings**: {'; '.join(result.warnings)}\n"
         
-        # 保存报告
+        # Save report
         if output_file:
             os.makedirs(os.path.dirname(output_file), exist_ok=True)
             with open(output_file, 'w', encoding='utf-8') as f:
                 f.write(report)
-            print(f"📄 报告已保存到: {output_file}")
+            print(f"📄 Report saved to: {output_file}")
         
         return report
     
     def export_results_csv(self, output_file: str):
-        """导出结果为CSV格式"""
+        """Export results to CSV format"""
         if not self.results:
-            print("没有结果可以导出")
+            print("No results to export")
             return
         
-        # 准备数据
+        # Prepare data
         data = []
         for result in self.results:
             row = {
@@ -475,7 +483,7 @@ class QueryTestRunner:
                 'action': result.action
             }
             
-            # 添加LLM评估字段
+            # Add LLM evaluation fields
             if result.llm_evaluation:
                 row.update({
                     'llm_evaluated': True,
@@ -507,94 +515,94 @@ class QueryTestRunner:
             
             data.append(row)
         
-        # 创建DataFrame并保存
+        # Create DataFrame and save
         df = pd.DataFrame(data)
         os.makedirs(os.path.dirname(output_file), exist_ok=True)
         df.to_csv(output_file, index=False, encoding='utf-8')
-        print(f"📊 结果已导出到: {output_file}")
+        print(f"📊 Results exported to: {output_file}")
 
 async def main():
-    """主函数"""
-    print("🎯 CiteWeave 多智能体查询测试系统")
+    """Main function"""
+    print("🎯 CiteWeave Multi-Agent Query Test System")
     print("=" * 50)
     
-    # 询问是否启用LLM评估
-    print("\n🤖 评估模式选择:")
-    print("1. 基础评估 (快速，仅基于长度、置信度等)")
-    print("2. 增强评估 (使用GPT-4o-mini进行内容质量评估)")
+    # Ask if LLM evaluation is enabled
+    print("\n🤖 Evaluation Mode Selection:")
+    print("1. Basic Evaluation (Fast, based on length, confidence, etc.)")
+    print("2. Enhanced Evaluation (using GPT-4o-mini for content quality assessment)")
     
-    eval_choice = input("请选择评估模式 (1-2): ").strip()
+    eval_choice = input("Please select evaluation mode (1-2): ").strip()
     enable_llm_evaluation = eval_choice == "2"
     
-    evaluation_mode = "增强评估模式" if enable_llm_evaluation else "基础评估模式"
-    print(f"✅ 已选择: {evaluation_mode}")
+    evaluation_mode = "Enhanced Evaluation Mode" if enable_llm_evaluation else "Basic Evaluation Mode"
+    print(f"✅ Selected: {evaluation_mode}")
     
-    # 初始化测试运行器
-    runner = QueryTestRunner(enable_llm_evaluation=enable_llm_evaluation)
+    # Initialize test runner
+    runner = QueryTestRunner(config_dir=config_dir, enable_llm_evaluation=enable_llm_evaluation)
     
-    # 初始化系统
+    # Initialize system
     if not await runner.initialize_system():
-        print("系统初始化失败，退出测试")
+        print("System initialization failed, exiting test")
         return
     
-    # 加载测试用例
+    # Load test cases
     if not runner.load_test_cases():
-        print("测试用例加载失败，退出测试")
+        print("Test cases loading failed, exiting test")
         return
     
-    # 交互式选择
-    print("\n请选择测试模式:")
-    print("1. 运行所有测试 (中文)")
-    print("2. 运行所有测试 (英文)")
-    print("3. 运行特定类别测试")
-    print("4. 显示测试类别列表")
+    # Interactive selection
+    print("\nPlease select test mode:")
+    print("1. Run all tests (Chinese)")
+    print("2. Run all tests (English)")
+    print("3. Run specific category tests")
+    print("4. Display test category list")
     
-    choice = input("请输入选择 (1-4): ").strip()
+    choice = input("Please enter selection (1-4): ").strip()
     
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     
     if choice == "1":
-        # 运行所有测试 (中文)
+        # Run all tests (Chinese)
         await runner.run_all_tests("cn")
-        report = runner.generate_report(f"test_reports/full_test_report_cn_{timestamp}.md")
-        runner.export_results_csv(f"test_reports/full_test_results_cn_{timestamp}.csv")
+        report = runner.generate_report(f"tests/query_evaluation/test_reports/full_test_report_cn_{timestamp}.md")
+        runner.export_results_csv(f"tests/query_evaluation/test_reports/full_test_results_cn_{timestamp}.csv")
         
     elif choice == "2":
-        # 运行所有测试 (英文)
+        # Run all tests (English)
         await runner.run_all_tests("en")
-        report = runner.generate_report(f"test_reports/full_test_report_en_{timestamp}.md")
-        runner.export_results_csv(f"test_reports/full_test_results_en_{timestamp}.csv")
+        report = runner.generate_report(f"tests/query_evaluation/test_reports/full_test_report_en_{timestamp}.md")
+        runner.export_results_csv(f"tests/query_evaluation/test_reports/full_test_results_en_{timestamp}.csv")
         
     elif choice == "3":
-        # 运行特定类别
-        print("\n可用的测试类别:")
+        # Run specific category
+        print("\nAvailable test categories:")
         for i, category in enumerate(runner.test_cases.keys(), 1):
             print(f"{i}. {category}")
         
-        cat_choice = input("请选择类别编号: ").strip()
+        cat_choice = input("Please select category number: ").strip()
         try:
             category_list = list(runner.test_cases.keys())
             selected_category = category_list[int(cat_choice) - 1]
             
-            language = input("选择语言 (cn/en): ").strip() or "cn"
+            language = input("Select language (cn/en): ").strip() or "cn"
             
             await runner.run_category_tests(selected_category, language)
-            report = runner.generate_report(f"test_reports/{selected_category}_test_report_{timestamp}.md")
-            runner.export_results_csv(f"test_reports/{selected_category}_test_results_{timestamp}.csv")
+            report = runner.generate_report(f"tests/query_evaluation/test_reports/{selected_category}_test_report_{timestamp}.md")
+            runner.export_results_csv(f"tests/query_evaluation/test_reports/{selected_category}_test_results_{timestamp}.csv")
             
         except (ValueError, IndexError):
-            print("无效选择")
+            print("Invalid selection")
             return
             
     elif choice == "4":
-        # 显示类别列表
-        print("\n📋 测试类别详情:")
+        # Display category list
+        print("\n📋 Test Category Details:")
         for category, info in runner.test_cases.items():
             test_count = len(info["test_cases"])
             print(f"\n🔍 {category}")
-            print(f"   描述: {info['description']}")
-            print(f"   检索策略: {info['retrieval_strategy']}")
-            print(f"   测试用例数: {test_count}")
+            print(f"    Description: {info['description']}")
+            print(f"    Retrieval Strategy: {info['retrieval_strategy']}")
+            print(f"    Test Cases: {test_count}")
             
             for test_case in info["test_cases"]:
                 print(f"   - {test_case['id']}: {test_case['query_cn']}")
@@ -602,10 +610,10 @@ async def main():
         return
     
     else:
-        print("无效选择")
+        print("Invalid selection")
         return
     
-    print("\n🎉 测试完成!")
+    print("\n🎉 Test completed!")
 
 if __name__ == "__main__":
     asyncio.run(main()) 

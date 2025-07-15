@@ -7,7 +7,7 @@ from langchain_openai import ChatOpenAI
 from typing import Optional, List
 import logging
 import re
-from config_manager import llm_config_selector
+from src.config_manager import llm_config_selector
 
 logger = logging.getLogger(__name__)
 

@@ -14,9 +14,9 @@ from datetime import datetime
 # Add src to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 
-from paper_id_utils import PaperIDGenerator
+from src.paper_id_utils import PaperIDGenerator
 from database_integrator import DatabaseIntegrator
-from graph_builder import GraphDB
+from src.graph_builder import GraphDB
 from config_manager import ConfigManager
 
 # Set up logging

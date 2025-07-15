@@ -161,7 +161,8 @@ Instructions:
 - Preserve technical terms and proper names (especially author names, paper titles)
 - Maintain the original meaning and tone
 - Do not add explanations or comments
-- Return ONLY the translated text"""),
+- Return ONLY the translated text
+- For all key academic terms, author names, paper titles, and technical keywords, always provide the original English term in parentheses or slashes after the translated/localized term, regardless of the output language. This helps the reader match the original source."""),
                 ("user", "{text}")
             ])
             
@@ -214,7 +215,9 @@ Instructions:
         memory.last_updated = datetime.now()
         
         # Check if summarization is needed
-        if len(memory.turns) >= self.config["conversation"]["summarization_threshold"]:
+        # Use a default threshold if config is missing
+        threshold = self.config.get("conversation", {}).get("summarization_threshold", 10)
+        if len(memory.turns) >= threshold:
             self._summarize_conversation(memory)
 
     def _summarize_conversation(self, memory: ConversationMemory):
@@ -235,15 +238,23 @@ Instructions:
 3. Types of queries asked (citation analysis, paper search, etc.)
 4. Important findings or patterns discovered
 
-Keep the summary concise but informative for future context."""),
-                ("user", "Conversation to summarize:\n\n{conversation}")
+Keep the summary concise but informative for future context.
+For all key academic terms, author names, paper titles, and technical keywords, always provide the original English term in parentheses or slashes after the translated/localized term, regardless of the output language. This helps the reader match the original source."""),
+                ("user", "Conversation to summarize:\n\n{{conversation}}")
             ])
             
             chain = prompt | model | StrOutputParser()
-            summary = chain.invoke({"conversation": "\n".join(conversation_text)})
-            
+            summary = None
+            try:
+                summary = chain.invoke({"conversation": "\n".join(conversation_text)})
+                logger.info(f"Conversation summary generated: {summary}")
+            except Exception as e:
+                logger.error(f"Summary generation failed: {e}")
+                summary = ""
             # Update memory
-            memory.summary = summary
+            if summary and isinstance(summary, str):
+                summary = summary.replace('{', '').replace('}', '')
+            memory.summary = summary if summary is not None else ""
             memory.turns = memory.turns[-3:]  # Keep only last 3 turns
             
             logger.info(f"Summarized conversation for thread {memory.thread_id}")
@@ -259,6 +270,9 @@ Keep the summary concise but informative for future context."""),
         
         # Add summary if available
         if memory.summary:
+            if not isinstance(memory.summary, str):
+                logger.warning(f"Memory summary is not a string: {memory.summary}")
+                memory.summary = str(memory.summary)
             context_parts.append(f"Previous conversation summary: {memory.summary}")
         
         # Add recent turns
@@ -287,6 +301,8 @@ Generate a helpful clarification question that:
 2. Suggests specific details the user could provide
 3. Offers options when possible
 4. Is polite and encouraging
+
+For all key academic terms, author names, paper titles, and technical keywords, always provide the original English term in parentheses or slashes after the translated/localized term, regardless of the output language. This helps the reader match the original source.
 
 Issue: {issue}
 Context: {context}"""),

@@ -10,8 +10,8 @@ import logging
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
 
-from pdf_processor import PDFProcessor
-from citation_parser import CitationParser
+from src.pdf_processor import PDFProcessor
+from src.citation_parser import CitationParser
 
 logging.basicConfig(level=logging.INFO)
 

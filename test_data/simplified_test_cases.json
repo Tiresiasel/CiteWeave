@@ -36,8 +36,8 @@
         },
         {
           "id": "basic_004",
-          "query_cn": "这些论文都发表在哪些期刊上？",
-          "query_en": "Which journals published these papers?",
+          "query_cn": "数据库里的论文都发表在哪些期刊上？",
+          "query_en": "Which journals published these papers in the database?",
           "expected_result_type": "journal_list",
           "complexity": "simple",
           "evaluation_criteria": ["journal_accuracy", "completeness"]

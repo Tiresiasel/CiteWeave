@@ -4,13 +4,38 @@
     "model": "bge-m3"
   },
   "llm": {
+    "agents": {
+      "language_processor": {
+        "provider": "openai",
+        "model": "gpt-3.5-turbo",
+        "temperature": 0.1,
+        "max_tokens": 1000
+      },
+      "query_analyzer": {
+        "provider": "openai",
+        "model": "gpt-3.5-turbo",
+        "temperature": 0.1,
+        "max_tokens": 1000
+      },
+      "paper_disambiguator": {
+        "provider": "openai",
+        "model": "gpt-3.5-turbo",
+        "temperature": 0.1,
+        "max_tokens": 1000
+      },
+      "response_generator": {
+        "provider": "openai",
+        "model": "gpt-3.5-turbo",
+        "temperature": 0.2,
+        "max_tokens": 2000
+      }
+    },
     "default": {
       "provider": "openai",
       "model": "gpt-3.5-turbo"
-    },
-    "citation_analysis": {
-      "provider": "openai",
-      "model": "gpt-3.5-turbo"
     }
-    }
+  },
+  "conversation": {
+    "summarization_threshold": 10
+  }
 } 

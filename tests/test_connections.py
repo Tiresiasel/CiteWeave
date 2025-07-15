@@ -7,8 +7,8 @@ import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
-from graph_builder import GraphDB
-from vector_indexer import VectorIndexer
+from src.graph_builder import GraphDB
+from src.vector_indexer import VectorIndexer
 from config_manager import ConfigManager
 
 def test_neo4j_connection():

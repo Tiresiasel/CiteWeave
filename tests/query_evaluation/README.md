@@ -58,8 +58,7 @@ export OPENAI_API_KEY="your-openai-api-key"
 
 #### 方式一：交互式完整测试
 ```bash
-cd tests/query_evaluation
-python automated_test_runner.py
+python -m tests.query_evaluation.automated_test_runner
 ```
 
 选择评估模式：
