@@ -1,0 +1,6 @@
+{
+  // Paths configuration for data and outputs
+  "pdf_dir": "./data/pdfs",
+  "output_dir": "./data/outputs",
+  "index_dir": "./data/indexes"
+} 

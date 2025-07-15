@@ -1,0 +1,107 @@
+version: 1.0
+types:
+  - id: CITES
+    label: cites
+    description: >
+      A directed reference from one argument or paper to another paper or argument, indicating that the former draws upon the latter.
+      Typically corresponds to formal citations, literature mentions, or embedded references.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "As discussed in Porter (1980), strategic positioning shapes industry structure."
+      - "This finding is consistent with earlier results reported by Zhang et al. (2015)."
+
+  - id: SUPPORTS
+    label: supports
+    description: >
+      A relationship where one argument explicitly strengthens or reinforces another argument, claim, or proposition.
+      Often grounded in logic, mechanism expansion, or additional validation.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "The model result further supports our claim about entry deterring behavior."
+      - "This mechanism gives theoretical support to the claim about consumer uncertainty."
+
+  - id: REFUTES
+    label: refutes
+    description: >
+      A relation where one argument explicitly contradicts or disproves another.
+      Typically involves logical disagreement, empirical rejection, or critique of assumptions.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "Contrary to prior work, our findings reject the first-mover advantage thesis."
+      - "This evidence refutes the selection-based explanation proposed by Lee (2020)."
+
+  - id: ELABORATES
+    label: elaborates
+    description: >
+      Indicates that one argument develops, clarifies, or extends another in greater detail.
+      Often used when breaking down a broad idea into subcomponents or providing deeper explanation.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "To elaborate, this pricing behavior unfolds in three stages..."
+      - "We now provide a more granular account of how quality is inferred."
+
+  - id: QUALIFIES
+    label: qualifies
+    description: >
+      A logical softening or conditionalizing of a claim. The second argument introduces limitations, boundary conditions, or caveats to the first.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "However, this only holds when consumers face high switching costs."
+      - "The effect is significant, but only among firms with low baseline ratings."
+
+  - id: EXTENDS
+    label: extends
+    description: >
+      An argument builds on, modifies, or generalizes a previous argument or model to a new context, dataset, or framework.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "We extend Anderson and Tushman’s model by introducing cross-platform dynamics."
+      - "Our framework generalizes prior work to multi-sided markets."
+
+  - id: CONTRASTS
+    label: contrasts
+    description: >
+      Indicates that two arguments are presented in comparison, showing differing approaches or outcomes without necessarily refuting one another.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "Unlike the signaling-based account, this explanation rests on coordination theory."
+      - "Our empirical result stands in contrast to the null findings in older settings."
+
+  - id: REPEATS
+    label: repeats
+    description: >
+      A restatement or reiteration of a prior claim without adding new logic or evidence. 
+      May be used for emphasis or clarity but carries no independent argumentative weight.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "This confirms our earlier assertion about price rigidity."
+      - "We reiterate that regulation may redirect but not suppress innovation."
+
+  - id: INSPIRED_BY
+    label: inspired_by
+    description: >
+      Indicates that the source argument or paper influenced the research question, framing, or theoretical approach of the target, without a direct citation.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "Our work is conceptually inspired by the dynamic capabilities perspective."
+      - "Although not directly citing them, our thinking aligns with Gawer and Cusumano."
+
+  - id: USES_METHOD_OF
+    label: uses_method_of
+    description: >
+      The current argument or paper adopts, adapts, or relies on a methodological approach developed by the cited source.
+      Emphasizes analytical lineage over theoretical continuity.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "We adopt the synthetic control method developed by Abadie et al. (2010)."
+      - "Our matching procedure follows the approach used in Athey & Imbens (2017)."

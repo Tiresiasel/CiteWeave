@@ -1,0 +1,155 @@
+version: 1.0
+types:
+  - id: CLAIM_MAIN
+    label: main_claim
+    description: >
+      A central argumentative statement that articulates the paper’s key theoretical or empirical contribution. 
+      Often appears in the introduction or conclusion and is typically supported by empirical or logical evidence.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "We argue that firms respond to reputation shocks by strategically adjusting price anchors."
+      - "This paper shows that quality signals have heterogeneous effects across market types."
+
+  - id: CLAIM_SUPPORTING
+    label: supporting_claim
+    description: >
+      A statement that logically supports the main claim or extends it through sub-arguments. 
+      These often appear in body sections and are built on theory, mechanisms, or preliminary findings.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "This mechanism is particularly salient when product quality is unobservable ex-ante."
+      - "The reputation channel is amplified in highly regulated sectors."
+
+  - id: EVIDENCE_EMPIRICAL
+    label: empirical_evidence
+    description: >
+      A statement based on collected data, statistical analysis, or observed patterns.
+      Typically references regression results, descriptive patterns, or quantitative metrics.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "As shown in Table 2, prices dropped by 14% following the disruption event (p < 0.01)."
+      - "Firms with stronger pre-shock reviews retained higher post-shock pricing power."
+
+  - id: EVIDENCE_THEORETICAL
+    label: theoretical_evidence
+    description: >
+      A logic-based or model-derived statement that supports a claim using theory or deduction, 
+      often without direct empirical testing.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "According to signaling theory, firms with private information use price as a credible cue."
+      - "Game-theoretic reasoning suggests a separating equilibrium under uncertainty."
+
+  - id: EVIDENCE_LITERATURE
+    label: literature_evidence
+    description: >
+      A citation-based argument that draws support from prior published research.
+      Often uses phrases like 'consistent with', 'similar to', or references specific authors.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "This aligns with findings from Zhao and Lee (2020), who showed similar pricing behavior."
+      - "Comparable results were reported in studies of Airbnb hosts by Martin et al. (2019)."
+
+  - id: COUNTERARGUMENT
+    label: counterargument
+    description: >
+      A statement that reflects or anticipates opposing viewpoints or potential objections.
+      Used to show robustness or address alternative interpretations.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "One might argue that regulatory constraints, not strategy, explain the price shift."
+      - "Critics may contend that reputation effects are confounded with category norms."
+
+  - id: REBUTTAL
+    label: rebuttal
+    description: >
+      A direct response to a counterargument that aims to invalidate, qualify, or disprove it.
+      Often includes new evidence or logical refutation.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "However, our robustness checks indicate that cost structures are unlikely drivers."
+      - "Even after excluding firms in regulated sectors, the effect persists."
+
+  - id: CONTEXT_LIMITATION
+    label: context_limitation
+    description: >
+      A statement that clarifies the scope or applicability conditions of a claim or result.
+      Typically uses constraints like time, geography, sample, or method.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "These results hold primarily in markets with low product differentiation."
+      - "Our sample is limited to firms operating in North America between 2014 and 2022."
+
+  - id: METHODOLOGY
+    label: methodology
+    description: >
+      A factual description of the research design, data, model specification, or procedure.
+      These are usually not argumentative but are essential for interpreting claims.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "We implement a difference-in-differences approach using matched firms from adjacent states."
+      - "Text data was processed using BERT-based sentence embeddings and cosine similarity."
+
+  - id: ASSUMPTION
+    label: assumption
+    description: >
+      A stated or implied condition necessary for the validity of a model, inference, or theory.
+      Typically untested within the study and may relate to behavior, structure, or data.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "We assume that firms observe market signals without noise."
+      - "The model presumes consumers update beliefs rationally."
+
+  - id: QUESTION_MOTIVATION
+    label: research_motivation
+    description: >
+      A sentence that frames the research question, motivation, or problem gap.
+      Often found in the introduction or literature review and used to establish relevance.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "How do firms adjust pricing strategies after suffering public trust erosion?"
+      - "Despite its importance, little is known about how regulation affects innovation posture."
+
+  - id: FUTURE_WORK
+    label: future_work
+    description: >
+      A forward-looking statement suggesting directions for subsequent research.
+      May relate to generalizability, mechanism validation, or cross-domain comparison.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "Future work should examine whether these patterns hold in decentralized platforms."
+      - "Subsequent studies could explore consumer-side reactions using experimental designs."
+
+  - id: NEUTRAL
+    label: neutral_statement
+    description: >
+      A non-argumentative sentence used for exposition, section navigation, or general factual context.
+      These do not build or challenge any claim directly.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "We begin by reviewing relevant literature on strategic pricing."
+      - "The paper is structured as follows."
+
+  - id: NON_ARGUMENT
+    label: non_argument
+    description: >
+      Text that provides purely procedural or editorial content with no argumentative or interpretive value.
+      Often includes formatting, repetition, or acknowledgements.
+    is_default: true
+    is_deprecated: false
+    examples:
+      - "All variables are normalized between 0 and 1 for interpretability."
+      - "Additional robustness checks are reported in the Appendix."

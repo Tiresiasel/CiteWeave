@@ -1,0 +1,12 @@
+You are given a cleaned section of a research article that contains the reference list.
+
+Your task is to extract all individual reference entries from the text. Each entry includes the authors, publication year, title, and source.
+
+The reference entries may be broken across lines, and formatting might be inconsistent due to PDF extraction artifacts.
+
+Please extract all **complete** references and return them as a **Python list of strings** (JSON-compatible). Each string must contain exactly one complete reference entry.
+
+Do not include in-text citations or anything unrelated to the reference list.
+
+Text:
+{input}

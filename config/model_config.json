@@ -1,0 +1,16 @@
+{
+  "embedding": {
+    "provider": "ollama",
+    "model": "bge-m3"
+  },
+  "llm": {
+    "default": {
+      "provider": "openai",
+      "model": "gpt-3.5-turbo"
+    },
+    "citation_analysis": {
+      "provider": "openai",
+      "model": "gpt-3.5-turbo"
+    }
+    }
+} 

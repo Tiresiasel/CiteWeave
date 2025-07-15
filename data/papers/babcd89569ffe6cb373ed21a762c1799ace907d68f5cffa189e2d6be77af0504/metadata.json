@@ -1,0 +1,18 @@
+{
+  "title": "Imitation of Complex Strategies",
+  "authors": [
+    "Jan W. Rivkin"
+  ],
+  "year": "2000",
+  "doi": "10.1287/mnsc.46.6.824.11940",
+  "journal": "Management Science",
+  "publisher": "Institute for Operations Research and the Management Sciences (INFORMS)",
+  "abstract": "<jats:p>Researchers examining loosely coupled systems, knowledge management, and complementary practices in organizations have proposed, informally, that the complexity of a successful business strategy can deter imitation of the strategy. This paper explores this proposition rigorously. A simple model is developed that parametrizes the two aspects of strategic complexity: the number of elements in a strategy and the interactions among those elements. The model excludes conventional resource-based and game-theoretic barriers to imitation altogether. The model is used to show that complexity makes the search for an optimal strategy intractable in the technical sense of the word provided by the theory of NP-completeness. Consequently, would-be copycats must rely on search heuristics or on learning, not on algorithmic “solutions,” to match the performance of superior firms. However, complexity also undermines heuristics and learning. In the face of complexity, firms that follow simple hill-climbing heuristics are quickly snared on low “local peaks,” and firms that try to learn and mimic a high performer's entire strategy suffer large penalties from small errors. The model helps to explain why some winning strategies remain unmatched even though they are open to public scrutiny; why certain bundles of organizational practices diffuse slowly even though they lead to superior performance; and why some strategies yield superior returns even after many of their critical ingredients are adopted by competitors. The analysis also suggests roles for management science and managerial choice in a world of complex strategies.</jats:p>",
+  "url": "https://doi.org/10.1287/mnsc.46.6.824.11940",
+  "type": "journal-article",
+  "volume": "46",
+  "issue": "6",
+  "pages": "824-844",
+  "issn": "0025-1909",
+  "extraction_method": "CrossRef_via_GROBID_DOI"
+}

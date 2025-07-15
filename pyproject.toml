@@ -1,0 +1,27 @@
+[project]
+name = "argument-graph-project"
+version = "0.1.0"
+description = "Argument-level citation graph and RAG system"
+authors = [
+    {name = "Yinji Zhou"}
+]
+readme = "README.md"
+requires-python = ">=3.9"
+dependencies = [
+    "nltk>=3.9.1",
+    "pdfplumber>=0.11.7",
+    "pillow>=11.3.0",
+    "pymupdf>=1.26.3",
+    "pytesseract>=0.3.13",
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+# Poetry tool configuration
+packages = [
+    { include = "src" }
+]
