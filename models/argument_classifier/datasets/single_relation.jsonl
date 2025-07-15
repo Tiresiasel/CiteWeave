@@ -1,0 +1,1000 @@
+{"text": "Porter (2006) extends earlier frameworks by introducing multi-level dynamics into dynamic capabilities.", "relations": [{"span": "Porter (2006)", "label": "EXTENDS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Mintzberg, 2007.", "relations": [{"span": "Mintzberg, 2007", "label": "INSPIRED_BY"}]}
+{"text": "However, the analysis presented by Ghemawat (2019) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Ghemawat (2019)", "label": "REFUTES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter (1999).", "relations": [{"span": "Porter (1999)", "label": "USES_METHOD_OF"}]}
+{"text": "Empirical findings in Rumelt, 2000 strongly support the argument presented regarding institutional theory.", "relations": [{"span": "Rumelt, 2000", "label": "SUPPORTS"}]}
+{"text": "However, the analysis presented by Eisenhardt 2002 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Eisenhardt 2002", "label": "REFUTES"}]}
+{"text": "Winter (1980) provides a more granular breakdown of the mechanism underlying dynamic capabilities.", "relations": [{"span": "Winter (1980)", "label": "ELABORATES"}]}
+{"text": "Empirical findings in Winter 2020 strongly support the argument presented regarding knowledge management.", "relations": [{"span": "Winter 2020", "label": "SUPPORTS"}]}
+{"text": "Eisenhardt, 2006 extends earlier frameworks by introducing multi-level dynamics into knowledge management.", "relations": [{"span": "Eisenhardt, 2006", "label": "EXTENDS"}]}
+{"text": "However, the analysis presented by Teece (2018) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Teece (2018)", "label": "REFUTES"}]}
+{"text": "Mintzberg (2007) provides a more granular breakdown of the mechanism underlying knowledge management.", "relations": [{"span": "Mintzberg (2007)", "label": "ELABORATES"}]}
+{"text": "However, the analysis presented by Teece (2014) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Teece (2014)", "label": "REFUTES"}]}
+{"text": "Prior research by Mintzberg, 1982 laid the foundation for understanding platform ecosystems.", "relations": [{"span": "Mintzberg, 1982", "label": "CITES"}]}
+{"text": "Empirical findings in Eisenhardt (2016) strongly support the argument presented regarding transaction cost economics.", "relations": [{"span": "Eisenhardt (2016)", "label": "SUPPORTS"}]}
+{"text": "Eisenhardt (1995) provides a more granular breakdown of the mechanism underlying transaction cost economics.", "relations": [{"span": "Eisenhardt (1995)", "label": "ELABORATES"}]}
+{"text": "However, the analysis presented by Grant, 1989 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Grant, 1989", "label": "REFUTES"}]}
+{"text": "As already observed in Eisenhardt, 2017, these behaviors are consistent across industries.", "relations": [{"span": "Eisenhardt, 2017", "label": "REPEATS"}]}
+{"text": "This stands in contrast to the assumptions made by Eisenhardt (1994).", "relations": [{"span": "Eisenhardt (1994)", "label": "CONTRASTS"}]}
+{"text": "Grant 1998 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Grant 1998", "label": "QUALIFIES"}]}
+{"text": "Teece, 1992 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Teece, 1992", "label": "QUALIFIES"}]}
+{"text": "Empirical findings in Teece (1989) strongly support the argument presented regarding platform ecosystems.", "relations": [{"span": "Teece (1989)", "label": "SUPPORTS"}]}
+{"text": "As already observed in Ghemawat, 2019, these behaviors are consistent across industries.", "relations": [{"span": "Ghemawat, 2019", "label": "REPEATS"}]}
+{"text": "Prior research by Porter 1998 laid the foundation for understanding resource-based view.", "relations": [{"span": "Porter 1998", "label": "CITES"}]}
+{"text": "However, the analysis presented by Winter, 2001 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Winter, 2001", "label": "REFUTES"}]}
+{"text": "Prior research by Rumelt 2009 laid the foundation for understanding innovation diffusion.", "relations": [{"span": "Rumelt 2009", "label": "CITES"}]}
+{"text": "Empirical findings in Nelson (2010) strongly support the argument presented regarding institutional theory.", "relations": [{"span": "Nelson (2010)", "label": "SUPPORTS"}]}
+{"text": "Ghemawat (2009) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Ghemawat (2009)", "label": "QUALIFIES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Teece, 1985.", "relations": [{"span": "Teece, 1985", "label": "INSPIRED_BY"}]}
+{"text": "Empirical findings in Porter (2017) strongly support the argument presented regarding resource-based view.", "relations": [{"span": "Porter (2017)", "label": "SUPPORTS"}]}
+{"text": "As already observed in Mintzberg, 1992, these behaviors are consistent across industries.", "relations": [{"span": "Mintzberg, 1992", "label": "REPEATS"}]}
+{"text": "This stands in contrast to the assumptions made by Grant (1995).", "relations": [{"span": "Grant (1995)", "label": "CONTRASTS"}]}
+{"text": "However, the analysis presented by Grant, 1994 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Grant, 1994", "label": "REFUTES"}]}
+{"text": "Ghemawat, 1984 extends earlier frameworks by introducing multi-level dynamics into resource-based view.", "relations": [{"span": "Ghemawat, 1984", "label": "EXTENDS"}]}
+{"text": "This stands in contrast to the assumptions made by Nelson, 1989.", "relations": [{"span": "Nelson, 1989", "label": "CONTRASTS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Eisenhardt 2020.", "relations": [{"span": "Eisenhardt 2020", "label": "INSPIRED_BY"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Grant 1997.", "relations": [{"span": "Grant 1997", "label": "USES_METHOD_OF"}]}
+{"text": "As already observed in Barney, 2013, these behaviors are consistent across industries.", "relations": [{"span": "Barney, 2013", "label": "REPEATS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Rumelt, 2020.", "relations": [{"span": "Rumelt, 2020", "label": "INSPIRED_BY"}]}
+{"text": "Nelson 2011 provides a more granular breakdown of the mechanism underlying transaction cost economics.", "relations": [{"span": "Nelson 2011", "label": "ELABORATES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Rumelt, 2006.", "relations": [{"span": "Rumelt, 2006", "label": "USES_METHOD_OF"}]}
+{"text": "Winter, 2021 extends earlier frameworks by introducing multi-level dynamics into organizational learning.", "relations": [{"span": "Winter, 2021", "label": "EXTENDS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Grant, 2011.", "relations": [{"span": "Grant, 2011", "label": "INSPIRED_BY"}]}
+{"text": "Empirical findings in Grant, 2015 strongly support the argument presented regarding organizational learning.", "relations": [{"span": "Grant, 2015", "label": "SUPPORTS"}]}
+{"text": "However, the analysis presented by Nelson (1996) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Nelson (1996)", "label": "REFUTES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Grant (1983).", "relations": [{"span": "Grant (1983)", "label": "INSPIRED_BY"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Mintzberg 1988.", "relations": [{"span": "Mintzberg 1988", "label": "INSPIRED_BY"}]}
+{"text": "Rumelt 1980 extends earlier frameworks by introducing multi-level dynamics into organizational learning.", "relations": [{"span": "Rumelt 1980", "label": "EXTENDS"}]}
+{"text": "However, the analysis presented by Ghemawat, 2011 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Ghemawat, 2011", "label": "REFUTES"}]}
+{"text": "However, the analysis presented by Barney, 2022 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Barney, 2022", "label": "REFUTES"}]}
+{"text": "As already observed in Nelson 2007, these behaviors are consistent across industries.", "relations": [{"span": "Nelson 2007", "label": "REPEATS"}]}
+{"text": "Prior research by Teece 1998 laid the foundation for understanding transaction cost economics.", "relations": [{"span": "Teece 1998", "label": "CITES"}]}
+{"text": "However, the analysis presented by Teece (1988) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Teece (1988)", "label": "REFUTES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter (1986).", "relations": [{"span": "Porter (1986)", "label": "USES_METHOD_OF"}]}
+{"text": "Mintzberg 2018 extends earlier frameworks by introducing multi-level dynamics into organizational learning.", "relations": [{"span": "Mintzberg 2018", "label": "EXTENDS"}]}
+{"text": "This stands in contrast to the assumptions made by Winter, 1988.", "relations": [{"span": "Winter, 1988", "label": "CONTRASTS"}]}
+{"text": "Prior research by Barney (1990) laid the foundation for understanding platform ecosystems.", "relations": [{"span": "Barney (1990)", "label": "CITES"}]}
+{"text": "As already observed in Nelson (1983), these behaviors are consistent across industries.", "relations": [{"span": "Nelson (1983)", "label": "REPEATS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Ghemawat, 2003.", "relations": [{"span": "Ghemawat, 2003", "label": "USES_METHOD_OF"}]}
+{"text": "Winter 2022 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Winter 2022", "label": "QUALIFIES"}]}
+{"text": "Rumelt (1992) extends earlier frameworks by introducing multi-level dynamics into resource-based view.", "relations": [{"span": "Rumelt (1992)", "label": "EXTENDS"}]}
+{"text": "However, the analysis presented by Nelson, 2003 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Nelson, 2003", "label": "REFUTES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Barney (2005).", "relations": [{"span": "Barney (2005)", "label": "INSPIRED_BY"}]}
+{"text": "Nelson 1992 provides a more granular breakdown of the mechanism underlying strategic positioning.", "relations": [{"span": "Nelson 1992", "label": "ELABORATES"}]}
+{"text": "Ghemawat, 1981 extends earlier frameworks by introducing multi-level dynamics into organizational learning.", "relations": [{"span": "Ghemawat, 1981", "label": "EXTENDS"}]}
+{"text": "Winter (1999) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Winter (1999)", "label": "QUALIFIES"}]}
+{"text": "Teece 1987 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Teece 1987", "label": "QUALIFIES"}]}
+{"text": "As already observed in Winter, 2001, these behaviors are consistent across industries.", "relations": [{"span": "Winter, 2001", "label": "REPEATS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Rumelt (1982).", "relations": [{"span": "Rumelt (1982)", "label": "INSPIRED_BY"}]}
+{"text": "This stands in contrast to the assumptions made by Rumelt (1981).", "relations": [{"span": "Rumelt (1981)", "label": "CONTRASTS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Rumelt (1996).", "relations": [{"span": "Rumelt (1996)", "label": "INSPIRED_BY"}]}
+{"text": "However, the analysis presented by Ghemawat 2008 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Ghemawat 2008", "label": "REFUTES"}]}
+{"text": "Porter, 2005 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Porter, 2005", "label": "QUALIFIES"}]}
+{"text": "Ghemawat (1992) provides a more granular breakdown of the mechanism underlying platform ecosystems.", "relations": [{"span": "Ghemawat (1992)", "label": "ELABORATES"}]}
+{"text": "Rumelt 2017 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Rumelt 2017", "label": "QUALIFIES"}]}
+{"text": "Nelson, 2011 provides a more granular breakdown of the mechanism underlying transaction cost economics.", "relations": [{"span": "Nelson, 2011", "label": "ELABORATES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Barney, 2016.", "relations": [{"span": "Barney, 2016", "label": "INSPIRED_BY"}]}
+{"text": "As already observed in Eisenhardt (2015), these behaviors are consistent across industries.", "relations": [{"span": "Eisenhardt (2015)", "label": "REPEATS"}]}
+{"text": "However, the analysis presented by Teece (2017) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Teece (2017)", "label": "REFUTES"}]}
+{"text": "Porter 2020 provides a more granular breakdown of the mechanism underlying competitive strategy.", "relations": [{"span": "Porter 2020", "label": "ELABORATES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Eisenhardt (2000).", "relations": [{"span": "Eisenhardt (2000)", "label": "USES_METHOD_OF"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Ghemawat, 1993.", "relations": [{"span": "Ghemawat, 1993", "label": "INSPIRED_BY"}]}
+{"text": "This stands in contrast to the assumptions made by Eisenhardt 1987.", "relations": [{"span": "Eisenhardt 1987", "label": "CONTRASTS"}]}
+{"text": "Eisenhardt 2014 provides a more granular breakdown of the mechanism underlying strategic positioning.", "relations": [{"span": "Eisenhardt 2014", "label": "ELABORATES"}]}
+{"text": "Empirical findings in Nelson, 2016 strongly support the argument presented regarding competitive strategy.", "relations": [{"span": "Nelson, 2016", "label": "SUPPORTS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Eisenhardt (2007).", "relations": [{"span": "Eisenhardt (2007)", "label": "INSPIRED_BY"}]}
+{"text": "Barney, 1988 provides a more granular breakdown of the mechanism underlying knowledge management.", "relations": [{"span": "Barney, 1988", "label": "ELABORATES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Ghemawat (1980).", "relations": [{"span": "Ghemawat (1980)", "label": "USES_METHOD_OF"}]}
+{"text": "However, the analysis presented by Mintzberg 1995 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Mintzberg 1995", "label": "REFUTES"}]}
+{"text": "Empirical findings in Rumelt (1996) strongly support the argument presented regarding institutional theory.", "relations": [{"span": "Rumelt (1996)", "label": "SUPPORTS"}]}
+{"text": "Winter 2004 extends earlier frameworks by introducing multi-level dynamics into competitive strategy.", "relations": [{"span": "Winter 2004", "label": "EXTENDS"}]}
+{"text": "As already observed in Ghemawat, 2000, these behaviors are consistent across industries.", "relations": [{"span": "Ghemawat, 2000", "label": "REPEATS"}]}
+{"text": "Grant, 2013 extends earlier frameworks by introducing multi-level dynamics into organizational learning.", "relations": [{"span": "Grant, 2013", "label": "EXTENDS"}]}
+{"text": "Porter 1980 extends earlier frameworks by introducing multi-level dynamics into platform ecosystems.", "relations": [{"span": "Porter 1980", "label": "EXTENDS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Eisenhardt (2004).", "relations": [{"span": "Eisenhardt (2004)", "label": "INSPIRED_BY"}]}
+{"text": "As already observed in Rumelt (1981), these behaviors are consistent across industries.", "relations": [{"span": "Rumelt (1981)", "label": "REPEATS"}]}
+{"text": "As already observed in Porter (2014), these behaviors are consistent across industries.", "relations": [{"span": "Porter (2014)", "label": "REPEATS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Teece (2009).", "relations": [{"span": "Teece (2009)", "label": "INSPIRED_BY"}]}
+{"text": "This stands in contrast to the assumptions made by Grant, 2011.", "relations": [{"span": "Grant, 2011", "label": "CONTRASTS"}]}
+{"text": "Empirical findings in Teece, 2008 strongly support the argument presented regarding knowledge management.", "relations": [{"span": "Teece, 2008", "label": "SUPPORTS"}]}
+{"text": "Grant 2016 provides a more granular breakdown of the mechanism underlying platform ecosystems.", "relations": [{"span": "Grant 2016", "label": "ELABORATES"}]}
+{"text": "This stands in contrast to the assumptions made by Grant, 1984.", "relations": [{"span": "Grant, 1984", "label": "CONTRASTS"}]}
+{"text": "However, the analysis presented by Rumelt, 2020 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Rumelt, 2020", "label": "REFUTES"}]}
+{"text": "Grant, 2021 provides a more granular breakdown of the mechanism underlying knowledge management.", "relations": [{"span": "Grant, 2021", "label": "ELABORATES"}]}
+{"text": "Empirical findings in Porter (2020) strongly support the argument presented regarding institutional theory.", "relations": [{"span": "Porter (2020)", "label": "SUPPORTS"}]}
+{"text": "Empirical findings in Rumelt, 1989 strongly support the argument presented regarding strategic positioning.", "relations": [{"span": "Rumelt, 1989", "label": "SUPPORTS"}]}
+{"text": "Prior research by Grant, 2017 laid the foundation for understanding knowledge management.", "relations": [{"span": "Grant, 2017", "label": "CITES"}]}
+{"text": "However, the analysis presented by Rumelt 2003 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Rumelt 2003", "label": "REFUTES"}]}
+{"text": "However, the analysis presented by Eisenhardt (1982) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Eisenhardt (1982)", "label": "REFUTES"}]}
+{"text": "However, the analysis presented by Rumelt (1994) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Rumelt (1994)", "label": "REFUTES"}]}
+{"text": "Empirical findings in Ghemawat 1983 strongly support the argument presented regarding resource-based view.", "relations": [{"span": "Ghemawat 1983", "label": "SUPPORTS"}]}
+{"text": "Teece, 2011 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Teece, 2011", "label": "QUALIFIES"}]}
+{"text": "However, the analysis presented by Rumelt, 2016 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Rumelt, 2016", "label": "REFUTES"}]}
+{"text": "Empirical findings in Nelson 1991 strongly support the argument presented regarding dynamic capabilities.", "relations": [{"span": "Nelson 1991", "label": "SUPPORTS"}]}
+{"text": "As already observed in Eisenhardt, 2016, these behaviors are consistent across industries.", "relations": [{"span": "Eisenhardt, 2016", "label": "REPEATS"}]}
+{"text": "However, the analysis presented by Eisenhardt 1983 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Eisenhardt 1983", "label": "REFUTES"}]}
+{"text": "However, the analysis presented by Winter (1985) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Winter (1985)", "label": "REFUTES"}]}
+{"text": "Empirical findings in Barney (2004) strongly support the argument presented regarding competitive strategy.", "relations": [{"span": "Barney (2004)", "label": "SUPPORTS"}]}
+{"text": "As already observed in Winter (1986), these behaviors are consistent across industries.", "relations": [{"span": "Winter (1986)", "label": "REPEATS"}]}
+{"text": "Empirical findings in Eisenhardt (2018) strongly support the argument presented regarding organizational learning.", "relations": [{"span": "Eisenhardt (2018)", "label": "SUPPORTS"}]}
+{"text": "Winter 2000 extends earlier frameworks by introducing multi-level dynamics into competitive strategy.", "relations": [{"span": "Winter 2000", "label": "EXTENDS"}]}
+{"text": "As already observed in Mintzberg, 2018, these behaviors are consistent across industries.", "relations": [{"span": "Mintzberg, 2018", "label": "REPEATS"}]}
+{"text": "However, the analysis presented by Porter (2021) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Porter (2021)", "label": "REFUTES"}]}
+{"text": "This stands in contrast to the assumptions made by Eisenhardt, 2005.", "relations": [{"span": "Eisenhardt, 2005", "label": "CONTRASTS"}]}
+{"text": "Grant 2021 provides a more granular breakdown of the mechanism underlying transaction cost economics.", "relations": [{"span": "Grant 2021", "label": "ELABORATES"}]}
+{"text": "Winter 2006 provides a more granular breakdown of the mechanism underlying dynamic capabilities.", "relations": [{"span": "Winter 2006", "label": "ELABORATES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Rumelt (2014).", "relations": [{"span": "Rumelt (2014)", "label": "USES_METHOD_OF"}]}
+{"text": "Nelson 1985 extends earlier frameworks by introducing multi-level dynamics into transaction cost economics.", "relations": [{"span": "Nelson 1985", "label": "EXTENDS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter 1980.", "relations": [{"span": "Porter 1980", "label": "USES_METHOD_OF"}]}
+{"text": "As already observed in Rumelt 1986, these behaviors are consistent across industries.", "relations": [{"span": "Rumelt 1986", "label": "REPEATS"}]}
+{"text": "As already observed in Winter 1981, these behaviors are consistent across industries.", "relations": [{"span": "Winter 1981", "label": "REPEATS"}]}
+{"text": "However, the analysis presented by Porter, 1998 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Porter, 1998", "label": "REFUTES"}]}
+{"text": "Empirical findings in Eisenhardt, 1994 strongly support the argument presented regarding knowledge management.", "relations": [{"span": "Eisenhardt, 1994", "label": "SUPPORTS"}]}
+{"text": "However, the analysis presented by Nelson (1981) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Nelson (1981)", "label": "REFUTES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Grant (1986).", "relations": [{"span": "Grant (1986)", "label": "USES_METHOD_OF"}]}
+{"text": "As already observed in Ghemawat, 1998, these behaviors are consistent across industries.", "relations": [{"span": "Ghemawat, 1998", "label": "REPEATS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Mintzberg (2008).", "relations": [{"span": "Mintzberg (2008)", "label": "USES_METHOD_OF"}]}
+{"text": "Prior research by Eisenhardt 2002 laid the foundation for understanding strategic positioning.", "relations": [{"span": "Eisenhardt 2002", "label": "CITES"}]}
+{"text": "Nelson (2017) provides a more granular breakdown of the mechanism underlying resource-based view.", "relations": [{"span": "Nelson (2017)", "label": "ELABORATES"}]}
+{"text": "Ghemawat, 2003 extends earlier frameworks by introducing multi-level dynamics into resource-based view.", "relations": [{"span": "Ghemawat, 2003", "label": "EXTENDS"}]}
+{"text": "This stands in contrast to the assumptions made by Grant 1988.", "relations": [{"span": "Grant 1988", "label": "CONTRASTS"}]}
+{"text": "Empirical findings in Barney, 1986 strongly support the argument presented regarding organizational learning.", "relations": [{"span": "Barney, 1986", "label": "SUPPORTS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Ghemawat 1998.", "relations": [{"span": "Ghemawat 1998", "label": "INSPIRED_BY"}]}
+{"text": "Empirical findings in Rumelt, 2015 strongly support the argument presented regarding resource-based view.", "relations": [{"span": "Rumelt, 2015", "label": "SUPPORTS"}]}
+{"text": "Prior research by Rumelt 2002 laid the foundation for understanding transaction cost economics.", "relations": [{"span": "Rumelt 2002", "label": "CITES"}]}
+{"text": "Prior research by Nelson (2011) laid the foundation for understanding innovation diffusion.", "relations": [{"span": "Nelson (2011)", "label": "CITES"}]}
+{"text": "However, the analysis presented by Teece (2012) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Teece (2012)", "label": "REFUTES"}]}
+{"text": "However, the analysis presented by Grant (1990) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Grant (1990)", "label": "REFUTES"}]}
+{"text": "As already observed in Rumelt (2010), these behaviors are consistent across industries.", "relations": [{"span": "Rumelt (2010)", "label": "REPEATS"}]}
+{"text": "However, the analysis presented by Rumelt, 2021 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Rumelt, 2021", "label": "REFUTES"}]}
+{"text": "As already observed in Teece (1985), these behaviors are consistent across industries.", "relations": [{"span": "Teece (1985)", "label": "REPEATS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Mintzberg, 2021.", "relations": [{"span": "Mintzberg, 2021", "label": "INSPIRED_BY"}]}
+{"text": "Prior research by Winter (1997) laid the foundation for understanding institutional theory.", "relations": [{"span": "Winter (1997)", "label": "CITES"}]}
+{"text": "However, the analysis presented by Teece, 2013 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Teece, 2013", "label": "REFUTES"}]}
+{"text": "As already observed in Teece (1996), these behaviors are consistent across industries.", "relations": [{"span": "Teece (1996)", "label": "REPEATS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Winter (2011).", "relations": [{"span": "Winter (2011)", "label": "INSPIRED_BY"}]}
+{"text": "Mintzberg, 1985 extends earlier frameworks by introducing multi-level dynamics into transaction cost economics.", "relations": [{"span": "Mintzberg, 1985", "label": "EXTENDS"}]}
+{"text": "Empirical findings in Grant (2016) strongly support the argument presented regarding strategic positioning.", "relations": [{"span": "Grant (2016)", "label": "SUPPORTS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter, 1989.", "relations": [{"span": "Porter, 1989", "label": "USES_METHOD_OF"}]}
+{"text": "As already observed in Porter, 2003, these behaviors are consistent across industries.", "relations": [{"span": "Porter, 2003", "label": "REPEATS"}]}
+{"text": "Empirical findings in Winter 1981 strongly support the argument presented regarding competitive strategy.", "relations": [{"span": "Winter 1981", "label": "SUPPORTS"}]}
+{"text": "Porter 2020 provides a more granular breakdown of the mechanism underlying institutional theory.", "relations": [{"span": "Porter 2020", "label": "ELABORATES"}]}
+{"text": "Empirical findings in Barney 2021 strongly support the argument presented regarding institutional theory.", "relations": [{"span": "Barney 2021", "label": "SUPPORTS"}]}
+{"text": "Grant (2008) provides a more granular breakdown of the mechanism underlying innovation diffusion.", "relations": [{"span": "Grant (2008)", "label": "ELABORATES"}]}
+{"text": "However, the analysis presented by Eisenhardt 1982 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Eisenhardt 1982", "label": "REFUTES"}]}
+{"text": "Ghemawat (1985) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Ghemawat (1985)", "label": "QUALIFIES"}]}
+{"text": "Mintzberg 1994 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Mintzberg 1994", "label": "QUALIFIES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Ghemawat, 2001.", "relations": [{"span": "Ghemawat, 2001", "label": "USES_METHOD_OF"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Porter, 1995.", "relations": [{"span": "Porter, 1995", "label": "INSPIRED_BY"}]}
+{"text": "As already observed in Eisenhardt (1998), these behaviors are consistent across industries.", "relations": [{"span": "Eisenhardt (1998)", "label": "REPEATS"}]}
+{"text": "Mintzberg, 2003 provides a more granular breakdown of the mechanism underlying strategic positioning.", "relations": [{"span": "Mintzberg, 2003", "label": "ELABORATES"}]}
+{"text": "Mintzberg, 2014 provides a more granular breakdown of the mechanism underlying competitive strategy.", "relations": [{"span": "Mintzberg, 2014", "label": "ELABORATES"}]}
+{"text": "Grant, 1984 extends earlier frameworks by introducing multi-level dynamics into resource-based view.", "relations": [{"span": "Grant, 1984", "label": "EXTENDS"}]}
+{"text": "Mintzberg, 1980 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Mintzberg, 1980", "label": "QUALIFIES"}]}
+{"text": "Mintzberg 2002 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Mintzberg 2002", "label": "QUALIFIES"}]}
+{"text": "Nelson (1984) extends earlier frameworks by introducing multi-level dynamics into innovation diffusion.", "relations": [{"span": "Nelson (1984)", "label": "EXTENDS"}]}
+{"text": "Teece, 2010 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Teece, 2010", "label": "QUALIFIES"}]}
+{"text": "This stands in contrast to the assumptions made by Winter, 2003.", "relations": [{"span": "Winter, 2003", "label": "CONTRASTS"}]}
+{"text": "Ghemawat, 1993 provides a more granular breakdown of the mechanism underlying resource-based view.", "relations": [{"span": "Ghemawat, 1993", "label": "ELABORATES"}]}
+{"text": "Prior research by Eisenhardt 1998 laid the foundation for understanding dynamic capabilities.", "relations": [{"span": "Eisenhardt 1998", "label": "CITES"}]}
+{"text": "Nelson 1997 provides a more granular breakdown of the mechanism underlying platform ecosystems.", "relations": [{"span": "Nelson 1997", "label": "ELABORATES"}]}
+{"text": "Empirical findings in Rumelt 1994 strongly support the argument presented regarding knowledge management.", "relations": [{"span": "Rumelt 1994", "label": "SUPPORTS"}]}
+{"text": "Nelson, 1984 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Nelson, 1984", "label": "QUALIFIES"}]}
+{"text": "As already observed in Mintzberg, 2007, these behaviors are consistent across industries.", "relations": [{"span": "Mintzberg, 2007", "label": "REPEATS"}]}
+{"text": "This stands in contrast to the assumptions made by Ghemawat, 1998.", "relations": [{"span": "Ghemawat, 1998", "label": "CONTRASTS"}]}
+{"text": "This stands in contrast to the assumptions made by Teece, 2018.", "relations": [{"span": "Teece, 2018", "label": "CONTRASTS"}]}
+{"text": "However, the analysis presented by Barney (1998) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Barney (1998)", "label": "REFUTES"}]}
+{"text": "Rumelt, 2003 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Rumelt, 2003", "label": "QUALIFIES"}]}
+{"text": "Prior research by Porter (1989) laid the foundation for understanding knowledge management.", "relations": [{"span": "Porter (1989)", "label": "CITES"}]}
+{"text": "This stands in contrast to the assumptions made by Barney, 2006.", "relations": [{"span": "Barney, 2006", "label": "CONTRASTS"}]}
+{"text": "Grant, 2005 provides a more granular breakdown of the mechanism underlying resource-based view.", "relations": [{"span": "Grant, 2005", "label": "ELABORATES"}]}
+{"text": "Prior research by Rumelt, 1986 laid the foundation for understanding transaction cost economics.", "relations": [{"span": "Rumelt, 1986", "label": "CITES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Barney, 1995.", "relations": [{"span": "Barney, 1995", "label": "USES_METHOD_OF"}]}
+{"text": "As already observed in Nelson (2002), these behaviors are consistent across industries.", "relations": [{"span": "Nelson (2002)", "label": "REPEATS"}]}
+{"text": "However, the analysis presented by Teece 1982 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Teece 1982", "label": "REFUTES"}]}
+{"text": "However, the analysis presented by Barney (2018) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Barney (2018)", "label": "REFUTES"}]}
+{"text": "Winter, 2007 provides a more granular breakdown of the mechanism underlying resource-based view.", "relations": [{"span": "Winter, 2007", "label": "ELABORATES"}]}
+{"text": "Porter 1995 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Porter 1995", "label": "QUALIFIES"}]}
+{"text": "As already observed in Rumelt 2002, these behaviors are consistent across industries.", "relations": [{"span": "Rumelt 2002", "label": "REPEATS"}]}
+{"text": "Teece (1994) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Teece (1994)", "label": "QUALIFIES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Rumelt 1998.", "relations": [{"span": "Rumelt 1998", "label": "INSPIRED_BY"}]}
+{"text": "This stands in contrast to the assumptions made by Nelson, 2005.", "relations": [{"span": "Nelson, 2005", "label": "CONTRASTS"}]}
+{"text": "As already observed in Grant 1992, these behaviors are consistent across industries.", "relations": [{"span": "Grant 1992", "label": "REPEATS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Barney 1989.", "relations": [{"span": "Barney 1989", "label": "INSPIRED_BY"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Mintzberg (1988).", "relations": [{"span": "Mintzberg (1988)", "label": "USES_METHOD_OF"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Grant, 1980.", "relations": [{"span": "Grant, 1980", "label": "USES_METHOD_OF"}]}
+{"text": "Winter (2019) extends earlier frameworks by introducing multi-level dynamics into dynamic capabilities.", "relations": [{"span": "Winter (2019)", "label": "EXTENDS"}]}
+{"text": "Prior research by Winter, 2000 laid the foundation for understanding dynamic capabilities.", "relations": [{"span": "Winter, 2000", "label": "CITES"}]}
+{"text": "Nelson 2003 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Nelson 2003", "label": "QUALIFIES"}]}
+{"text": "Empirical findings in Nelson 1997 strongly support the argument presented regarding dynamic capabilities.", "relations": [{"span": "Nelson 1997", "label": "SUPPORTS"}]}
+{"text": "As already observed in Eisenhardt 1993, these behaviors are consistent across industries.", "relations": [{"span": "Eisenhardt 1993", "label": "REPEATS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Porter 2007.", "relations": [{"span": "Porter 2007", "label": "INSPIRED_BY"}]}
+{"text": "Empirical findings in Winter (1994) strongly support the argument presented regarding innovation diffusion.", "relations": [{"span": "Winter (1994)", "label": "SUPPORTS"}]}
+{"text": "Nelson 2017 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Nelson 2017", "label": "QUALIFIES"}]}
+{"text": "Prior research by Ghemawat (1982) laid the foundation for understanding platform ecosystems.", "relations": [{"span": "Ghemawat (1982)", "label": "CITES"}]}
+{"text": "Porter (1988) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Porter (1988)", "label": "QUALIFIES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Barney, 1985.", "relations": [{"span": "Barney, 1985", "label": "USES_METHOD_OF"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Ghemawat 1995.", "relations": [{"span": "Ghemawat 1995", "label": "INSPIRED_BY"}]}
+{"text": "This stands in contrast to the assumptions made by Winter 2007.", "relations": [{"span": "Winter 2007", "label": "CONTRASTS"}]}
+{"text": "Empirical findings in Rumelt (1992) strongly support the argument presented regarding dynamic capabilities.", "relations": [{"span": "Rumelt (1992)", "label": "SUPPORTS"}]}
+{"text": "Empirical findings in Rumelt (2003) strongly support the argument presented regarding organizational learning.", "relations": [{"span": "Rumelt (2003)", "label": "SUPPORTS"}]}
+{"text": "However, the analysis presented by Winter (1993) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Winter (1993)", "label": "REFUTES"}]}
+{"text": "This stands in contrast to the assumptions made by Winter, 1995.", "relations": [{"span": "Winter, 1995", "label": "CONTRASTS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Teece, 1988.", "relations": [{"span": "Teece, 1988", "label": "INSPIRED_BY"}]}
+{"text": "This stands in contrast to the assumptions made by Grant 1997.", "relations": [{"span": "Grant 1997", "label": "CONTRASTS"}]}
+{"text": "Empirical findings in Teece (1991) strongly support the argument presented regarding institutional theory.", "relations": [{"span": "Teece (1991)", "label": "SUPPORTS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter 1988.", "relations": [{"span": "Porter 1988", "label": "USES_METHOD_OF"}]}
+{"text": "However, the analysis presented by Mintzberg (1985) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Mintzberg (1985)", "label": "REFUTES"}]}
+{"text": "Ghemawat (1984) extends earlier frameworks by introducing multi-level dynamics into organizational learning.", "relations": [{"span": "Ghemawat (1984)", "label": "EXTENDS"}]}
+{"text": "Barney 2008 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Barney 2008", "label": "QUALIFIES"}]}
+{"text": "This stands in contrast to the assumptions made by Grant, 1982.", "relations": [{"span": "Grant, 1982", "label": "CONTRASTS"}]}
+{"text": "As already observed in Grant 2022, these behaviors are consistent across industries.", "relations": [{"span": "Grant 2022", "label": "REPEATS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Porter (2018).", "relations": [{"span": "Porter (2018)", "label": "INSPIRED_BY"}]}
+{"text": "Porter 1983 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Porter 1983", "label": "QUALIFIES"}]}
+{"text": "Empirical findings in Porter (1995) strongly support the argument presented regarding competitive strategy.", "relations": [{"span": "Porter (1995)", "label": "SUPPORTS"}]}
+{"text": "This stands in contrast to the assumptions made by Eisenhardt, 1993.", "relations": [{"span": "Eisenhardt, 1993", "label": "CONTRASTS"}]}
+{"text": "Ghemawat 2013 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Ghemawat 2013", "label": "QUALIFIES"}]}
+{"text": "This stands in contrast to the assumptions made by Rumelt (2002).", "relations": [{"span": "Rumelt (2002)", "label": "CONTRASTS"}]}
+{"text": "This stands in contrast to the assumptions made by Ghemawat 1995.", "relations": [{"span": "Ghemawat 1995", "label": "CONTRASTS"}]}
+{"text": "This stands in contrast to the assumptions made by Teece, 1981.", "relations": [{"span": "Teece, 1981", "label": "CONTRASTS"}]}
+{"text": "As already observed in Porter 1994, these behaviors are consistent across industries.", "relations": [{"span": "Porter 1994", "label": "REPEATS"}]}
+{"text": "Porter (1985) provides a more granular breakdown of the mechanism underlying platform ecosystems.", "relations": [{"span": "Porter (1985)", "label": "ELABORATES"}]}
+{"text": "As already observed in Winter, 1986, these behaviors are consistent across industries.", "relations": [{"span": "Winter, 1986", "label": "REPEATS"}]}
+{"text": "However, the analysis presented by Barney, 2007 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Barney, 2007", "label": "REFUTES"}]}
+{"text": "Rumelt (2015) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Rumelt (2015)", "label": "QUALIFIES"}]}
+{"text": "As already observed in Porter (1988), these behaviors are consistent across industries.", "relations": [{"span": "Porter (1988)", "label": "REPEATS"}]}
+{"text": "Teece (2022) extends earlier frameworks by introducing multi-level dynamics into strategic positioning.", "relations": [{"span": "Teece (2022)", "label": "EXTENDS"}]}
+{"text": "Ghemawat (1983) provides a more granular breakdown of the mechanism underlying resource-based view.", "relations": [{"span": "Ghemawat (1983)", "label": "ELABORATES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Grant 1986.", "relations": [{"span": "Grant 1986", "label": "USES_METHOD_OF"}]}
+{"text": "Porter (2022) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Porter (2022)", "label": "QUALIFIES"}]}
+{"text": "This stands in contrast to the assumptions made by Nelson (1992).", "relations": [{"span": "Nelson (1992)", "label": "CONTRASTS"}]}
+{"text": "This stands in contrast to the assumptions made by Teece, 2021.", "relations": [{"span": "Teece, 2021", "label": "CONTRASTS"}]}
+{"text": "Mintzberg, 2011 provides a more granular breakdown of the mechanism underlying transaction cost economics.", "relations": [{"span": "Mintzberg, 2011", "label": "ELABORATES"}]}
+{"text": "Eisenhardt (1990) extends earlier frameworks by introducing multi-level dynamics into dynamic capabilities.", "relations": [{"span": "Eisenhardt (1990)", "label": "EXTENDS"}]}
+{"text": "Mintzberg (2011) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Mintzberg (2011)", "label": "QUALIFIES"}]}
+{"text": "Eisenhardt (2019) extends earlier frameworks by introducing multi-level dynamics into innovation diffusion.", "relations": [{"span": "Eisenhardt (2019)", "label": "EXTENDS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter (2016).", "relations": [{"span": "Porter (2016)", "label": "USES_METHOD_OF"}]}
+{"text": "This stands in contrast to the assumptions made by Winter (1991).", "relations": [{"span": "Winter (1991)", "label": "CONTRASTS"}]}
+{"text": "Empirical findings in Ghemawat, 2014 strongly support the argument presented regarding organizational learning.", "relations": [{"span": "Ghemawat, 2014", "label": "SUPPORTS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Rumelt 2011.", "relations": [{"span": "Rumelt 2011", "label": "INSPIRED_BY"}]}
+{"text": "This stands in contrast to the assumptions made by Nelson, 1982.", "relations": [{"span": "Nelson, 1982", "label": "CONTRASTS"}]}
+{"text": "Teece, 1996 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Teece, 1996", "label": "QUALIFIES"}]}
+{"text": "Prior research by Mintzberg (2008) laid the foundation for understanding innovation diffusion.", "relations": [{"span": "Mintzberg (2008)", "label": "CITES"}]}
+{"text": "This stands in contrast to the assumptions made by Barney (2015).", "relations": [{"span": "Barney (2015)", "label": "CONTRASTS"}]}
+{"text": "Empirical findings in Mintzberg 2005 strongly support the argument presented regarding transaction cost economics.", "relations": [{"span": "Mintzberg 2005", "label": "SUPPORTS"}]}
+{"text": "Prior research by Grant 2001 laid the foundation for understanding strategic positioning.", "relations": [{"span": "Grant 2001", "label": "CITES"}]}
+{"text": "As already observed in Mintzberg 2010, these behaviors are consistent across industries.", "relations": [{"span": "Mintzberg 2010", "label": "REPEATS"}]}
+{"text": "However, the analysis presented by Winter (2000) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Winter (2000)", "label": "REFUTES"}]}
+{"text": "However, the analysis presented by Winter 2003 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Winter 2003", "label": "REFUTES"}]}
+{"text": "Prior research by Teece (2018) laid the foundation for understanding knowledge management.", "relations": [{"span": "Teece (2018)", "label": "CITES"}]}
+{"text": "Rumelt 2018 provides a more granular breakdown of the mechanism underlying knowledge management.", "relations": [{"span": "Rumelt 2018", "label": "ELABORATES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Eisenhardt 2006.", "relations": [{"span": "Eisenhardt 2006", "label": "INSPIRED_BY"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Teece 2002.", "relations": [{"span": "Teece 2002", "label": "USES_METHOD_OF"}]}
+{"text": "Prior research by Rumelt (2010) laid the foundation for understanding platform ecosystems.", "relations": [{"span": "Rumelt (2010)", "label": "CITES"}]}
+{"text": "Prior research by Teece, 1990 laid the foundation for understanding dynamic capabilities.", "relations": [{"span": "Teece, 1990", "label": "CITES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter (1997).", "relations": [{"span": "Porter (1997)", "label": "USES_METHOD_OF"}]}
+{"text": "This stands in contrast to the assumptions made by Barney (1989).", "relations": [{"span": "Barney (1989)", "label": "CONTRASTS"}]}
+{"text": "This stands in contrast to the assumptions made by Rumelt, 1995.", "relations": [{"span": "Rumelt, 1995", "label": "CONTRASTS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Teece (2019).", "relations": [{"span": "Teece (2019)", "label": "INSPIRED_BY"}]}
+{"text": "Grant 1984 provides a more granular breakdown of the mechanism underlying dynamic capabilities.", "relations": [{"span": "Grant 1984", "label": "ELABORATES"}]}
+{"text": "Porter, 2012 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Porter, 2012", "label": "QUALIFIES"}]}
+{"text": "As already observed in Winter, 2001, these behaviors are consistent across industries.", "relations": [{"span": "Winter, 2001", "label": "REPEATS"}]}
+{"text": "Grant 2009 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Grant 2009", "label": "QUALIFIES"}]}
+{"text": "This stands in contrast to the assumptions made by Teece, 2009.", "relations": [{"span": "Teece, 2009", "label": "CONTRASTS"}]}
+{"text": "As already observed in Rumelt 2005, these behaviors are consistent across industries.", "relations": [{"span": "Rumelt 2005", "label": "REPEATS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Barney, 2022.", "relations": [{"span": "Barney, 2022", "label": "USES_METHOD_OF"}]}
+{"text": "Nelson 1994 provides a more granular breakdown of the mechanism underlying innovation diffusion.", "relations": [{"span": "Nelson 1994", "label": "ELABORATES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Grant 2020.", "relations": [{"span": "Grant 2020", "label": "INSPIRED_BY"}]}
+{"text": "Ghemawat 2017 extends earlier frameworks by introducing multi-level dynamics into transaction cost economics.", "relations": [{"span": "Ghemawat 2017", "label": "EXTENDS"}]}
+{"text": "Barney, 1988 provides a more granular breakdown of the mechanism underlying knowledge management.", "relations": [{"span": "Barney, 1988", "label": "ELABORATES"}]}
+{"text": "Barney (1991) provides a more granular breakdown of the mechanism underlying competitive strategy.", "relations": [{"span": "Barney (1991)", "label": "ELABORATES"}]}
+{"text": "However, the analysis presented by Porter, 2018 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Porter, 2018", "label": "REFUTES"}]}
+{"text": "Eisenhardt 2003 extends earlier frameworks by introducing multi-level dynamics into transaction cost economics.", "relations": [{"span": "Eisenhardt 2003", "label": "EXTENDS"}]}
+{"text": "Prior research by Mintzberg, 2011 laid the foundation for understanding transaction cost economics.", "relations": [{"span": "Mintzberg, 2011", "label": "CITES"}]}
+{"text": "Teece, 2019 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Teece, 2019", "label": "QUALIFIES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Porter 2013.", "relations": [{"span": "Porter 2013", "label": "INSPIRED_BY"}]}
+{"text": "This stands in contrast to the assumptions made by Teece 2004.", "relations": [{"span": "Teece 2004", "label": "CONTRASTS"}]}
+{"text": "Eisenhardt (2000) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Eisenhardt (2000)", "label": "QUALIFIES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Teece (1985).", "relations": [{"span": "Teece (1985)", "label": "INSPIRED_BY"}]}
+{"text": "Rumelt 1996 extends earlier frameworks by introducing multi-level dynamics into innovation diffusion.", "relations": [{"span": "Rumelt 1996", "label": "EXTENDS"}]}
+{"text": "As already observed in Nelson (2000), these behaviors are consistent across industries.", "relations": [{"span": "Nelson (2000)", "label": "REPEATS"}]}
+{"text": "However, the analysis presented by Grant, 2002 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Grant, 2002", "label": "REFUTES"}]}
+{"text": "Prior research by Teece, 2005 laid the foundation for understanding knowledge management.", "relations": [{"span": "Teece, 2005", "label": "CITES"}]}
+{"text": "Empirical findings in Mintzberg 1984 strongly support the argument presented regarding knowledge management.", "relations": [{"span": "Mintzberg 1984", "label": "SUPPORTS"}]}
+{"text": "As already observed in Grant 2006, these behaviors are consistent across industries.", "relations": [{"span": "Grant 2006", "label": "REPEATS"}]}
+{"text": "Prior research by Nelson (2012) laid the foundation for understanding institutional theory.", "relations": [{"span": "Nelson (2012)", "label": "CITES"}]}
+{"text": "However, the analysis presented by Grant (2010) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Grant (2010)", "label": "REFUTES"}]}
+{"text": "However, the analysis presented by Teece 1990 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Teece 1990", "label": "REFUTES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Eisenhardt 2004.", "relations": [{"span": "Eisenhardt 2004", "label": "USES_METHOD_OF"}]}
+{"text": "This stands in contrast to the assumptions made by Rumelt, 1997.", "relations": [{"span": "Rumelt, 1997", "label": "CONTRASTS"}]}
+{"text": "Prior research by Mintzberg, 2011 laid the foundation for understanding dynamic capabilities.", "relations": [{"span": "Mintzberg, 2011", "label": "CITES"}]}
+{"text": "Porter, 2022 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Porter, 2022", "label": "QUALIFIES"}]}
+{"text": "Rumelt, 2015 extends earlier frameworks by introducing multi-level dynamics into knowledge management.", "relations": [{"span": "Rumelt, 2015", "label": "EXTENDS"}]}
+{"text": "As already observed in Eisenhardt (1988), these behaviors are consistent across industries.", "relations": [{"span": "Eisenhardt (1988)", "label": "REPEATS"}]}
+{"text": "Prior research by Porter, 2018 laid the foundation for understanding knowledge management.", "relations": [{"span": "Porter, 2018", "label": "CITES"}]}
+{"text": "As already observed in Ghemawat 2014, these behaviors are consistent across industries.", "relations": [{"span": "Ghemawat 2014", "label": "REPEATS"}]}
+{"text": "As already observed in Nelson (2016), these behaviors are consistent across industries.", "relations": [{"span": "Nelson (2016)", "label": "REPEATS"}]}
+{"text": "However, the analysis presented by Porter, 2003 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Porter, 2003", "label": "REFUTES"}]}
+{"text": "Teece, 1987 provides a more granular breakdown of the mechanism underlying competitive strategy.", "relations": [{"span": "Teece, 1987", "label": "ELABORATES"}]}
+{"text": "This stands in contrast to the assumptions made by Winter, 2008.", "relations": [{"span": "Winter, 2008", "label": "CONTRASTS"}]}
+{"text": "This stands in contrast to the assumptions made by Nelson 2006.", "relations": [{"span": "Nelson 2006", "label": "CONTRASTS"}]}
+{"text": "Prior research by Ghemawat, 1990 laid the foundation for understanding institutional theory.", "relations": [{"span": "Ghemawat, 1990", "label": "CITES"}]}
+{"text": "However, the analysis presented by Nelson 2017 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Nelson 2017", "label": "REFUTES"}]}
+{"text": "This stands in contrast to the assumptions made by Rumelt, 2000.", "relations": [{"span": "Rumelt, 2000", "label": "CONTRASTS"}]}
+{"text": "Barney, 2001 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Barney, 2001", "label": "QUALIFIES"}]}
+{"text": "Rumelt 2005 provides a more granular breakdown of the mechanism underlying platform ecosystems.", "relations": [{"span": "Rumelt 2005", "label": "ELABORATES"}]}
+{"text": "Teece (1991) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Teece (1991)", "label": "QUALIFIES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Rumelt, 2003.", "relations": [{"span": "Rumelt, 2003", "label": "USES_METHOD_OF"}]}
+{"text": "Empirical findings in Teece, 1994 strongly support the argument presented regarding transaction cost economics.", "relations": [{"span": "Teece, 1994", "label": "SUPPORTS"}]}
+{"text": "Grant 1981 provides a more granular breakdown of the mechanism underlying dynamic capabilities.", "relations": [{"span": "Grant 1981", "label": "ELABORATES"}]}
+{"text": "However, the analysis presented by Winter, 1997 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Winter, 1997", "label": "REFUTES"}]}
+{"text": "Porter 1999 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Porter 1999", "label": "QUALIFIES"}]}
+{"text": "This stands in contrast to the assumptions made by Barney, 1980.", "relations": [{"span": "Barney, 1980", "label": "CONTRASTS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Grant (1991).", "relations": [{"span": "Grant (1991)", "label": "INSPIRED_BY"}]}
+{"text": "Empirical findings in Barney 2006 strongly support the argument presented regarding resource-based view.", "relations": [{"span": "Barney 2006", "label": "SUPPORTS"}]}
+{"text": "Nelson (1987) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Nelson (1987)", "label": "QUALIFIES"}]}
+{"text": "However, the analysis presented by Teece, 1981 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Teece, 1981", "label": "REFUTES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Mintzberg 2012.", "relations": [{"span": "Mintzberg 2012", "label": "USES_METHOD_OF"}]}
+{"text": "Prior research by Winter (2012) laid the foundation for understanding strategic positioning.", "relations": [{"span": "Winter (2012)", "label": "CITES"}]}
+{"text": "This stands in contrast to the assumptions made by Ghemawat, 1992.", "relations": [{"span": "Ghemawat, 1992", "label": "CONTRASTS"}]}
+{"text": "Barney (2004) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Barney (2004)", "label": "QUALIFIES"}]}
+{"text": "Nelson 1986 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Nelson 1986", "label": "QUALIFIES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Grant, 2018.", "relations": [{"span": "Grant, 2018", "label": "INSPIRED_BY"}]}
+{"text": "Empirical findings in Nelson 2009 strongly support the argument presented regarding dynamic capabilities.", "relations": [{"span": "Nelson 2009", "label": "SUPPORTS"}]}
+{"text": "Ghemawat (2008) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Ghemawat (2008)", "label": "QUALIFIES"}]}
+{"text": "Winter, 2013 provides a more granular breakdown of the mechanism underlying institutional theory.", "relations": [{"span": "Winter, 2013", "label": "ELABORATES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Porter (1983).", "relations": [{"span": "Porter (1983)", "label": "INSPIRED_BY"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter, 2022.", "relations": [{"span": "Porter, 2022", "label": "USES_METHOD_OF"}]}
+{"text": "Empirical findings in Winter, 2003 strongly support the argument presented regarding resource-based view.", "relations": [{"span": "Winter, 2003", "label": "SUPPORTS"}]}
+{"text": "Empirical findings in Grant, 1982 strongly support the argument presented regarding competitive strategy.", "relations": [{"span": "Grant, 1982", "label": "SUPPORTS"}]}
+{"text": "This stands in contrast to the assumptions made by Mintzberg (1998).", "relations": [{"span": "Mintzberg (1998)", "label": "CONTRASTS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter (2014).", "relations": [{"span": "Porter (2014)", "label": "USES_METHOD_OF"}]}
+{"text": "This stands in contrast to the assumptions made by Winter, 2003.", "relations": [{"span": "Winter, 2003", "label": "CONTRASTS"}]}
+{"text": "Empirical findings in Nelson (2021) strongly support the argument presented regarding innovation diffusion.", "relations": [{"span": "Nelson (2021)", "label": "SUPPORTS"}]}
+{"text": "Porter (2005) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Porter (2005)", "label": "QUALIFIES"}]}
+{"text": "As already observed in Winter, 2014, these behaviors are consistent across industries.", "relations": [{"span": "Winter, 2014", "label": "REPEATS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Teece 2004.", "relations": [{"span": "Teece 2004", "label": "INSPIRED_BY"}]}
+{"text": "Ghemawat (2019) provides a more granular breakdown of the mechanism underlying strategic positioning.", "relations": [{"span": "Ghemawat (2019)", "label": "ELABORATES"}]}
+{"text": "As already observed in Mintzberg 1999, these behaviors are consistent across industries.", "relations": [{"span": "Mintzberg 1999", "label": "REPEATS"}]}
+{"text": "Empirical findings in Winter (1980) strongly support the argument presented regarding strategic positioning.", "relations": [{"span": "Winter (1980)", "label": "SUPPORTS"}]}
+{"text": "As already observed in Barney (2010), these behaviors are consistent across industries.", "relations": [{"span": "Barney (2010)", "label": "REPEATS"}]}
+{"text": "Empirical findings in Barney (1987) strongly support the argument presented regarding strategic positioning.", "relations": [{"span": "Barney (1987)", "label": "SUPPORTS"}]}
+{"text": "This stands in contrast to the assumptions made by Mintzberg 1983.", "relations": [{"span": "Mintzberg 1983", "label": "CONTRASTS"}]}
+{"text": "Prior research by Porter 2016 laid the foundation for understanding innovation diffusion.", "relations": [{"span": "Porter 2016", "label": "CITES"}]}
+{"text": "As already observed in Grant, 2016, these behaviors are consistent across industries.", "relations": [{"span": "Grant, 2016", "label": "REPEATS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Nelson (2010).", "relations": [{"span": "Nelson (2010)", "label": "USES_METHOD_OF"}]}
+{"text": "Empirical findings in Rumelt 1981 strongly support the argument presented regarding innovation diffusion.", "relations": [{"span": "Rumelt 1981", "label": "SUPPORTS"}]}
+{"text": "Porter, 2008 extends earlier frameworks by introducing multi-level dynamics into innovation diffusion.", "relations": [{"span": "Porter, 2008", "label": "EXTENDS"}]}
+{"text": "Prior research by Porter (2008) laid the foundation for understanding resource-based view.", "relations": [{"span": "Porter (2008)", "label": "CITES"}]}
+{"text": "Teece, 1995 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Teece, 1995", "label": "QUALIFIES"}]}
+{"text": "However, the analysis presented by Ghemawat 1986 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Ghemawat 1986", "label": "REFUTES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Winter, 1998.", "relations": [{"span": "Winter, 1998", "label": "USES_METHOD_OF"}]}
+{"text": "Empirical findings in Mintzberg, 1996 strongly support the argument presented regarding institutional theory.", "relations": [{"span": "Mintzberg, 1996", "label": "SUPPORTS"}]}
+{"text": "However, the analysis presented by Mintzberg 1991 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Mintzberg 1991", "label": "REFUTES"}]}
+{"text": "Prior research by Barney 2009 laid the foundation for understanding innovation diffusion.", "relations": [{"span": "Barney 2009", "label": "CITES"}]}
+{"text": "However, the analysis presented by Porter 2018 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Porter 2018", "label": "REFUTES"}]}
+{"text": "This stands in contrast to the assumptions made by Nelson (1995).", "relations": [{"span": "Nelson (1995)", "label": "CONTRASTS"}]}
+{"text": "Empirical findings in Teece (1991) strongly support the argument presented regarding transaction cost economics.", "relations": [{"span": "Teece (1991)", "label": "SUPPORTS"}]}
+{"text": "Empirical findings in Ghemawat (2011) strongly support the argument presented regarding strategic positioning.", "relations": [{"span": "Ghemawat (2011)", "label": "SUPPORTS"}]}
+{"text": "Teece 2008 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Teece 2008", "label": "QUALIFIES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Teece, 1990.", "relations": [{"span": "Teece, 1990", "label": "USES_METHOD_OF"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Eisenhardt, 2010.", "relations": [{"span": "Eisenhardt, 2010", "label": "INSPIRED_BY"}]}
+{"text": "Barney, 1996 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Barney, 1996", "label": "QUALIFIES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Eisenhardt (1989).", "relations": [{"span": "Eisenhardt (1989)", "label": "USES_METHOD_OF"}]}
+{"text": "Empirical findings in Winter (1994) strongly support the argument presented regarding strategic positioning.", "relations": [{"span": "Winter (1994)", "label": "SUPPORTS"}]}
+{"text": "Ghemawat 2014 provides a more granular breakdown of the mechanism underlying transaction cost economics.", "relations": [{"span": "Ghemawat 2014", "label": "ELABORATES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Eisenhardt, 2014.", "relations": [{"span": "Eisenhardt, 2014", "label": "INSPIRED_BY"}]}
+{"text": "Teece (2001) provides a more granular breakdown of the mechanism underlying transaction cost economics.", "relations": [{"span": "Teece (2001)", "label": "ELABORATES"}]}
+{"text": "However, the analysis presented by Nelson, 2022 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Nelson, 2022", "label": "REFUTES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Rumelt 2021.", "relations": [{"span": "Rumelt 2021", "label": "INSPIRED_BY"}]}
+{"text": "This stands in contrast to the assumptions made by Grant (2000).", "relations": [{"span": "Grant (2000)", "label": "CONTRASTS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Rumelt 1997.", "relations": [{"span": "Rumelt 1997", "label": "USES_METHOD_OF"}]}
+{"text": "Winter 1986 provides a more granular breakdown of the mechanism underlying institutional theory.", "relations": [{"span": "Winter 1986", "label": "ELABORATES"}]}
+{"text": "As already observed in Nelson 1982, these behaviors are consistent across industries.", "relations": [{"span": "Nelson 1982", "label": "REPEATS"}]}
+{"text": "Empirical findings in Grant, 1989 strongly support the argument presented regarding knowledge management.", "relations": [{"span": "Grant, 1989", "label": "SUPPORTS"}]}
+{"text": "However, the analysis presented by Barney 2005 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Barney 2005", "label": "REFUTES"}]}
+{"text": "Mintzberg 2021 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Mintzberg 2021", "label": "QUALIFIES"}]}
+{"text": "Grant, 1989 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Grant, 1989", "label": "QUALIFIES"}]}
+{"text": "Ghemawat, 1987 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Ghemawat, 1987", "label": "QUALIFIES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Mintzberg 2022.", "relations": [{"span": "Mintzberg 2022", "label": "INSPIRED_BY"}]}
+{"text": "Nelson, 2014 extends earlier frameworks by introducing multi-level dynamics into knowledge management.", "relations": [{"span": "Nelson, 2014", "label": "EXTENDS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Barney 2003.", "relations": [{"span": "Barney 2003", "label": "USES_METHOD_OF"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Porter (2022).", "relations": [{"span": "Porter (2022)", "label": "INSPIRED_BY"}]}
+{"text": "Mintzberg 1997 provides a more granular breakdown of the mechanism underlying institutional theory.", "relations": [{"span": "Mintzberg 1997", "label": "ELABORATES"}]}
+{"text": "As already observed in Nelson (2008), these behaviors are consistent across industries.", "relations": [{"span": "Nelson (2008)", "label": "REPEATS"}]}
+{"text": "Grant 2001 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Grant 2001", "label": "QUALIFIES"}]}
+{"text": "Prior research by Barney (2015) laid the foundation for understanding strategic positioning.", "relations": [{"span": "Barney (2015)", "label": "CITES"}]}
+{"text": "Eisenhardt 1987 provides a more granular breakdown of the mechanism underlying strategic positioning.", "relations": [{"span": "Eisenhardt 1987", "label": "ELABORATES"}]}
+{"text": "Prior research by Winter (2007) laid the foundation for understanding strategic positioning.", "relations": [{"span": "Winter (2007)", "label": "CITES"}]}
+{"text": "This stands in contrast to the assumptions made by Teece, 1992.", "relations": [{"span": "Teece, 1992", "label": "CONTRASTS"}]}
+{"text": "Empirical findings in Barney (2003) strongly support the argument presented regarding competitive strategy.", "relations": [{"span": "Barney (2003)", "label": "SUPPORTS"}]}
+{"text": "Nelson 2001 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Nelson 2001", "label": "QUALIFIES"}]}
+{"text": "Ghemawat (2020) provides a more granular breakdown of the mechanism underlying transaction cost economics.", "relations": [{"span": "Ghemawat (2020)", "label": "ELABORATES"}]}
+{"text": "Winter, 2018 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Winter, 2018", "label": "QUALIFIES"}]}
+{"text": "Nelson, 2005 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Nelson, 2005", "label": "QUALIFIES"}]}
+{"text": "Grant (1987) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Grant (1987)", "label": "QUALIFIES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Mintzberg (2012).", "relations": [{"span": "Mintzberg (2012)", "label": "USES_METHOD_OF"}]}
+{"text": "Prior research by Rumelt 2000 laid the foundation for understanding platform ecosystems.", "relations": [{"span": "Rumelt 2000", "label": "CITES"}]}
+{"text": "Rumelt, 1991 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Rumelt, 1991", "label": "QUALIFIES"}]}
+{"text": "This stands in contrast to the assumptions made by Winter (1995).", "relations": [{"span": "Winter (1995)", "label": "CONTRASTS"}]}
+{"text": "Prior research by Eisenhardt (1980) laid the foundation for understanding knowledge management.", "relations": [{"span": "Eisenhardt (1980)", "label": "CITES"}]}
+{"text": "Nelson 2022 extends earlier frameworks by introducing multi-level dynamics into organizational learning.", "relations": [{"span": "Nelson 2022", "label": "EXTENDS"}]}
+{"text": "Teece (1983) provides a more granular breakdown of the mechanism underlying organizational learning.", "relations": [{"span": "Teece (1983)", "label": "ELABORATES"}]}
+{"text": "Prior research by Porter, 2013 laid the foundation for understanding organizational learning.", "relations": [{"span": "Porter, 2013", "label": "CITES"}]}
+{"text": "Porter 2005 extends earlier frameworks by introducing multi-level dynamics into knowledge management.", "relations": [{"span": "Porter 2005", "label": "EXTENDS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter, 2022.", "relations": [{"span": "Porter, 2022", "label": "USES_METHOD_OF"}]}
+{"text": "Porter 1986 extends earlier frameworks by introducing multi-level dynamics into dynamic capabilities.", "relations": [{"span": "Porter 1986", "label": "EXTENDS"}]}
+{"text": "This stands in contrast to the assumptions made by Teece, 2018.", "relations": [{"span": "Teece, 2018", "label": "CONTRASTS"}]}
+{"text": "Grant (1984) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Grant (1984)", "label": "QUALIFIES"}]}
+{"text": "Porter 1992 provides a more granular breakdown of the mechanism underlying resource-based view.", "relations": [{"span": "Porter 1992", "label": "ELABORATES"}]}
+{"text": "Teece 1998 extends earlier frameworks by introducing multi-level dynamics into platform ecosystems.", "relations": [{"span": "Teece 1998", "label": "EXTENDS"}]}
+{"text": "Nelson (2016) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Nelson (2016)", "label": "QUALIFIES"}]}
+{"text": "However, the analysis presented by Eisenhardt (2013) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Eisenhardt (2013)", "label": "REFUTES"}]}
+{"text": "This stands in contrast to the assumptions made by Porter 1982.", "relations": [{"span": "Porter 1982", "label": "CONTRASTS"}]}
+{"text": "Winter 2000 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Winter 2000", "label": "QUALIFIES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Eisenhardt 2005.", "relations": [{"span": "Eisenhardt 2005", "label": "INSPIRED_BY"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Grant 2021.", "relations": [{"span": "Grant 2021", "label": "INSPIRED_BY"}]}
+{"text": "Prior research by Rumelt (2009) laid the foundation for understanding competitive strategy.", "relations": [{"span": "Rumelt (2009)", "label": "CITES"}]}
+{"text": "Barney 1984 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Barney 1984", "label": "QUALIFIES"}]}
+{"text": "This stands in contrast to the assumptions made by Eisenhardt 1998.", "relations": [{"span": "Eisenhardt 1998", "label": "CONTRASTS"}]}
+{"text": "This stands in contrast to the assumptions made by Eisenhardt 2005.", "relations": [{"span": "Eisenhardt 2005", "label": "CONTRASTS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Rumelt, 2006.", "relations": [{"span": "Rumelt, 2006", "label": "INSPIRED_BY"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Teece, 1980.", "relations": [{"span": "Teece, 1980", "label": "USES_METHOD_OF"}]}
+{"text": "Prior research by Winter (2006) laid the foundation for understanding innovation diffusion.", "relations": [{"span": "Winter (2006)", "label": "CITES"}]}
+{"text": "Barney 1988 provides a more granular breakdown of the mechanism underlying knowledge management.", "relations": [{"span": "Barney 1988", "label": "ELABORATES"}]}
+{"text": "Barney 1999 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Barney 1999", "label": "QUALIFIES"}]}
+{"text": "Porter (1986) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Porter (1986)", "label": "QUALIFIES"}]}
+{"text": "Barney, 2017 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Barney, 2017", "label": "QUALIFIES"}]}
+{"text": "This stands in contrast to the assumptions made by Nelson (2002).", "relations": [{"span": "Nelson (2002)", "label": "CONTRASTS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Mintzberg (2012).", "relations": [{"span": "Mintzberg (2012)", "label": "USES_METHOD_OF"}]}
+{"text": "Empirical findings in Teece, 2020 strongly support the argument presented regarding organizational learning.", "relations": [{"span": "Teece, 2020", "label": "SUPPORTS"}]}
+{"text": "As already observed in Ghemawat, 2007, these behaviors are consistent across industries.", "relations": [{"span": "Ghemawat, 2007", "label": "REPEATS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Eisenhardt 1983.", "relations": [{"span": "Eisenhardt 1983", "label": "INSPIRED_BY"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Rumelt 2019.", "relations": [{"span": "Rumelt 2019", "label": "INSPIRED_BY"}]}
+{"text": "Empirical findings in Barney 2006 strongly support the argument presented regarding competitive strategy.", "relations": [{"span": "Barney 2006", "label": "SUPPORTS"}]}
+{"text": "Eisenhardt 1980 extends earlier frameworks by introducing multi-level dynamics into organizational learning.", "relations": [{"span": "Eisenhardt 1980", "label": "EXTENDS"}]}
+{"text": "Prior research by Eisenhardt, 2000 laid the foundation for understanding transaction cost economics.", "relations": [{"span": "Eisenhardt, 2000", "label": "CITES"}]}
+{"text": "As already observed in Nelson 2004, these behaviors are consistent across industries.", "relations": [{"span": "Nelson 2004", "label": "REPEATS"}]}
+{"text": "As already observed in Porter, 1991, these behaviors are consistent across industries.", "relations": [{"span": "Porter, 1991", "label": "REPEATS"}]}
+{"text": "Porter, 1984 provides a more granular breakdown of the mechanism underlying innovation diffusion.", "relations": [{"span": "Porter, 1984", "label": "ELABORATES"}]}
+{"text": "This stands in contrast to the assumptions made by Grant (2020).", "relations": [{"span": "Grant (2020)", "label": "CONTRASTS"}]}
+{"text": "Eisenhardt, 2016 extends earlier frameworks by introducing multi-level dynamics into competitive strategy.", "relations": [{"span": "Eisenhardt, 2016", "label": "EXTENDS"}]}
+{"text": "Rumelt, 2017 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Rumelt, 2017", "label": "QUALIFIES"}]}
+{"text": "Barney, 2013 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Barney, 2013", "label": "QUALIFIES"}]}
+{"text": "However, the analysis presented by Winter, 1989 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Winter, 1989", "label": "REFUTES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter 1986.", "relations": [{"span": "Porter 1986", "label": "USES_METHOD_OF"}]}
+{"text": "Eisenhardt 2006 extends earlier frameworks by introducing multi-level dynamics into organizational learning.", "relations": [{"span": "Eisenhardt 2006", "label": "EXTENDS"}]}
+{"text": "However, the analysis presented by Grant 1991 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Grant 1991", "label": "REFUTES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Teece (2005).", "relations": [{"span": "Teece (2005)", "label": "USES_METHOD_OF"}]}
+{"text": "Empirical findings in Eisenhardt 1998 strongly support the argument presented regarding transaction cost economics.", "relations": [{"span": "Eisenhardt 1998", "label": "SUPPORTS"}]}
+{"text": "Mintzberg, 2005 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Mintzberg, 2005", "label": "QUALIFIES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Eisenhardt, 2016.", "relations": [{"span": "Eisenhardt, 2016", "label": "INSPIRED_BY"}]}
+{"text": "Nelson 2012 provides a more granular breakdown of the mechanism underlying institutional theory.", "relations": [{"span": "Nelson 2012", "label": "ELABORATES"}]}
+{"text": "This stands in contrast to the assumptions made by Porter 2002.", "relations": [{"span": "Porter 2002", "label": "CONTRASTS"}]}
+{"text": "As already observed in Porter (2015), these behaviors are consistent across industries.", "relations": [{"span": "Porter (2015)", "label": "REPEATS"}]}
+{"text": "This stands in contrast to the assumptions made by Eisenhardt (1981).", "relations": [{"span": "Eisenhardt (1981)", "label": "CONTRASTS"}]}
+{"text": "This stands in contrast to the assumptions made by Teece 2008.", "relations": [{"span": "Teece 2008", "label": "CONTRASTS"}]}
+{"text": "Teece (2008) provides a more granular breakdown of the mechanism underlying organizational learning.", "relations": [{"span": "Teece (2008)", "label": "ELABORATES"}]}
+{"text": "Eisenhardt (1991) provides a more granular breakdown of the mechanism underlying institutional theory.", "relations": [{"span": "Eisenhardt (1991)", "label": "ELABORATES"}]}
+{"text": "As already observed in Winter (1992), these behaviors are consistent across industries.", "relations": [{"span": "Winter (1992)", "label": "REPEATS"}]}
+{"text": "Empirical findings in Winter, 1999 strongly support the argument presented regarding transaction cost economics.", "relations": [{"span": "Winter, 1999", "label": "SUPPORTS"}]}
+{"text": "Empirical findings in Rumelt, 2019 strongly support the argument presented regarding institutional theory.", "relations": [{"span": "Rumelt, 2019", "label": "SUPPORTS"}]}
+{"text": "As already observed in Ghemawat 1987, these behaviors are consistent across industries.", "relations": [{"span": "Ghemawat 1987", "label": "REPEATS"}]}
+{"text": "Empirical findings in Eisenhardt, 1996 strongly support the argument presented regarding resource-based view.", "relations": [{"span": "Eisenhardt, 1996", "label": "SUPPORTS"}]}
+{"text": "Barney (2021) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Barney (2021)", "label": "QUALIFIES"}]}
+{"text": "However, the analysis presented by Nelson, 2008 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Nelson, 2008", "label": "REFUTES"}]}
+{"text": "As already observed in Rumelt 2000, these behaviors are consistent across industries.", "relations": [{"span": "Rumelt 2000", "label": "REPEATS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Porter 2008.", "relations": [{"span": "Porter 2008", "label": "INSPIRED_BY"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Barney 1990.", "relations": [{"span": "Barney 1990", "label": "USES_METHOD_OF"}]}
+{"text": "Ghemawat, 1993 provides a more granular breakdown of the mechanism underlying resource-based view.", "relations": [{"span": "Ghemawat, 1993", "label": "ELABORATES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Eisenhardt (2004).", "relations": [{"span": "Eisenhardt (2004)", "label": "INSPIRED_BY"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Rumelt 2002.", "relations": [{"span": "Rumelt 2002", "label": "INSPIRED_BY"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Rumelt 1982.", "relations": [{"span": "Rumelt 1982", "label": "USES_METHOD_OF"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Mintzberg (1980).", "relations": [{"span": "Mintzberg (1980)", "label": "INSPIRED_BY"}]}
+{"text": "Empirical findings in Porter, 1996 strongly support the argument presented regarding platform ecosystems.", "relations": [{"span": "Porter, 1996", "label": "SUPPORTS"}]}
+{"text": "Empirical findings in Eisenhardt (2015) strongly support the argument presented regarding institutional theory.", "relations": [{"span": "Eisenhardt (2015)", "label": "SUPPORTS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter, 2014.", "relations": [{"span": "Porter, 2014", "label": "USES_METHOD_OF"}]}
+{"text": "Empirical findings in Nelson (1985) strongly support the argument presented regarding resource-based view.", "relations": [{"span": "Nelson (1985)", "label": "SUPPORTS"}]}
+{"text": "Porter, 1996 extends earlier frameworks by introducing multi-level dynamics into organizational learning.", "relations": [{"span": "Porter, 1996", "label": "EXTENDS"}]}
+{"text": "As already observed in Grant 2003, these behaviors are consistent across industries.", "relations": [{"span": "Grant 2003", "label": "REPEATS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Ghemawat, 2016.", "relations": [{"span": "Ghemawat, 2016", "label": "INSPIRED_BY"}]}
+{"text": "Teece, 1981 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Teece, 1981", "label": "QUALIFIES"}]}
+{"text": "However, the analysis presented by Grant, 2019 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Grant, 2019", "label": "REFUTES"}]}
+{"text": "Mintzberg, 2003 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Mintzberg, 2003", "label": "QUALIFIES"}]}
+{"text": "This stands in contrast to the assumptions made by Nelson, 1980.", "relations": [{"span": "Nelson, 1980", "label": "CONTRASTS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Ghemawat 2005.", "relations": [{"span": "Ghemawat 2005", "label": "USES_METHOD_OF"}]}
+{"text": "As already observed in Eisenhardt 2000, these behaviors are consistent across industries.", "relations": [{"span": "Eisenhardt 2000", "label": "REPEATS"}]}
+{"text": "This stands in contrast to the assumptions made by Ghemawat 2007.", "relations": [{"span": "Ghemawat 2007", "label": "CONTRASTS"}]}
+{"text": "However, the analysis presented by Barney, 1984 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Barney, 1984", "label": "REFUTES"}]}
+{"text": "However, the analysis presented by Mintzberg, 2000 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Mintzberg, 2000", "label": "REFUTES"}]}
+{"text": "Ghemawat (2020) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Ghemawat (2020)", "label": "QUALIFIES"}]}
+{"text": "Empirical findings in Mintzberg (2012) strongly support the argument presented regarding transaction cost economics.", "relations": [{"span": "Mintzberg (2012)", "label": "SUPPORTS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Porter 1995.", "relations": [{"span": "Porter 1995", "label": "INSPIRED_BY"}]}
+{"text": "However, the analysis presented by Ghemawat, 2012 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Ghemawat, 2012", "label": "REFUTES"}]}
+{"text": "This stands in contrast to the assumptions made by Rumelt, 1983.", "relations": [{"span": "Rumelt, 1983", "label": "CONTRASTS"}]}
+{"text": "However, the analysis presented by Ghemawat, 2022 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Ghemawat, 2022", "label": "REFUTES"}]}
+{"text": "Prior research by Porter 1986 laid the foundation for understanding resource-based view.", "relations": [{"span": "Porter 1986", "label": "CITES"}]}
+{"text": "However, the analysis presented by Mintzberg, 2008 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Mintzberg, 2008", "label": "REFUTES"}]}
+{"text": "However, the analysis presented by Rumelt (1985) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Rumelt (1985)", "label": "REFUTES"}]}
+{"text": "Eisenhardt 1994 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Eisenhardt 1994", "label": "QUALIFIES"}]}
+{"text": "Barney (2005) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Barney (2005)", "label": "QUALIFIES"}]}
+{"text": "Barney 2005 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Barney 2005", "label": "QUALIFIES"}]}
+{"text": "This stands in contrast to the assumptions made by Winter, 1994.", "relations": [{"span": "Winter, 1994", "label": "CONTRASTS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Porter (1985).", "relations": [{"span": "Porter (1985)", "label": "INSPIRED_BY"}]}
+{"text": "Nelson 1999 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Nelson 1999", "label": "QUALIFIES"}]}
+{"text": "As already observed in Grant (1980), these behaviors are consistent across industries.", "relations": [{"span": "Grant (1980)", "label": "REPEATS"}]}
+{"text": "This stands in contrast to the assumptions made by Grant 2001.", "relations": [{"span": "Grant 2001", "label": "CONTRASTS"}]}
+{"text": "Empirical findings in Porter, 2001 strongly support the argument presented regarding resource-based view.", "relations": [{"span": "Porter, 2001", "label": "SUPPORTS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Teece 2019.", "relations": [{"span": "Teece 2019", "label": "INSPIRED_BY"}]}
+{"text": "This stands in contrast to the assumptions made by Porter 1992.", "relations": [{"span": "Porter 1992", "label": "CONTRASTS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Eisenhardt 2005.", "relations": [{"span": "Eisenhardt 2005", "label": "USES_METHOD_OF"}]}
+{"text": "Winter, 2011 provides a more granular breakdown of the mechanism underlying resource-based view.", "relations": [{"span": "Winter, 2011", "label": "ELABORATES"}]}
+{"text": "As already observed in Rumelt (2008), these behaviors are consistent across industries.", "relations": [{"span": "Rumelt (2008)", "label": "REPEATS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter 2019.", "relations": [{"span": "Porter 2019", "label": "USES_METHOD_OF"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Mintzberg, 2006.", "relations": [{"span": "Mintzberg, 2006", "label": "INSPIRED_BY"}]}
+{"text": "However, the analysis presented by Porter, 2006 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Porter, 2006", "label": "REFUTES"}]}
+{"text": "However, the analysis presented by Eisenhardt, 2003 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Eisenhardt, 2003", "label": "REFUTES"}]}
+{"text": "Grant (2002) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Grant (2002)", "label": "QUALIFIES"}]}
+{"text": "Barney, 2019 provides a more granular breakdown of the mechanism underlying strategic positioning.", "relations": [{"span": "Barney, 2019", "label": "ELABORATES"}]}
+{"text": "Prior research by Porter 2009 laid the foundation for understanding transaction cost economics.", "relations": [{"span": "Porter 2009", "label": "CITES"}]}
+{"text": "Empirical findings in Barney (2017) strongly support the argument presented regarding resource-based view.", "relations": [{"span": "Barney (2017)", "label": "SUPPORTS"}]}
+{"text": "Empirical findings in Nelson, 2017 strongly support the argument presented regarding resource-based view.", "relations": [{"span": "Nelson, 2017", "label": "SUPPORTS"}]}
+{"text": "Grant 2002 extends earlier frameworks by introducing multi-level dynamics into competitive strategy.", "relations": [{"span": "Grant 2002", "label": "EXTENDS"}]}
+{"text": "This stands in contrast to the assumptions made by Winter, 1980.", "relations": [{"span": "Winter, 1980", "label": "CONTRASTS"}]}
+{"text": "Prior research by Rumelt (2005) laid the foundation for understanding transaction cost economics.", "relations": [{"span": "Rumelt (2005)", "label": "CITES"}]}
+{"text": "Prior research by Rumelt 2007 laid the foundation for understanding platform ecosystems.", "relations": [{"span": "Rumelt 2007", "label": "CITES"}]}
+{"text": "As already observed in Mintzberg (1984), these behaviors are consistent across industries.", "relations": [{"span": "Mintzberg (1984)", "label": "REPEATS"}]}
+{"text": "Eisenhardt (1999) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Eisenhardt (1999)", "label": "QUALIFIES"}]}
+{"text": "However, the analysis presented by Grant 1984 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Grant 1984", "label": "REFUTES"}]}
+{"text": "However, the analysis presented by Nelson 2014 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Nelson 2014", "label": "REFUTES"}]}
+{"text": "Eisenhardt, 2006 provides a more granular breakdown of the mechanism underlying organizational learning.", "relations": [{"span": "Eisenhardt, 2006", "label": "ELABORATES"}]}
+{"text": "As already observed in Winter (2013), these behaviors are consistent across industries.", "relations": [{"span": "Winter (2013)", "label": "REPEATS"}]}
+{"text": "However, the analysis presented by Teece 2014 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Teece 2014", "label": "REFUTES"}]}
+{"text": "Prior research by Winter 1983 laid the foundation for understanding platform ecosystems.", "relations": [{"span": "Winter 1983", "label": "CITES"}]}
+{"text": "As already observed in Eisenhardt, 2005, these behaviors are consistent across industries.", "relations": [{"span": "Eisenhardt, 2005", "label": "REPEATS"}]}
+{"text": "Empirical findings in Ghemawat, 1992 strongly support the argument presented regarding resource-based view.", "relations": [{"span": "Ghemawat, 1992", "label": "SUPPORTS"}]}
+{"text": "Ghemawat 2016 provides a more granular breakdown of the mechanism underlying institutional theory.", "relations": [{"span": "Ghemawat 2016", "label": "ELABORATES"}]}
+{"text": "Rumelt, 2011 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Rumelt, 2011", "label": "QUALIFIES"}]}
+{"text": "As already observed in Grant 1996, these behaviors are consistent across industries.", "relations": [{"span": "Grant 1996", "label": "REPEATS"}]}
+{"text": "This stands in contrast to the assumptions made by Winter (1989).", "relations": [{"span": "Winter (1989)", "label": "CONTRASTS"}]}
+{"text": "Prior research by Rumelt, 2013 laid the foundation for understanding competitive strategy.", "relations": [{"span": "Rumelt, 2013", "label": "CITES"}]}
+{"text": "This stands in contrast to the assumptions made by Rumelt 1988.", "relations": [{"span": "Rumelt 1988", "label": "CONTRASTS"}]}
+{"text": "This stands in contrast to the assumptions made by Grant (1993).", "relations": [{"span": "Grant (1993)", "label": "CONTRASTS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Nelson 2004.", "relations": [{"span": "Nelson 2004", "label": "USES_METHOD_OF"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Winter, 1992.", "relations": [{"span": "Winter, 1992", "label": "INSPIRED_BY"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Barney, 2017.", "relations": [{"span": "Barney, 2017", "label": "INSPIRED_BY"}]}
+{"text": "Prior research by Teece (1999) laid the foundation for understanding institutional theory.", "relations": [{"span": "Teece (1999)", "label": "CITES"}]}
+{"text": "Prior research by Mintzberg 2002 laid the foundation for understanding resource-based view.", "relations": [{"span": "Mintzberg 2002", "label": "CITES"}]}
+{"text": "Porter (2001) provides a more granular breakdown of the mechanism underlying transaction cost economics.", "relations": [{"span": "Porter (2001)", "label": "ELABORATES"}]}
+{"text": "Eisenhardt (1999) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Eisenhardt (1999)", "label": "QUALIFIES"}]}
+{"text": "Winter, 1995 extends earlier frameworks by introducing multi-level dynamics into resource-based view.", "relations": [{"span": "Winter, 1995", "label": "EXTENDS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Mintzberg, 1991.", "relations": [{"span": "Mintzberg, 1991", "label": "USES_METHOD_OF"}]}
+{"text": "Prior research by Ghemawat (2006) laid the foundation for understanding competitive strategy.", "relations": [{"span": "Ghemawat (2006)", "label": "CITES"}]}
+{"text": "This stands in contrast to the assumptions made by Winter 1984.", "relations": [{"span": "Winter 1984", "label": "CONTRASTS"}]}
+{"text": "Winter, 2002 extends earlier frameworks by introducing multi-level dynamics into organizational learning.", "relations": [{"span": "Winter, 2002", "label": "EXTENDS"}]}
+{"text": "Empirical findings in Teece, 2013 strongly support the argument presented regarding transaction cost economics.", "relations": [{"span": "Teece, 2013", "label": "SUPPORTS"}]}
+{"text": "Nelson 1993 extends earlier frameworks by introducing multi-level dynamics into dynamic capabilities.", "relations": [{"span": "Nelson 1993", "label": "EXTENDS"}]}
+{"text": "However, the analysis presented by Teece, 2019 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Teece, 2019", "label": "REFUTES"}]}
+{"text": "This stands in contrast to the assumptions made by Nelson 2002.", "relations": [{"span": "Nelson 2002", "label": "CONTRASTS"}]}
+{"text": "Porter 2020 provides a more granular breakdown of the mechanism underlying institutional theory.", "relations": [{"span": "Porter 2020", "label": "ELABORATES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Rumelt 2003.", "relations": [{"span": "Rumelt 2003", "label": "USES_METHOD_OF"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Rumelt, 2015.", "relations": [{"span": "Rumelt, 2015", "label": "INSPIRED_BY"}]}
+{"text": "Empirical findings in Ghemawat (1987) strongly support the argument presented regarding innovation diffusion.", "relations": [{"span": "Ghemawat (1987)", "label": "SUPPORTS"}]}
+{"text": "As already observed in Nelson (2019), these behaviors are consistent across industries.", "relations": [{"span": "Nelson (2019)", "label": "REPEATS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Grant (1999).", "relations": [{"span": "Grant (1999)", "label": "INSPIRED_BY"}]}
+{"text": "Mintzberg 1990 extends earlier frameworks by introducing multi-level dynamics into innovation diffusion.", "relations": [{"span": "Mintzberg 1990", "label": "EXTENDS"}]}
+{"text": "As already observed in Winter 1987, these behaviors are consistent across industries.", "relations": [{"span": "Winter 1987", "label": "REPEATS"}]}
+{"text": "As already observed in Teece, 1987, these behaviors are consistent across industries.", "relations": [{"span": "Teece, 1987", "label": "REPEATS"}]}
+{"text": "As already observed in Rumelt (1986), these behaviors are consistent across industries.", "relations": [{"span": "Rumelt (1986)", "label": "REPEATS"}]}
+{"text": "Empirical findings in Teece, 2000 strongly support the argument presented regarding platform ecosystems.", "relations": [{"span": "Teece, 2000", "label": "SUPPORTS"}]}
+{"text": "Prior research by Nelson, 2016 laid the foundation for understanding transaction cost economics.", "relations": [{"span": "Nelson, 2016", "label": "CITES"}]}
+{"text": "Rumelt (1999) provides a more granular breakdown of the mechanism underlying strategic positioning.", "relations": [{"span": "Rumelt (1999)", "label": "ELABORATES"}]}
+{"text": "Empirical findings in Teece (2015) strongly support the argument presented regarding institutional theory.", "relations": [{"span": "Teece (2015)", "label": "SUPPORTS"}]}
+{"text": "Empirical findings in Ghemawat (2016) strongly support the argument presented regarding platform ecosystems.", "relations": [{"span": "Ghemawat (2016)", "label": "SUPPORTS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter 1988.", "relations": [{"span": "Porter 1988", "label": "USES_METHOD_OF"}]}
+{"text": "Eisenhardt (2007) extends earlier frameworks by introducing multi-level dynamics into strategic positioning.", "relations": [{"span": "Eisenhardt (2007)", "label": "EXTENDS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Nelson (2004).", "relations": [{"span": "Nelson (2004)", "label": "USES_METHOD_OF"}]}
+{"text": "Rumelt, 1985 extends earlier frameworks by introducing multi-level dynamics into dynamic capabilities.", "relations": [{"span": "Rumelt, 1985", "label": "EXTENDS"}]}
+{"text": "Eisenhardt (2009) provides a more granular breakdown of the mechanism underlying competitive strategy.", "relations": [{"span": "Eisenhardt (2009)", "label": "ELABORATES"}]}
+{"text": "This stands in contrast to the assumptions made by Winter, 1999.", "relations": [{"span": "Winter, 1999", "label": "CONTRASTS"}]}
+{"text": "This stands in contrast to the assumptions made by Porter (1983).", "relations": [{"span": "Porter (1983)", "label": "CONTRASTS"}]}
+{"text": "Empirical findings in Ghemawat 1988 strongly support the argument presented regarding resource-based view.", "relations": [{"span": "Ghemawat 1988", "label": "SUPPORTS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Ghemawat 1992.", "relations": [{"span": "Ghemawat 1992", "label": "USES_METHOD_OF"}]}
+{"text": "Empirical findings in Grant, 1983 strongly support the argument presented regarding platform ecosystems.", "relations": [{"span": "Grant, 1983", "label": "SUPPORTS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Mintzberg (2003).", "relations": [{"span": "Mintzberg (2003)", "label": "INSPIRED_BY"}]}
+{"text": "As already observed in Porter, 1980, these behaviors are consistent across industries.", "relations": [{"span": "Porter, 1980", "label": "REPEATS"}]}
+{"text": "This stands in contrast to the assumptions made by Mintzberg (2017).", "relations": [{"span": "Mintzberg (2017)", "label": "CONTRASTS"}]}
+{"text": "Prior research by Porter, 1993 laid the foundation for understanding dynamic capabilities.", "relations": [{"span": "Porter, 1993", "label": "CITES"}]}
+{"text": "Empirical findings in Porter 1987 strongly support the argument presented regarding platform ecosystems.", "relations": [{"span": "Porter 1987", "label": "SUPPORTS"}]}
+{"text": "Rumelt, 2012 provides a more granular breakdown of the mechanism underlying transaction cost economics.", "relations": [{"span": "Rumelt, 2012", "label": "ELABORATES"}]}
+{"text": "Prior research by Porter, 1993 laid the foundation for understanding transaction cost economics.", "relations": [{"span": "Porter, 1993", "label": "CITES"}]}
+{"text": "This stands in contrast to the assumptions made by Porter, 2015.", "relations": [{"span": "Porter, 2015", "label": "CONTRASTS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Rumelt (1986).", "relations": [{"span": "Rumelt (1986)", "label": "USES_METHOD_OF"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Rumelt, 2013.", "relations": [{"span": "Rumelt, 2013", "label": "USES_METHOD_OF"}]}
+{"text": "Eisenhardt, 2011 extends earlier frameworks by introducing multi-level dynamics into knowledge management.", "relations": [{"span": "Eisenhardt, 2011", "label": "EXTENDS"}]}
+{"text": "As already observed in Mintzberg 2011, these behaviors are consistent across industries.", "relations": [{"span": "Mintzberg 2011", "label": "REPEATS"}]}
+{"text": "As already observed in Porter 1987, these behaviors are consistent across industries.", "relations": [{"span": "Porter 1987", "label": "REPEATS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter (1999).", "relations": [{"span": "Porter (1999)", "label": "USES_METHOD_OF"}]}
+{"text": "Empirical findings in Mintzberg 2006 strongly support the argument presented regarding platform ecosystems.", "relations": [{"span": "Mintzberg 2006", "label": "SUPPORTS"}]}
+{"text": "Empirical findings in Teece, 2001 strongly support the argument presented regarding platform ecosystems.", "relations": [{"span": "Teece, 2001", "label": "SUPPORTS"}]}
+{"text": "Porter (1988) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Porter (1988)", "label": "QUALIFIES"}]}
+{"text": "Grant 2018 provides a more granular breakdown of the mechanism underlying resource-based view.", "relations": [{"span": "Grant 2018", "label": "ELABORATES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Grant, 2012.", "relations": [{"span": "Grant, 2012", "label": "USES_METHOD_OF"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Barney, 2012.", "relations": [{"span": "Barney, 2012", "label": "USES_METHOD_OF"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Ghemawat (1992).", "relations": [{"span": "Ghemawat (1992)", "label": "INSPIRED_BY"}]}
+{"text": "Grant (1997) extends earlier frameworks by introducing multi-level dynamics into dynamic capabilities.", "relations": [{"span": "Grant (1997)", "label": "EXTENDS"}]}
+{"text": "This stands in contrast to the assumptions made by Teece (1984).", "relations": [{"span": "Teece (1984)", "label": "CONTRASTS"}]}
+{"text": "Prior research by Grant (2005) laid the foundation for understanding knowledge management.", "relations": [{"span": "Grant (2005)", "label": "CITES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Porter, 2005.", "relations": [{"span": "Porter, 2005", "label": "INSPIRED_BY"}]}
+{"text": "Rumelt, 1981 extends earlier frameworks by introducing multi-level dynamics into resource-based view.", "relations": [{"span": "Rumelt, 1981", "label": "EXTENDS"}]}
+{"text": "Empirical findings in Ghemawat (1999) strongly support the argument presented regarding platform ecosystems.", "relations": [{"span": "Ghemawat (1999)", "label": "SUPPORTS"}]}
+{"text": "However, the analysis presented by Porter, 2021 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Porter, 2021", "label": "REFUTES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Grant, 2014.", "relations": [{"span": "Grant, 2014", "label": "USES_METHOD_OF"}]}
+{"text": "However, the analysis presented by Barney, 2009 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Barney, 2009", "label": "REFUTES"}]}
+{"text": "As already observed in Ghemawat (2011), these behaviors are consistent across industries.", "relations": [{"span": "Ghemawat (2011)", "label": "REPEATS"}]}
+{"text": "Nelson 2010 extends earlier frameworks by introducing multi-level dynamics into organizational learning.", "relations": [{"span": "Nelson 2010", "label": "EXTENDS"}]}
+{"text": "Barney 2009 extends earlier frameworks by introducing multi-level dynamics into strategic positioning.", "relations": [{"span": "Barney 2009", "label": "EXTENDS"}]}
+{"text": "However, the analysis presented by Rumelt (2013) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Rumelt (2013)", "label": "REFUTES"}]}
+{"text": "Barney 2009 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Barney 2009", "label": "QUALIFIES"}]}
+{"text": "As already observed in Porter 1992, these behaviors are consistent across industries.", "relations": [{"span": "Porter 1992", "label": "REPEATS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Ghemawat (1985).", "relations": [{"span": "Ghemawat (1985)", "label": "INSPIRED_BY"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter 1996.", "relations": [{"span": "Porter 1996", "label": "USES_METHOD_OF"}]}
+{"text": "Nelson (2018) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Nelson (2018)", "label": "QUALIFIES"}]}
+{"text": "Empirical findings in Winter, 1999 strongly support the argument presented regarding transaction cost economics.", "relations": [{"span": "Winter, 1999", "label": "SUPPORTS"}]}
+{"text": "Empirical findings in Teece (2005) strongly support the argument presented regarding competitive strategy.", "relations": [{"span": "Teece (2005)", "label": "SUPPORTS"}]}
+{"text": "This stands in contrast to the assumptions made by Nelson 1990.", "relations": [{"span": "Nelson 1990", "label": "CONTRASTS"}]}
+{"text": "However, the analysis presented by Rumelt 1980 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Rumelt 1980", "label": "REFUTES"}]}
+{"text": "Barney, 1981 extends earlier frameworks by introducing multi-level dynamics into dynamic capabilities.", "relations": [{"span": "Barney, 1981", "label": "EXTENDS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Teece (2006).", "relations": [{"span": "Teece (2006)", "label": "USES_METHOD_OF"}]}
+{"text": "Grant, 1990 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Grant, 1990", "label": "QUALIFIES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Ghemawat, 2003.", "relations": [{"span": "Ghemawat, 2003", "label": "USES_METHOD_OF"}]}
+{"text": "Teece, 2019 extends earlier frameworks by introducing multi-level dynamics into transaction cost economics.", "relations": [{"span": "Teece, 2019", "label": "EXTENDS"}]}
+{"text": "This stands in contrast to the assumptions made by Nelson (2020).", "relations": [{"span": "Nelson (2020)", "label": "CONTRASTS"}]}
+{"text": "This stands in contrast to the assumptions made by Eisenhardt (1996).", "relations": [{"span": "Eisenhardt (1996)", "label": "CONTRASTS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Rumelt, 2012.", "relations": [{"span": "Rumelt, 2012", "label": "USES_METHOD_OF"}]}
+{"text": "Empirical findings in Rumelt (1992) strongly support the argument presented regarding innovation diffusion.", "relations": [{"span": "Rumelt (1992)", "label": "SUPPORTS"}]}
+{"text": "Grant (2010) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Grant (2010)", "label": "QUALIFIES"}]}
+{"text": "Empirical findings in Teece (1990) strongly support the argument presented regarding dynamic capabilities.", "relations": [{"span": "Teece (1990)", "label": "SUPPORTS"}]}
+{"text": "Nelson, 2007 extends earlier frameworks by introducing multi-level dynamics into organizational learning.", "relations": [{"span": "Nelson, 2007", "label": "EXTENDS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Teece 2007.", "relations": [{"span": "Teece 2007", "label": "INSPIRED_BY"}]}
+{"text": "However, the analysis presented by Nelson, 2008 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Nelson, 2008", "label": "REFUTES"}]}
+{"text": "This stands in contrast to the assumptions made by Eisenhardt (2008).", "relations": [{"span": "Eisenhardt (2008)", "label": "CONTRASTS"}]}
+{"text": "This stands in contrast to the assumptions made by Winter, 1993.", "relations": [{"span": "Winter, 1993", "label": "CONTRASTS"}]}
+{"text": "Ghemawat, 2019 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Ghemawat, 2019", "label": "QUALIFIES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Winter 2015.", "relations": [{"span": "Winter 2015", "label": "USES_METHOD_OF"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Ghemawat 1986.", "relations": [{"span": "Ghemawat 1986", "label": "INSPIRED_BY"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Winter, 1995.", "relations": [{"span": "Winter, 1995", "label": "USES_METHOD_OF"}]}
+{"text": "Prior research by Porter 2007 laid the foundation for understanding dynamic capabilities.", "relations": [{"span": "Porter 2007", "label": "CITES"}]}
+{"text": "Eisenhardt, 1990 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Eisenhardt, 1990", "label": "QUALIFIES"}]}
+{"text": "Winter 1983 provides a more granular breakdown of the mechanism underlying institutional theory.", "relations": [{"span": "Winter 1983", "label": "ELABORATES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Winter (1997).", "relations": [{"span": "Winter (1997)", "label": "USES_METHOD_OF"}]}
+{"text": "Ghemawat 1994 provides a more granular breakdown of the mechanism underlying competitive strategy.", "relations": [{"span": "Ghemawat 1994", "label": "ELABORATES"}]}
+{"text": "Nelson, 2015 provides a more granular breakdown of the mechanism underlying platform ecosystems.", "relations": [{"span": "Nelson, 2015", "label": "ELABORATES"}]}
+{"text": "Prior research by Teece (1993) laid the foundation for understanding institutional theory.", "relations": [{"span": "Teece (1993)", "label": "CITES"}]}
+{"text": "This stands in contrast to the assumptions made by Mintzberg (2005).", "relations": [{"span": "Mintzberg (2005)", "label": "CONTRASTS"}]}
+{"text": "However, the analysis presented by Nelson 1987 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Nelson 1987", "label": "REFUTES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Mintzberg 1999.", "relations": [{"span": "Mintzberg 1999", "label": "USES_METHOD_OF"}]}
+{"text": "Nelson, 2022 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Nelson, 2022", "label": "QUALIFIES"}]}
+{"text": "However, the analysis presented by Eisenhardt 2013 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Eisenhardt 2013", "label": "REFUTES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Barney (2021).", "relations": [{"span": "Barney (2021)", "label": "INSPIRED_BY"}]}
+{"text": "Empirical findings in Grant (1985) strongly support the argument presented regarding innovation diffusion.", "relations": [{"span": "Grant (1985)", "label": "SUPPORTS"}]}
+{"text": "As already observed in Ghemawat 1989, these behaviors are consistent across industries.", "relations": [{"span": "Ghemawat 1989", "label": "REPEATS"}]}
+{"text": "Nelson, 2017 provides a more granular breakdown of the mechanism underlying innovation diffusion.", "relations": [{"span": "Nelson, 2017", "label": "ELABORATES"}]}
+{"text": "However, the analysis presented by Barney 2016 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Barney 2016", "label": "REFUTES"}]}
+{"text": "However, the analysis presented by Eisenhardt, 2003 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Eisenhardt, 2003", "label": "REFUTES"}]}
+{"text": "This stands in contrast to the assumptions made by Winter (1985).", "relations": [{"span": "Winter (1985)", "label": "CONTRASTS"}]}
+{"text": "As already observed in Ghemawat (2007), these behaviors are consistent across industries.", "relations": [{"span": "Ghemawat (2007)", "label": "REPEATS"}]}
+{"text": "Prior research by Rumelt, 1988 laid the foundation for understanding competitive strategy.", "relations": [{"span": "Rumelt, 1988", "label": "CITES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Porter (2000).", "relations": [{"span": "Porter (2000)", "label": "INSPIRED_BY"}]}
+{"text": "Porter (1991) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Porter (1991)", "label": "QUALIFIES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Nelson 1985.", "relations": [{"span": "Nelson 1985", "label": "INSPIRED_BY"}]}
+{"text": "This stands in contrast to the assumptions made by Eisenhardt (2021).", "relations": [{"span": "Eisenhardt (2021)", "label": "CONTRASTS"}]}
+{"text": "Empirical findings in Teece 2021 strongly support the argument presented regarding institutional theory.", "relations": [{"span": "Teece 2021", "label": "SUPPORTS"}]}
+{"text": "Empirical findings in Grant 2018 strongly support the argument presented regarding institutional theory.", "relations": [{"span": "Grant 2018", "label": "SUPPORTS"}]}
+{"text": "This stands in contrast to the assumptions made by Barney (2004).", "relations": [{"span": "Barney (2004)", "label": "CONTRASTS"}]}
+{"text": "Eisenhardt (2018) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Eisenhardt (2018)", "label": "QUALIFIES"}]}
+{"text": "This stands in contrast to the assumptions made by Winter 2010.", "relations": [{"span": "Winter 2010", "label": "CONTRASTS"}]}
+{"text": "Prior research by Eisenhardt, 1997 laid the foundation for understanding strategic positioning.", "relations": [{"span": "Eisenhardt, 1997", "label": "CITES"}]}
+{"text": "Winter, 2008 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Winter, 2008", "label": "QUALIFIES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Eisenhardt (2013).", "relations": [{"span": "Eisenhardt (2013)", "label": "INSPIRED_BY"}]}
+{"text": "Empirical findings in Nelson 2014 strongly support the argument presented regarding strategic positioning.", "relations": [{"span": "Nelson 2014", "label": "SUPPORTS"}]}
+{"text": "Teece (1990) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Teece (1990)", "label": "QUALIFIES"}]}
+{"text": "Teece 2005 provides a more granular breakdown of the mechanism underlying institutional theory.", "relations": [{"span": "Teece 2005", "label": "ELABORATES"}]}
+{"text": "As already observed in Ghemawat (1993), these behaviors are consistent across industries.", "relations": [{"span": "Ghemawat (1993)", "label": "REPEATS"}]}
+{"text": "Ghemawat, 1982 extends earlier frameworks by introducing multi-level dynamics into transaction cost economics.", "relations": [{"span": "Ghemawat, 1982", "label": "EXTENDS"}]}
+{"text": "Teece, 1990 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Teece, 1990", "label": "QUALIFIES"}]}
+{"text": "Grant (2020) extends earlier frameworks by introducing multi-level dynamics into dynamic capabilities.", "relations": [{"span": "Grant (2020)", "label": "EXTENDS"}]}
+{"text": "Empirical findings in Mintzberg 1997 strongly support the argument presented regarding resource-based view.", "relations": [{"span": "Mintzberg 1997", "label": "SUPPORTS"}]}
+{"text": "Prior research by Teece (1998) laid the foundation for understanding institutional theory.", "relations": [{"span": "Teece (1998)", "label": "CITES"}]}
+{"text": "As already observed in Nelson (2016), these behaviors are consistent across industries.", "relations": [{"span": "Nelson (2016)", "label": "REPEATS"}]}
+{"text": "Winter 2003 provides a more granular breakdown of the mechanism underlying dynamic capabilities.", "relations": [{"span": "Winter 2003", "label": "ELABORATES"}]}
+{"text": "Eisenhardt, 1986 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Eisenhardt, 1986", "label": "QUALIFIES"}]}
+{"text": "As already observed in Barney, 2020, these behaviors are consistent across industries.", "relations": [{"span": "Barney, 2020", "label": "REPEATS"}]}
+{"text": "This stands in contrast to the assumptions made by Porter (1990).", "relations": [{"span": "Porter (1990)", "label": "CONTRASTS"}]}
+{"text": "As already observed in Barney (1991), these behaviors are consistent across industries.", "relations": [{"span": "Barney (1991)", "label": "REPEATS"}]}
+{"text": "However, the analysis presented by Barney 1997 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Barney 1997", "label": "REFUTES"}]}
+{"text": "Prior research by Porter (2016) laid the foundation for understanding platform ecosystems.", "relations": [{"span": "Porter (2016)", "label": "CITES"}]}
+{"text": "However, the analysis presented by Teece, 1980 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Teece, 1980", "label": "REFUTES"}]}
+{"text": "As already observed in Nelson 2017, these behaviors are consistent across industries.", "relations": [{"span": "Nelson 2017", "label": "REPEATS"}]}
+{"text": "Rumelt, 2006 extends earlier frameworks by introducing multi-level dynamics into institutional theory.", "relations": [{"span": "Rumelt, 2006", "label": "EXTENDS"}]}
+{"text": "This stands in contrast to the assumptions made by Teece (1996).", "relations": [{"span": "Teece (1996)", "label": "CONTRASTS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Eisenhardt (2000).", "relations": [{"span": "Eisenhardt (2000)", "label": "INSPIRED_BY"}]}
+{"text": "Grant (1995) extends earlier frameworks by introducing multi-level dynamics into knowledge management.", "relations": [{"span": "Grant (1995)", "label": "EXTENDS"}]}
+{"text": "However, the analysis presented by Rumelt, 1996 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Rumelt, 1996", "label": "REFUTES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Winter, 2003.", "relations": [{"span": "Winter, 2003", "label": "INSPIRED_BY"}]}
+{"text": "Mintzberg (1999) provides a more granular breakdown of the mechanism underlying platform ecosystems.", "relations": [{"span": "Mintzberg (1999)", "label": "ELABORATES"}]}
+{"text": "However, the analysis presented by Nelson 1996 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Nelson 1996", "label": "REFUTES"}]}
+{"text": "As already observed in Eisenhardt, 2022, these behaviors are consistent across industries.", "relations": [{"span": "Eisenhardt, 2022", "label": "REPEATS"}]}
+{"text": "Grant 2000 extends earlier frameworks by introducing multi-level dynamics into transaction cost economics.", "relations": [{"span": "Grant 2000", "label": "EXTENDS"}]}
+{"text": "However, the analysis presented by Mintzberg (1987) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Mintzberg (1987)", "label": "REFUTES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Eisenhardt, 1997.", "relations": [{"span": "Eisenhardt, 1997", "label": "INSPIRED_BY"}]}
+{"text": "Winter (1998) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Winter (1998)", "label": "QUALIFIES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Eisenhardt, 1986.", "relations": [{"span": "Eisenhardt, 1986", "label": "USES_METHOD_OF"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter 2008.", "relations": [{"span": "Porter 2008", "label": "USES_METHOD_OF"}]}
+{"text": "As already observed in Mintzberg 2022, these behaviors are consistent across industries.", "relations": [{"span": "Mintzberg 2022", "label": "REPEATS"}]}
+{"text": "However, the analysis presented by Ghemawat, 1988 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Ghemawat, 1988", "label": "REFUTES"}]}
+{"text": "This stands in contrast to the assumptions made by Ghemawat 1996.", "relations": [{"span": "Ghemawat 1996", "label": "CONTRASTS"}]}
+{"text": "Ghemawat, 1986 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Ghemawat, 1986", "label": "QUALIFIES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Eisenhardt 1981.", "relations": [{"span": "Eisenhardt 1981", "label": "USES_METHOD_OF"}]}
+{"text": "Rumelt, 2019 extends earlier frameworks by introducing multi-level dynamics into dynamic capabilities.", "relations": [{"span": "Rumelt, 2019", "label": "EXTENDS"}]}
+{"text": "Porter 2017 extends earlier frameworks by introducing multi-level dynamics into competitive strategy.", "relations": [{"span": "Porter 2017", "label": "EXTENDS"}]}
+{"text": "Winter (2005) provides a more granular breakdown of the mechanism underlying platform ecosystems.", "relations": [{"span": "Winter (2005)", "label": "ELABORATES"}]}
+{"text": "However, the analysis presented by Grant 1988 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Grant 1988", "label": "REFUTES"}]}
+{"text": "Ghemawat, 1992 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Ghemawat, 1992", "label": "QUALIFIES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Barney (1986).", "relations": [{"span": "Barney (1986)", "label": "INSPIRED_BY"}]}
+{"text": "Eisenhardt, 1985 extends earlier frameworks by introducing multi-level dynamics into platform ecosystems.", "relations": [{"span": "Eisenhardt, 1985", "label": "EXTENDS"}]}
+{"text": "As already observed in Grant 2001, these behaviors are consistent across industries.", "relations": [{"span": "Grant 2001", "label": "REPEATS"}]}
+{"text": "Rumelt 1998 extends earlier frameworks by introducing multi-level dynamics into transaction cost economics.", "relations": [{"span": "Rumelt 1998", "label": "EXTENDS"}]}
+{"text": "However, the analysis presented by Grant 2011 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Grant 2011", "label": "REFUTES"}]}
+{"text": "Winter (1980) extends earlier frameworks by introducing multi-level dynamics into organizational learning.", "relations": [{"span": "Winter (1980)", "label": "EXTENDS"}]}
+{"text": "Prior research by Grant 2012 laid the foundation for understanding transaction cost economics.", "relations": [{"span": "Grant 2012", "label": "CITES"}]}
+{"text": "Prior research by Teece 1982 laid the foundation for understanding institutional theory.", "relations": [{"span": "Teece 1982", "label": "CITES"}]}
+{"text": "As already observed in Teece (1980), these behaviors are consistent across industries.", "relations": [{"span": "Teece (1980)", "label": "REPEATS"}]}
+{"text": "Winter 1988 extends earlier frameworks by introducing multi-level dynamics into dynamic capabilities.", "relations": [{"span": "Winter 1988", "label": "EXTENDS"}]}
+{"text": "Prior research by Mintzberg 1987 laid the foundation for understanding transaction cost economics.", "relations": [{"span": "Mintzberg 1987", "label": "CITES"}]}
+{"text": "Nelson, 2014 provides a more granular breakdown of the mechanism underlying competitive strategy.", "relations": [{"span": "Nelson, 2014", "label": "ELABORATES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Mintzberg (2003).", "relations": [{"span": "Mintzberg (2003)", "label": "INSPIRED_BY"}]}
+{"text": "Prior research by Ghemawat 2021 laid the foundation for understanding resource-based view.", "relations": [{"span": "Ghemawat 2021", "label": "CITES"}]}
+{"text": "Grant 2008 provides a more granular breakdown of the mechanism underlying resource-based view.", "relations": [{"span": "Grant 2008", "label": "ELABORATES"}]}
+{"text": "This stands in contrast to the assumptions made by Winter (2020).", "relations": [{"span": "Winter (2020)", "label": "CONTRASTS"}]}
+{"text": "Porter (2013) provides a more granular breakdown of the mechanism underlying transaction cost economics.", "relations": [{"span": "Porter (2013)", "label": "ELABORATES"}]}
+{"text": "Barney 2022 provides a more granular breakdown of the mechanism underlying strategic positioning.", "relations": [{"span": "Barney 2022", "label": "ELABORATES"}]}
+{"text": "Porter, 1981 provides a more granular breakdown of the mechanism underlying competitive strategy.", "relations": [{"span": "Porter, 1981", "label": "ELABORATES"}]}
+{"text": "Winter, 1996 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Winter, 1996", "label": "QUALIFIES"}]}
+{"text": "Empirical findings in Porter, 2002 strongly support the argument presented regarding transaction cost economics.", "relations": [{"span": "Porter, 2002", "label": "SUPPORTS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Winter 1998.", "relations": [{"span": "Winter 1998", "label": "INSPIRED_BY"}]}
+{"text": "This stands in contrast to the assumptions made by Mintzberg, 1996.", "relations": [{"span": "Mintzberg, 1996", "label": "CONTRASTS"}]}
+{"text": "Nelson 1990 provides a more granular breakdown of the mechanism underlying competitive strategy.", "relations": [{"span": "Nelson 1990", "label": "ELABORATES"}]}
+{"text": "However, the analysis presented by Rumelt (1986) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Rumelt (1986)", "label": "REFUTES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Winter, 1990.", "relations": [{"span": "Winter, 1990", "label": "INSPIRED_BY"}]}
+{"text": "Grant, 1990 extends earlier frameworks by introducing multi-level dynamics into knowledge management.", "relations": [{"span": "Grant, 1990", "label": "EXTENDS"}]}
+{"text": "However, the analysis presented by Porter (1994) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Porter (1994)", "label": "REFUTES"}]}
+{"text": "Nelson (2017) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Nelson (2017)", "label": "QUALIFIES"}]}
+{"text": "Porter (1984) extends earlier frameworks by introducing multi-level dynamics into competitive strategy.", "relations": [{"span": "Porter (1984)", "label": "EXTENDS"}]}
+{"text": "Empirical findings in Porter, 1981 strongly support the argument presented regarding organizational learning.", "relations": [{"span": "Porter, 1981", "label": "SUPPORTS"}]}
+{"text": "As already observed in Porter, 2002, these behaviors are consistent across industries.", "relations": [{"span": "Porter, 2002", "label": "REPEATS"}]}
+{"text": "However, the analysis presented by Ghemawat, 2013 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Ghemawat, 2013", "label": "REFUTES"}]}
+{"text": "Empirical findings in Barney, 2013 strongly support the argument presented regarding transaction cost economics.", "relations": [{"span": "Barney, 2013", "label": "SUPPORTS"}]}
+{"text": "Ghemawat, 2015 provides a more granular breakdown of the mechanism underlying organizational learning.", "relations": [{"span": "Ghemawat, 2015", "label": "ELABORATES"}]}
+{"text": "Porter (1986) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Porter (1986)", "label": "QUALIFIES"}]}
+{"text": "Rumelt 1983 extends earlier frameworks by introducing multi-level dynamics into knowledge management.", "relations": [{"span": "Rumelt 1983", "label": "EXTENDS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Barney 2012.", "relations": [{"span": "Barney 2012", "label": "INSPIRED_BY"}]}
+{"text": "Ghemawat 1995 extends earlier frameworks by introducing multi-level dynamics into competitive strategy.", "relations": [{"span": "Ghemawat 1995", "label": "EXTENDS"}]}
+{"text": "This stands in contrast to the assumptions made by Teece (2006).", "relations": [{"span": "Teece (2006)", "label": "CONTRASTS"}]}
+{"text": "Prior research by Barney (2000) laid the foundation for understanding institutional theory.", "relations": [{"span": "Barney (2000)", "label": "CITES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Teece, 2004.", "relations": [{"span": "Teece, 2004", "label": "INSPIRED_BY"}]}
+{"text": "This stands in contrast to the assumptions made by Mintzberg (1992).", "relations": [{"span": "Mintzberg (1992)", "label": "CONTRASTS"}]}
+{"text": "As already observed in Ghemawat 2019, these behaviors are consistent across industries.", "relations": [{"span": "Ghemawat 2019", "label": "REPEATS"}]}
+{"text": "Empirical findings in Eisenhardt 1994 strongly support the argument presented regarding competitive strategy.", "relations": [{"span": "Eisenhardt 1994", "label": "SUPPORTS"}]}
+{"text": "Empirical findings in Nelson 2020 strongly support the argument presented regarding organizational learning.", "relations": [{"span": "Nelson 2020", "label": "SUPPORTS"}]}
+{"text": "As already observed in Porter (1996), these behaviors are consistent across industries.", "relations": [{"span": "Porter (1996)", "label": "REPEATS"}]}
+{"text": "Porter (1991) extends earlier frameworks by introducing multi-level dynamics into dynamic capabilities.", "relations": [{"span": "Porter (1991)", "label": "EXTENDS"}]}
+{"text": "Barney 2020 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Barney 2020", "label": "QUALIFIES"}]}
+{"text": "Rumelt, 1995 extends earlier frameworks by introducing multi-level dynamics into resource-based view.", "relations": [{"span": "Rumelt, 1995", "label": "EXTENDS"}]}
+{"text": "Barney, 2016 provides a more granular breakdown of the mechanism underlying strategic positioning.", "relations": [{"span": "Barney, 2016", "label": "ELABORATES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Mintzberg (2004).", "relations": [{"span": "Mintzberg (2004)", "label": "USES_METHOD_OF"}]}
+{"text": "Prior research by Porter 1992 laid the foundation for understanding strategic positioning.", "relations": [{"span": "Porter 1992", "label": "CITES"}]}
+{"text": "Empirical findings in Rumelt, 2022 strongly support the argument presented regarding platform ecosystems.", "relations": [{"span": "Rumelt, 2022", "label": "SUPPORTS"}]}
+{"text": "Nelson 1986 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Nelson 1986", "label": "QUALIFIES"}]}
+{"text": "Rumelt, 2012 provides a more granular breakdown of the mechanism underlying competitive strategy.", "relations": [{"span": "Rumelt, 2012", "label": "ELABORATES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Rumelt (1988).", "relations": [{"span": "Rumelt (1988)", "label": "INSPIRED_BY"}]}
+{"text": "Empirical findings in Grant, 1992 strongly support the argument presented regarding transaction cost economics.", "relations": [{"span": "Grant, 1992", "label": "SUPPORTS"}]}
+{"text": "However, the analysis presented by Mintzberg, 1996 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Mintzberg, 1996", "label": "REFUTES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Teece 1985.", "relations": [{"span": "Teece 1985", "label": "USES_METHOD_OF"}]}
+{"text": "Prior research by Nelson 1985 laid the foundation for understanding dynamic capabilities.", "relations": [{"span": "Nelson 1985", "label": "CITES"}]}
+{"text": "However, the analysis presented by Ghemawat 2009 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Ghemawat 2009", "label": "REFUTES"}]}
+{"text": "As already observed in Barney (2009), these behaviors are consistent across industries.", "relations": [{"span": "Barney (2009)", "label": "REPEATS"}]}
+{"text": "As already observed in Eisenhardt, 2011, these behaviors are consistent across industries.", "relations": [{"span": "Eisenhardt, 2011", "label": "REPEATS"}]}
+{"text": "Ghemawat, 2000 provides a more granular breakdown of the mechanism underlying strategic positioning.", "relations": [{"span": "Ghemawat, 2000", "label": "ELABORATES"}]}
+{"text": "Grant 2008 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Grant 2008", "label": "QUALIFIES"}]}
+{"text": "As already observed in Grant 2004, these behaviors are consistent across industries.", "relations": [{"span": "Grant 2004", "label": "REPEATS"}]}
+{"text": "Porter (1991) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Porter (1991)", "label": "QUALIFIES"}]}
+{"text": "Prior research by Ghemawat (1982) laid the foundation for understanding resource-based view.", "relations": [{"span": "Ghemawat (1982)", "label": "CITES"}]}
+{"text": "Winter (2020) provides a more granular breakdown of the mechanism underlying dynamic capabilities.", "relations": [{"span": "Winter (2020)", "label": "ELABORATES"}]}
+{"text": "Porter, 2021 provides a more granular breakdown of the mechanism underlying transaction cost economics.", "relations": [{"span": "Porter, 2021", "label": "ELABORATES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Eisenhardt 1998.", "relations": [{"span": "Eisenhardt 1998", "label": "USES_METHOD_OF"}]}
+{"text": "Porter 2014 extends earlier frameworks by introducing multi-level dynamics into transaction cost economics.", "relations": [{"span": "Porter 2014", "label": "EXTENDS"}]}
+{"text": "Porter 2021 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Porter 2021", "label": "QUALIFIES"}]}
+{"text": "Nelson, 1990 provides a more granular breakdown of the mechanism underlying resource-based view.", "relations": [{"span": "Nelson, 1990", "label": "ELABORATES"}]}
+{"text": "As already observed in Mintzberg, 1999, these behaviors are consistent across industries.", "relations": [{"span": "Mintzberg, 1999", "label": "REPEATS"}]}
+{"text": "Barney (2015) provides a more granular breakdown of the mechanism underlying platform ecosystems.", "relations": [{"span": "Barney (2015)", "label": "ELABORATES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Winter (2020).", "relations": [{"span": "Winter (2020)", "label": "USES_METHOD_OF"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Eisenhardt (1992).", "relations": [{"span": "Eisenhardt (1992)", "label": "INSPIRED_BY"}]}
+{"text": "Empirical findings in Nelson 2015 strongly support the argument presented regarding strategic positioning.", "relations": [{"span": "Nelson 2015", "label": "SUPPORTS"}]}
+{"text": "Teece (2020) provides a more granular breakdown of the mechanism underlying institutional theory.", "relations": [{"span": "Teece (2020)", "label": "ELABORATES"}]}
+{"text": "Eisenhardt 1999 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Eisenhardt 1999", "label": "QUALIFIES"}]}
+{"text": "Teece, 1985 extends earlier frameworks by introducing multi-level dynamics into innovation diffusion.", "relations": [{"span": "Teece, 1985", "label": "EXTENDS"}]}
+{"text": "Barney 1983 provides a more granular breakdown of the mechanism underlying innovation diffusion.", "relations": [{"span": "Barney 1983", "label": "ELABORATES"}]}
+{"text": "Ghemawat 2019 extends earlier frameworks by introducing multi-level dynamics into platform ecosystems.", "relations": [{"span": "Ghemawat 2019", "label": "EXTENDS"}]}
+{"text": "Mintzberg 1997 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Mintzberg 1997", "label": "QUALIFIES"}]}
+{"text": "This stands in contrast to the assumptions made by Teece 2005.", "relations": [{"span": "Teece 2005", "label": "CONTRASTS"}]}
+{"text": "However, the analysis presented by Eisenhardt 2006 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Eisenhardt 2006", "label": "REFUTES"}]}
+{"text": "Eisenhardt, 1981 provides a more granular breakdown of the mechanism underlying knowledge management.", "relations": [{"span": "Eisenhardt, 1981", "label": "ELABORATES"}]}
+{"text": "Ghemawat, 2011 extends earlier frameworks by introducing multi-level dynamics into platform ecosystems.", "relations": [{"span": "Ghemawat, 2011", "label": "EXTENDS"}]}
+{"text": "Prior research by Grant 1999 laid the foundation for understanding innovation diffusion.", "relations": [{"span": "Grant 1999", "label": "CITES"}]}
+{"text": "Teece 1989 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Teece 1989", "label": "QUALIFIES"}]}
+{"text": "However, the analysis presented by Winter (2021) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Winter (2021)", "label": "REFUTES"}]}
+{"text": "As already observed in Mintzberg (2013), these behaviors are consistent across industries.", "relations": [{"span": "Mintzberg (2013)", "label": "REPEATS"}]}
+{"text": "Prior research by Grant (2005) laid the foundation for understanding strategic positioning.", "relations": [{"span": "Grant (2005)", "label": "CITES"}]}
+{"text": "Nelson (2004) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Nelson (2004)", "label": "QUALIFIES"}]}
+{"text": "However, the analysis presented by Barney (2016) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Barney (2016)", "label": "REFUTES"}]}
+{"text": "This stands in contrast to the assumptions made by Eisenhardt 2009.", "relations": [{"span": "Eisenhardt 2009", "label": "CONTRASTS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Teece 2015.", "relations": [{"span": "Teece 2015", "label": "USES_METHOD_OF"}]}
+{"text": "Mintzberg, 1990 extends earlier frameworks by introducing multi-level dynamics into dynamic capabilities.", "relations": [{"span": "Mintzberg, 1990", "label": "EXTENDS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Barney 1994.", "relations": [{"span": "Barney 1994", "label": "INSPIRED_BY"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Winter (2007).", "relations": [{"span": "Winter (2007)", "label": "USES_METHOD_OF"}]}
+{"text": "However, the analysis presented by Barney, 2014 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Barney, 2014", "label": "REFUTES"}]}
+{"text": "Prior research by Rumelt, 2001 laid the foundation for understanding transaction cost economics.", "relations": [{"span": "Rumelt, 2001", "label": "CITES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Grant 2022.", "relations": [{"span": "Grant 2022", "label": "USES_METHOD_OF"}]}
+{"text": "Teece, 1991 extends earlier frameworks by introducing multi-level dynamics into organizational learning.", "relations": [{"span": "Teece, 1991", "label": "EXTENDS"}]}
+{"text": "This stands in contrast to the assumptions made by Nelson (2011).", "relations": [{"span": "Nelson (2011)", "label": "CONTRASTS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Porter 2011.", "relations": [{"span": "Porter 2011", "label": "INSPIRED_BY"}]}
+{"text": "However, the analysis presented by Teece, 1996 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Teece, 1996", "label": "REFUTES"}]}
+{"text": "As already observed in Winter, 2011, these behaviors are consistent across industries.", "relations": [{"span": "Winter, 2011", "label": "REPEATS"}]}
+{"text": "Ghemawat 1989 provides a more granular breakdown of the mechanism underlying transaction cost economics.", "relations": [{"span": "Ghemawat 1989", "label": "ELABORATES"}]}
+{"text": "Porter, 2008 provides a more granular breakdown of the mechanism underlying transaction cost economics.", "relations": [{"span": "Porter, 2008", "label": "ELABORATES"}]}
+{"text": "This stands in contrast to the assumptions made by Winter, 2015.", "relations": [{"span": "Winter, 2015", "label": "CONTRASTS"}]}
+{"text": "Barney 2018 provides a more granular breakdown of the mechanism underlying transaction cost economics.", "relations": [{"span": "Barney 2018", "label": "ELABORATES"}]}
+{"text": "Empirical findings in Teece (2012) strongly support the argument presented regarding institutional theory.", "relations": [{"span": "Teece (2012)", "label": "SUPPORTS"}]}
+{"text": "This stands in contrast to the assumptions made by Ghemawat (1981).", "relations": [{"span": "Ghemawat (1981)", "label": "CONTRASTS"}]}
+{"text": "Rumelt, 2010 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Rumelt, 2010", "label": "QUALIFIES"}]}
+{"text": "Winter 1998 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Winter 1998", "label": "QUALIFIES"}]}
+{"text": "This stands in contrast to the assumptions made by Grant 1982.", "relations": [{"span": "Grant 1982", "label": "CONTRASTS"}]}
+{"text": "Teece, 2013 provides a more granular breakdown of the mechanism underlying transaction cost economics.", "relations": [{"span": "Teece, 2013", "label": "ELABORATES"}]}
+{"text": "Teece, 2016 extends earlier frameworks by introducing multi-level dynamics into strategic positioning.", "relations": [{"span": "Teece, 2016", "label": "EXTENDS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Ghemawat (1998).", "relations": [{"span": "Ghemawat (1998)", "label": "USES_METHOD_OF"}]}
+{"text": "This stands in contrast to the assumptions made by Porter 2008.", "relations": [{"span": "Porter 2008", "label": "CONTRASTS"}]}
+{"text": "However, the analysis presented by Rumelt 2004 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Rumelt 2004", "label": "REFUTES"}]}
+{"text": "Empirical findings in Rumelt, 1992 strongly support the argument presented regarding organizational learning.", "relations": [{"span": "Rumelt, 1992", "label": "SUPPORTS"}]}
+{"text": "This stands in contrast to the assumptions made by Nelson (2008).", "relations": [{"span": "Nelson (2008)", "label": "CONTRASTS"}]}
+{"text": "This stands in contrast to the assumptions made by Grant 2000.", "relations": [{"span": "Grant 2000", "label": "CONTRASTS"}]}
+{"text": "Porter, 1983 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Porter, 1983", "label": "QUALIFIES"}]}
+{"text": "Prior research by Nelson 2002 laid the foundation for understanding competitive strategy.", "relations": [{"span": "Nelson 2002", "label": "CITES"}]}
+{"text": "Rumelt 2005 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Rumelt 2005", "label": "QUALIFIES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Nelson (1983).", "relations": [{"span": "Nelson (1983)", "label": "INSPIRED_BY"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter (1990).", "relations": [{"span": "Porter (1990)", "label": "USES_METHOD_OF"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Grant (1994).", "relations": [{"span": "Grant (1994)", "label": "USES_METHOD_OF"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Grant 1988.", "relations": [{"span": "Grant 1988", "label": "USES_METHOD_OF"}]}
+{"text": "Prior research by Rumelt, 1989 laid the foundation for understanding transaction cost economics.", "relations": [{"span": "Rumelt, 1989", "label": "CITES"}]}
+{"text": "Mintzberg 2012 provides a more granular breakdown of the mechanism underlying organizational learning.", "relations": [{"span": "Mintzberg 2012", "label": "ELABORATES"}]}
+{"text": "Grant, 2015 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Grant, 2015", "label": "QUALIFIES"}]}
+{"text": "Empirical findings in Rumelt, 2017 strongly support the argument presented regarding strategic positioning.", "relations": [{"span": "Rumelt, 2017", "label": "SUPPORTS"}]}
+{"text": "This stands in contrast to the assumptions made by Teece, 2010.", "relations": [{"span": "Teece, 2010", "label": "CONTRASTS"}]}
+{"text": "Nelson, 2002 provides a more granular breakdown of the mechanism underlying knowledge management.", "relations": [{"span": "Nelson, 2002", "label": "ELABORATES"}]}
+{"text": "However, the analysis presented by Winter, 1998 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Winter, 1998", "label": "REFUTES"}]}
+{"text": "Teece, 1992 extends earlier frameworks by introducing multi-level dynamics into resource-based view.", "relations": [{"span": "Teece, 1992", "label": "EXTENDS"}]}
+{"text": "Eisenhardt, 2014 provides a more granular breakdown of the mechanism underlying innovation diffusion.", "relations": [{"span": "Eisenhardt, 2014", "label": "ELABORATES"}]}
+{"text": "Prior research by Grant, 1989 laid the foundation for understanding transaction cost economics.", "relations": [{"span": "Grant, 1989", "label": "CITES"}]}
+{"text": "However, the analysis presented by Eisenhardt (1995) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Eisenhardt (1995)", "label": "REFUTES"}]}
+{"text": "Empirical findings in Eisenhardt 2017 strongly support the argument presented regarding strategic positioning.", "relations": [{"span": "Eisenhardt 2017", "label": "SUPPORTS"}]}
+{"text": "However, the analysis presented by Winter 1999 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Winter 1999", "label": "REFUTES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Grant, 2019.", "relations": [{"span": "Grant, 2019", "label": "USES_METHOD_OF"}]}
+{"text": "Rumelt, 2005 provides a more granular breakdown of the mechanism underlying strategic positioning.", "relations": [{"span": "Rumelt, 2005", "label": "ELABORATES"}]}
+{"text": "Barney, 2013 provides a more granular breakdown of the mechanism underlying competitive strategy.", "relations": [{"span": "Barney, 2013", "label": "ELABORATES"}]}
+{"text": "However, the analysis presented by Ghemawat (2019) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Ghemawat (2019)", "label": "REFUTES"}]}
+{"text": "This stands in contrast to the assumptions made by Barney 2014.", "relations": [{"span": "Barney 2014", "label": "CONTRASTS"}]}
+{"text": "Grant, 2013 provides a more granular breakdown of the mechanism underlying strategic positioning.", "relations": [{"span": "Grant, 2013", "label": "ELABORATES"}]}
+{"text": "Empirical findings in Grant (2000) strongly support the argument presented regarding innovation diffusion.", "relations": [{"span": "Grant (2000)", "label": "SUPPORTS"}]}
+{"text": "Grant, 1987 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Grant, 1987", "label": "QUALIFIES"}]}
+{"text": "Barney 1994 provides a more granular breakdown of the mechanism underlying strategic positioning.", "relations": [{"span": "Barney 1994", "label": "ELABORATES"}]}
+{"text": "As already observed in Rumelt, 2016, these behaviors are consistent across industries.", "relations": [{"span": "Rumelt, 2016", "label": "REPEATS"}]}
+{"text": "Empirical findings in Grant, 2002 strongly support the argument presented regarding dynamic capabilities.", "relations": [{"span": "Grant, 2002", "label": "SUPPORTS"}]}
+{"text": "Winter, 1981 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Winter, 1981", "label": "QUALIFIES"}]}
+{"text": "Teece (2012) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Teece (2012)", "label": "QUALIFIES"}]}
+{"text": "This stands in contrast to the assumptions made by Porter, 1993.", "relations": [{"span": "Porter, 1993", "label": "CONTRASTS"}]}
+{"text": "Empirical findings in Rumelt 2021 strongly support the argument presented regarding institutional theory.", "relations": [{"span": "Rumelt 2021", "label": "SUPPORTS"}]}
+{"text": "Eisenhardt (2000) extends earlier frameworks by introducing multi-level dynamics into platform ecosystems.", "relations": [{"span": "Eisenhardt (2000)", "label": "EXTENDS"}]}
+{"text": "Prior research by Eisenhardt 1994 laid the foundation for understanding platform ecosystems.", "relations": [{"span": "Eisenhardt 1994", "label": "CITES"}]}
+{"text": "However, the analysis presented by Rumelt 1985 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Rumelt 1985", "label": "REFUTES"}]}
+{"text": "This stands in contrast to the assumptions made by Grant, 2004.", "relations": [{"span": "Grant, 2004", "label": "CONTRASTS"}]}
+{"text": "However, the analysis presented by Porter, 1997 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Porter, 1997", "label": "REFUTES"}]}
+{"text": "Grant, 1981 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Grant, 1981", "label": "QUALIFIES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Rumelt 1988.", "relations": [{"span": "Rumelt 1988", "label": "INSPIRED_BY"}]}
+{"text": "Prior research by Grant 2014 laid the foundation for understanding resource-based view.", "relations": [{"span": "Grant 2014", "label": "CITES"}]}
+{"text": "Prior research by Mintzberg 2002 laid the foundation for understanding competitive strategy.", "relations": [{"span": "Mintzberg 2002", "label": "CITES"}]}
+{"text": "However, the analysis presented by Porter, 2012 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Porter, 2012", "label": "REFUTES"}]}
+{"text": "As already observed in Porter (2003), these behaviors are consistent across industries.", "relations": [{"span": "Porter (2003)", "label": "REPEATS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Eisenhardt (2014).", "relations": [{"span": "Eisenhardt (2014)", "label": "USES_METHOD_OF"}]}
+{"text": "This stands in contrast to the assumptions made by Mintzberg 2018.", "relations": [{"span": "Mintzberg 2018", "label": "CONTRASTS"}]}
+{"text": "However, the analysis presented by Winter, 1984 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Winter, 1984", "label": "REFUTES"}]}
+{"text": "Prior research by Grant, 1990 laid the foundation for understanding resource-based view.", "relations": [{"span": "Grant, 1990", "label": "CITES"}]}
+{"text": "Eisenhardt 2004 extends earlier frameworks by introducing multi-level dynamics into innovation diffusion.", "relations": [{"span": "Eisenhardt 2004", "label": "EXTENDS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Winter 1996.", "relations": [{"span": "Winter 1996", "label": "INSPIRED_BY"}]}
+{"text": "This stands in contrast to the assumptions made by Barney, 2014.", "relations": [{"span": "Barney, 2014", "label": "CONTRASTS"}]}
+{"text": "This stands in contrast to the assumptions made by Porter, 1996.", "relations": [{"span": "Porter, 1996", "label": "CONTRASTS"}]}
+{"text": "Nelson (2006) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Nelson (2006)", "label": "QUALIFIES"}]}
+{"text": "This stands in contrast to the assumptions made by Porter 2016.", "relations": [{"span": "Porter 2016", "label": "CONTRASTS"}]}
+{"text": "This stands in contrast to the assumptions made by Teece 2016.", "relations": [{"span": "Teece 2016", "label": "CONTRASTS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Nelson (2013).", "relations": [{"span": "Nelson (2013)", "label": "INSPIRED_BY"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Grant (1991).", "relations": [{"span": "Grant (1991)", "label": "USES_METHOD_OF"}]}
+{"text": "Barney (2010) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Barney (2010)", "label": "QUALIFIES"}]}
+{"text": "However, the analysis presented by Winter 1996 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Winter 1996", "label": "REFUTES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Rumelt 1980.", "relations": [{"span": "Rumelt 1980", "label": "USES_METHOD_OF"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Barney 2016.", "relations": [{"span": "Barney 2016", "label": "INSPIRED_BY"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Rumelt 1980.", "relations": [{"span": "Rumelt 1980", "label": "USES_METHOD_OF"}]}
+{"text": "Mintzberg (1994) extends earlier frameworks by introducing multi-level dynamics into innovation diffusion.", "relations": [{"span": "Mintzberg (1994)", "label": "EXTENDS"}]}
+{"text": "Prior research by Mintzberg (2008) laid the foundation for understanding transaction cost economics.", "relations": [{"span": "Mintzberg (2008)", "label": "CITES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Eisenhardt, 2014.", "relations": [{"span": "Eisenhardt, 2014", "label": "INSPIRED_BY"}]}
+{"text": "Prior research by Ghemawat (2014) laid the foundation for understanding innovation diffusion.", "relations": [{"span": "Ghemawat (2014)", "label": "CITES"}]}
+{"text": "Eisenhardt (2012) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Eisenhardt (2012)", "label": "QUALIFIES"}]}
+{"text": "Nelson 1990 provides a more granular breakdown of the mechanism underlying strategic positioning.", "relations": [{"span": "Nelson 1990", "label": "ELABORATES"}]}
+{"text": "Empirical findings in Eisenhardt 1996 strongly support the argument presented regarding institutional theory.", "relations": [{"span": "Eisenhardt 1996", "label": "SUPPORTS"}]}
+{"text": "Prior research by Barney (1982) laid the foundation for understanding resource-based view.", "relations": [{"span": "Barney (1982)", "label": "CITES"}]}
+{"text": "However, the analysis presented by Barney 1988 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Barney 1988", "label": "REFUTES"}]}
+{"text": "Prior research by Mintzberg 2019 laid the foundation for understanding platform ecosystems.", "relations": [{"span": "Mintzberg 2019", "label": "CITES"}]}
+{"text": "However, the analysis presented by Porter, 1983 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Porter, 1983", "label": "REFUTES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Eisenhardt, 1983.", "relations": [{"span": "Eisenhardt, 1983", "label": "USES_METHOD_OF"}]}
+{"text": "As already observed in Teece (1985), these behaviors are consistent across industries.", "relations": [{"span": "Teece (1985)", "label": "REPEATS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Ghemawat, 1997.", "relations": [{"span": "Ghemawat, 1997", "label": "INSPIRED_BY"}]}
+{"text": "Empirical findings in Nelson, 1991 strongly support the argument presented regarding innovation diffusion.", "relations": [{"span": "Nelson, 1991", "label": "SUPPORTS"}]}
+{"text": "Empirical findings in Teece, 1981 strongly support the argument presented regarding innovation diffusion.", "relations": [{"span": "Teece, 1981", "label": "SUPPORTS"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Eisenhardt (2008).", "relations": [{"span": "Eisenhardt (2008)", "label": "USES_METHOD_OF"}]}
+{"text": "This stands in contrast to the assumptions made by Barney (1990).", "relations": [{"span": "Barney (1990)", "label": "CONTRASTS"}]}
+{"text": "Mintzberg, 2011 extends earlier frameworks by introducing multi-level dynamics into institutional theory.", "relations": [{"span": "Mintzberg, 2011", "label": "EXTENDS"}]}
+{"text": "Rumelt (2020) provides a more granular breakdown of the mechanism underlying institutional theory.", "relations": [{"span": "Rumelt (2020)", "label": "ELABORATES"}]}
+{"text": "Empirical findings in Mintzberg (2005) strongly support the argument presented regarding dynamic capabilities.", "relations": [{"span": "Mintzberg (2005)", "label": "SUPPORTS"}]}
+{"text": "Grant 1981 extends earlier frameworks by introducing multi-level dynamics into dynamic capabilities.", "relations": [{"span": "Grant 1981", "label": "EXTENDS"}]}
+{"text": "However, the analysis presented by Mintzberg, 1992 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Mintzberg, 1992", "label": "REFUTES"}]}
+{"text": "This stands in contrast to the assumptions made by Nelson (2003).", "relations": [{"span": "Nelson (2003)", "label": "CONTRASTS"}]}
+{"text": "Rumelt 1987 provides a more granular breakdown of the mechanism underlying dynamic capabilities.", "relations": [{"span": "Rumelt 1987", "label": "ELABORATES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Teece 1982.", "relations": [{"span": "Teece 1982", "label": "INSPIRED_BY"}]}
+{"text": "Porter 2020 extends earlier frameworks by introducing multi-level dynamics into platform ecosystems.", "relations": [{"span": "Porter 2020", "label": "EXTENDS"}]}
+{"text": "Prior research by Winter, 2012 laid the foundation for understanding transaction cost economics.", "relations": [{"span": "Winter, 2012", "label": "CITES"}]}
+{"text": "Rumelt (2005) provides a more granular breakdown of the mechanism underlying transaction cost economics.", "relations": [{"span": "Rumelt (2005)", "label": "ELABORATES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Barney (2001).", "relations": [{"span": "Barney (2001)", "label": "INSPIRED_BY"}]}
+{"text": "However, the analysis presented by Winter 2011 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Winter 2011", "label": "REFUTES"}]}
+{"text": "As already observed in Rumelt (1999), these behaviors are consistent across industries.", "relations": [{"span": "Rumelt (1999)", "label": "REPEATS"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Nelson, 2000.", "relations": [{"span": "Nelson, 2000", "label": "INSPIRED_BY"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Porter (2008).", "relations": [{"span": "Porter (2008)", "label": "USES_METHOD_OF"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Winter, 2022.", "relations": [{"span": "Winter, 2022", "label": "INSPIRED_BY"}]}
+{"text": "Prior research by Barney 2007 laid the foundation for understanding institutional theory.", "relations": [{"span": "Barney 2007", "label": "CITES"}]}
+{"text": "Prior research by Mintzberg, 2005 laid the foundation for understanding dynamic capabilities.", "relations": [{"span": "Mintzberg, 2005", "label": "CITES"}]}
+{"text": "However, the analysis presented by Eisenhardt 2002 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Eisenhardt 2002", "label": "REFUTES"}]}
+{"text": "As already observed in Ghemawat, 2020, these behaviors are consistent across industries.", "relations": [{"span": "Ghemawat, 2020", "label": "REPEATS"}]}
+{"text": "Eisenhardt (2006) notes that these findings are contingent on several assumptions.", "relations": [{"span": "Eisenhardt (2006)", "label": "QUALIFIES"}]}
+{"text": "As already observed in Nelson, 2001, these behaviors are consistent across industries.", "relations": [{"span": "Nelson, 2001", "label": "REPEATS"}]}
+{"text": "However, the analysis presented by Mintzberg (2004) refutes this claim, especially under high uncertainty.", "relations": [{"span": "Mintzberg (2004)", "label": "REFUTES"}]}
+{"text": "Eisenhardt 1994 extends earlier frameworks by introducing multi-level dynamics into transaction cost economics.", "relations": [{"span": "Eisenhardt 1994", "label": "EXTENDS"}]}
+{"text": "Nelson, 1993 provides a more granular breakdown of the mechanism underlying strategic positioning.", "relations": [{"span": "Nelson, 1993", "label": "ELABORATES"}]}
+{"text": "However, the analysis presented by Mintzberg, 2016 refutes this claim, especially under high uncertainty.", "relations": [{"span": "Mintzberg, 2016", "label": "REFUTES"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Grant 2015.", "relations": [{"span": "Grant 2015", "label": "USES_METHOD_OF"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Grant (2013).", "relations": [{"span": "Grant (2013)", "label": "USES_METHOD_OF"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Rumelt 2013.", "relations": [{"span": "Rumelt 2013", "label": "USES_METHOD_OF"}]}
+{"text": "As already observed in Rumelt 1984, these behaviors are consistent across industries.", "relations": [{"span": "Rumelt 1984", "label": "REPEATS"}]}
+{"text": "Porter, 2012 provides a more granular breakdown of the mechanism underlying resource-based view.", "relations": [{"span": "Porter, 2012", "label": "ELABORATES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Porter (1994).", "relations": [{"span": "Porter (1994)", "label": "INSPIRED_BY"}]}
+{"text": "Prior research by Nelson 2008 laid the foundation for understanding transaction cost economics.", "relations": [{"span": "Nelson 2008", "label": "CITES"}]}
+{"text": "Prior research by Nelson (1982) laid the foundation for understanding knowledge management.", "relations": [{"span": "Nelson (1982)", "label": "CITES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Eisenhardt (1998).", "relations": [{"span": "Eisenhardt (1998)", "label": "INSPIRED_BY"}]}
+{"text": "The study employs a difference-in-differences approach as formalized in Eisenhardt (2016).", "relations": [{"span": "Eisenhardt (2016)", "label": "USES_METHOD_OF"}]}
+{"text": "Prior research by Grant 2014 laid the foundation for understanding resource-based view.", "relations": [{"span": "Grant 2014", "label": "CITES"}]}
+{"text": "Eisenhardt, 1999 provides a more granular breakdown of the mechanism underlying competitive strategy.", "relations": [{"span": "Eisenhardt, 1999", "label": "ELABORATES"}]}
+{"text": "Porter (1998) extends earlier frameworks by introducing multi-level dynamics into innovation diffusion.", "relations": [{"span": "Porter (1998)", "label": "EXTENDS"}]}
+{"text": "Empirical findings in Eisenhardt (2018) strongly support the argument presented regarding strategic positioning.", "relations": [{"span": "Eisenhardt (2018)", "label": "SUPPORTS"}]}
+{"text": "Eisenhardt, 1985 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Eisenhardt, 1985", "label": "QUALIFIES"}]}
+{"text": "The theoretical framing is inspired by concepts loosely aligned with Rumelt (2007).", "relations": [{"span": "Rumelt (2007)", "label": "INSPIRED_BY"}]}
+{"text": "Prior research by Ghemawat, 1989 laid the foundation for understanding innovation diffusion.", "relations": [{"span": "Ghemawat, 1989", "label": "CITES"}]}
+{"text": "Ghemawat 2003 notes that these findings are contingent on several assumptions.", "relations": [{"span": "Ghemawat 2003", "label": "QUALIFIES"}]}
+{"text": "Barney, 2017 extends earlier frameworks by introducing multi-level dynamics into platform ecosystems.", "relations": [{"span": "Barney, 2017", "label": "EXTENDS"}]}
+{"text": "Ghemawat 2008 provides a more granular breakdown of the mechanism underlying knowledge management.", "relations": [{"span": "Ghemawat 2008", "label": "ELABORATES"}]}
+{"text": "Barney 2019 extends earlier frameworks by introducing multi-level dynamics into organizational learning.", "relations": [{"span": "Barney 2019", "label": "EXTENDS"}]}

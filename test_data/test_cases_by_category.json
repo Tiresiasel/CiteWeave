@@ -1,0 +1,326 @@
+{
+  "test_cases_by_category": {
+    "basic_information": {
+      "description": "基础信息查询测试用例",
+      "retrieval_strategy": "direct_database_query_metadata_matching",
+      "test_cases": [
+        {
+          "id": "basic_001",
+          "query_cn": "Michael Porter的竞争战略论文发表在哪一年？",
+          "query_en": "What year was Michael Porter's competitive strategy paper published?",
+          "expected_result_type": "paper_metadata",
+          "complexity": "simple",
+          "evaluation_criteria": ["accurate_year", "correct_author", "paper_title"]
+        },
+        {
+          "id": "basic_002", 
+          "query_cn": "谁是《创新扩散》这本书的作者？",
+          "query_en": "Who is the author of 'Diffusion of Innovations'?",
+          "expected_result_type": "author_info",
+          "complexity": "simple",
+          "evaluation_criteria": ["correct_author_name", "publication_details"]
+        },
+        {
+          "id": "basic_003",
+          "query_cn": "Porter 1980年的论文摘要是什么？",
+          "query_en": "What is the abstract of Porter's 1980 paper?",
+          "expected_result_type": "abstract_content",
+          "complexity": "medium",
+          "evaluation_criteria": ["content_accuracy", "completeness"]
+        }
+      ]
+    },
+    "citation_relationships": {
+      "description": "引用关系查询测试用例",
+      "retrieval_strategy": "graph_traversal_network_analysis",
+      "test_cases": [
+        {
+          "id": "cite_001",
+          "query_cn": "谁引用了Porter的五力模型？",
+          "query_en": "Who cited Porter's Five Forces model?",
+          "expected_result_type": "citing_papers_list",
+          "complexity": "medium",
+          "evaluation_criteria": ["citation_count", "relevant_papers", "temporal_order"]
+        },
+        {
+          "id": "cite_002",
+          "query_cn": "Porter 1980年的竞争战略论文引用了哪些文献？",
+          "query_en": "What papers did Porter's 1980 competitive strategy paper cite?",
+          "expected_result_type": "reference_list",
+          "complexity": "medium", 
+          "evaluation_criteria": ["reference_accuracy", "foundational_works"]
+        },
+        {
+          "id": "cite_003",
+          "query_cn": "哪些论文同时引用了Porter和Barney的工作？",
+          "query_en": "Which papers cite both Porter and Barney's work?",
+          "expected_result_type": "co_citation_analysis",
+          "complexity": "high",
+          "evaluation_criteria": ["intersection_accuracy", "relevance_ranking"]
+        }
+      ]
+    },
+    "thematic_content": {
+      "description": "主题内容查询测试用例",
+      "retrieval_strategy": "vector_search_semantic_matching",
+      "test_cases": [
+        {
+          "id": "theme_001",
+          "query_cn": "关于资源基础观的最新研究有哪些？",
+          "query_en": "What are the latest studies on Resource-Based View?",
+          "expected_result_type": "thematic_paper_list",
+          "complexity": "medium",
+          "evaluation_criteria": ["topic_relevance", "recency", "comprehensiveness"]
+        },
+        {
+          "id": "theme_002",
+          "query_cn": "战略管理中的定量研究方法有哪些应用？",
+          "query_en": "What applications of quantitative methods exist in strategic management?",
+          "expected_result_type": "methodology_papers",
+          "complexity": "high",
+          "evaluation_criteria": ["method_diversity", "application_examples"]
+        },
+        {
+          "id": "theme_003",
+          "query_cn": "数字化转型对传统竞争优势理论的挑战",
+          "query_en": "How does digital transformation challenge traditional competitive advantage theories?",
+          "expected_result_type": "conceptual_analysis",
+          "complexity": "high",
+          "evaluation_criteria": ["theoretical_depth", "contemporary_relevance"]
+        }
+      ]
+    },
+    "author_scholar": {
+      "description": "作者学者查询测试用例", 
+      "retrieval_strategy": "author_graph_collaboration_network",
+      "test_cases": [
+        {
+          "id": "author_001",
+          "query_cn": "Michael Porter都写过哪些重要论文？",
+          "query_en": "What are Michael Porter's important papers?",
+          "expected_result_type": "author_publication_list",
+          "complexity": "simple",
+          "evaluation_criteria": ["publication_completeness", "chronological_order", "impact_ranking"]
+        },
+        {
+          "id": "author_002",
+          "query_cn": "Porter和谁经常合作发表论文？",
+          "query_en": "Who does Porter frequently collaborate with?",
+          "expected_result_type": "collaboration_network",
+          "complexity": "medium",
+          "evaluation_criteria": ["collaboration_frequency", "co_author_significance"]
+        },
+        {
+          "id": "author_003",
+          "query_cn": "在竞争战略领域，哪些学者的影响力最大？",
+          "query_en": "Which scholars have the greatest influence in competitive strategy?",
+          "expected_result_type": "influence_ranking",
+          "complexity": "high",
+          "evaluation_criteria": ["citation_metrics", "field_contribution", "temporal_consistency"]
+        }
+      ]
+    },
+    "temporal_evolution": {
+      "description": "时间演进查询测试用例",
+      "retrieval_strategy": "temporal_analysis_trend_identification", 
+      "test_cases": [
+        {
+          "id": "time_001",
+          "query_cn": "竞争优势理论是如何随时间发展的？",
+          "query_en": "How has competitive advantage theory evolved over time?",
+          "expected_result_type": "theoretical_evolution",
+          "complexity": "high",
+          "evaluation_criteria": ["chronological_accuracy", "milestone_identification", "development_coherence"]
+        },
+        {
+          "id": "time_002",
+          "query_cn": "2010年以后战略管理研究的新趋势是什么？",
+          "query_en": "What are the new trends in strategic management research after 2010?",
+          "expected_result_type": "trend_analysis",
+          "complexity": "high",
+          "evaluation_criteria": ["trend_identification", "supporting_evidence", "future_implications"]
+        },
+        {
+          "id": "time_003",
+          "query_cn": "1980年代的战略管理理论有什么特点？",
+          "query_en": "What are the characteristics of strategic management theories in the 1980s?",
+          "expected_result_type": "period_characteristics",
+          "complexity": "medium",
+          "evaluation_criteria": ["period_accuracy", "theoretical_features", "contextual_understanding"]
+        }
+      ]
+    },
+    "comparative_analysis": {
+      "description": "比较分析查询测试用例",
+      "retrieval_strategy": "multi_dimensional_comparison",
+      "test_cases": [
+        {
+          "id": "comp_001",
+          "query_cn": "资源基础观和动态能力理论有什么区别？",
+          "query_en": "What are the differences between Resource-Based View and Dynamic Capabilities theory?",
+          "expected_result_type": "theoretical_comparison",
+          "complexity": "high",
+          "evaluation_criteria": ["distinction_clarity", "theoretical_depth", "practical_implications"]
+        },
+        {
+          "id": "comp_002",
+          "query_cn": "定量和定性研究方法在战略管理中的应用对比",
+          "query_en": "Comparison of quantitative vs qualitative research methods in strategic management",
+          "expected_result_type": "methodology_comparison",
+          "complexity": "high",
+          "evaluation_criteria": ["method_characteristics", "application_scenarios", "effectiveness_analysis"]
+        },
+        {
+          "id": "comp_003",
+          "query_cn": "美国和欧洲的战略管理研究有什么不同？",
+          "query_en": "What are the differences between US and European strategic management research?",
+          "expected_result_type": "regional_comparison",
+          "complexity": "high",
+          "evaluation_criteria": ["regional_characteristics", "cultural_influence", "research_focus_differences"]
+        }
+      ]
+    },
+    "impact_assessment": {
+      "description": "影响力评估查询测试用例",
+      "retrieval_strategy": "impact_metrics_quality_assessment",
+      "test_cases": [
+        {
+          "id": "impact_001",
+          "query_cn": "战略管理领域被引用最多的论文有哪些？",
+          "query_en": "What are the most cited papers in strategic management?",
+          "expected_result_type": "high_impact_papers",
+          "complexity": "medium",
+          "evaluation_criteria": ["citation_ranking", "field_relevance", "temporal_consistency"]
+        },
+        {
+          "id": "impact_002",
+          "query_cn": "Porter的五力模型对产业界有什么实际影响？",
+          "query_en": "What practical impact has Porter's Five Forces model had on industry?",
+          "expected_result_type": "practical_impact_analysis",
+          "complexity": "high",
+          "evaluation_criteria": ["industry_adoption", "practical_applications", "business_outcomes"]
+        },
+        {
+          "id": "impact_003",
+          "query_cn": "哪些战略管理理论影响了政策制定？",
+          "query_en": "Which strategic management theories have influenced policy making?",
+          "expected_result_type": "policy_influence_analysis",
+          "complexity": "high", 
+          "evaluation_criteria": ["policy_evidence", "institutional_adoption", "societal_impact"]
+        }
+      ]
+    },
+    "literature_review": {
+      "description": "文献综述支持查询测试用例",
+      "retrieval_strategy": "comprehensive_search_systematic_organization",
+      "test_cases": [
+        {
+          "id": "review_001",
+          "query_cn": "请为我整理关于动态能力的文献综述",
+          "query_en": "Please organize a literature review on dynamic capabilities",
+          "expected_result_type": "systematic_review",
+          "complexity": "high",
+          "evaluation_criteria": ["comprehensiveness", "organization_quality", "gap_identification"]
+        },
+        {
+          "id": "review_002",
+          "query_cn": "平台战略研究现状如何？",
+          "query_en": "What is the current state of platform strategy research?",
+          "expected_result_type": "research_landscape",
+          "complexity": "high",
+          "evaluation_criteria": ["current_state_accuracy", "trend_identification", "future_directions"]
+        },
+        {
+          "id": "review_003",
+          "query_cn": "竞争优势测量方法的研究进展",
+          "query_en": "Research progress on competitive advantage measurement methods",
+          "expected_result_type": "methodological_review",
+          "complexity": "high",
+          "evaluation_criteria": ["method_evolution", "measurement_validity", "practical_applicability"]
+        }
+      ]
+    },
+    "interdisciplinary": {
+      "description": "跨学科查询测试用例",
+      "retrieval_strategy": "cross_domain_search_concept_migration",
+      "test_cases": [
+        {
+          "id": "inter_001",
+          "query_cn": "心理学理论如何应用到战略管理中？",
+          "query_en": "How are psychological theories applied in strategic management?",
+          "expected_result_type": "interdisciplinary_application",
+          "complexity": "high",
+          "evaluation_criteria": ["concept_transfer_accuracy", "application_effectiveness", "integration_depth"]
+        },
+        {
+          "id": "inter_002",
+          "query_cn": "人工智能对战略决策的影响研究",
+          "query_en": "Research on AI's impact on strategic decision-making",
+          "expected_result_type": "emerging_intersection",
+          "complexity": "high",
+          "evaluation_criteria": ["novelty", "technological_integration", "strategic_implications"]
+        },
+        {
+          "id": "inter_003",
+          "query_cn": "生态学概念在商业生态系统中的应用",
+          "query_en": "Application of ecological concepts in business ecosystems",
+          "expected_result_type": "metaphor_analysis",
+          "complexity": "high",
+          "evaluation_criteria": ["metaphor_validity", "conceptual_richness", "explanatory_power"]
+        }
+      ]
+    },
+    "practical_application": {
+      "description": "实用性导向查询测试用例",
+      "retrieval_strategy": "application_matching_practice_evaluation",
+      "test_cases": [
+        {
+          "id": "pract_001",
+          "query_cn": "如何在实际中应用SWOT分析？",
+          "query_en": "How to apply SWOT analysis in practice?",
+          "expected_result_type": "implementation_guide",
+          "complexity": "medium",
+          "evaluation_criteria": ["step_clarity", "practical_examples", "common_pitfalls"]
+        },
+        {
+          "id": "pract_002",
+          "query_cn": "数字化转型的最佳实践案例有哪些？",
+          "query_en": "What are the best practice cases for digital transformation?",
+          "expected_result_type": "case_studies",
+          "complexity": "medium",
+          "evaluation_criteria": ["case_relevance", "success_factors", "transferability"]
+        },
+        {
+          "id": "pract_003",
+          "query_cn": "如何评估战略实施的效果？",
+          "query_en": "How to evaluate the effectiveness of strategy implementation?",
+          "expected_result_type": "evaluation_framework",
+          "complexity": "high",
+          "evaluation_criteria": ["framework_completeness", "measurement_validity", "practical_feasibility"]
+        }
+      ]
+    }
+  },
+  "meta_information": {
+    "total_categories": 10,
+    "total_test_cases": 30,
+    "complexity_distribution": {
+      "simple": 3,
+      "medium": 9,
+      "high": 18
+    },
+    "language_coverage": ["中文", "English"],
+    "expected_retrieval_strategies": [
+      "direct_database_query_metadata_matching",
+      "graph_traversal_network_analysis", 
+      "vector_search_semantic_matching",
+      "author_graph_collaboration_network",
+      "temporal_analysis_trend_identification",
+      "multi_dimensional_comparison",
+      "impact_metrics_quality_assessment",
+      "comprehensive_search_systematic_organization",
+      "cross_domain_search_concept_migration",
+      "application_matching_practice_evaluation"
+    ]
+  }
+} 

@@ -1,0 +1,245 @@
+{
+  "test_data_path": "datasets/test_data.jsonl",
+  "model_path": "checkpoints/citation_classifier",
+  "test_examples_count": 400,
+  "device_used": "mps",
+  "token_level_metrics": {
+    "accuracy": 1.0,
+    "f1_macro": 1.0,
+    "f1_weighted": 1.0,
+    "precision_macro": 1.0,
+    "recall_macro": 1.0
+  },
+  "entity_level_metrics": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1": 1.0,
+    "predicted_entities": 726,
+    "actual_entities": 726,
+    "correct_entities": 306
+  },
+  "per_relation_metrics": {
+    "REPEATS": {
+      "precision": 0.39436619718309857,
+      "recall": 0.39436619718309857,
+      "f1": 0.39436619718309857,
+      "predicted_count": 71,
+      "actual_count": 71,
+      "correct_count": 28
+    },
+    "QUALIFIES": {
+      "precision": 0.4,
+      "recall": 0.4,
+      "f1": 0.4000000000000001,
+      "predicted_count": 85,
+      "actual_count": 85,
+      "correct_count": 34
+    },
+    "SUPPORTS": {
+      "precision": 0.38461538461538464,
+      "recall": 0.38461538461538464,
+      "f1": 0.38461538461538464,
+      "predicted_count": 78,
+      "actual_count": 78,
+      "correct_count": 30
+    },
+    "ELABORATES": {
+      "precision": 0.3698630136986301,
+      "recall": 0.3698630136986301,
+      "f1": 0.36986301369863017,
+      "predicted_count": 73,
+      "actual_count": 73,
+      "correct_count": 27
+    },
+    "USES_METHOD_OF": {
+      "precision": 0.5074626865671642,
+      "recall": 0.5074626865671642,
+      "f1": 0.5074626865671642,
+      "predicted_count": 67,
+      "actual_count": 67,
+      "correct_count": 34
+    },
+    "INSPIRED_BY": {
+      "precision": 0.4025974025974026,
+      "recall": 0.4025974025974026,
+      "f1": 0.40259740259740256,
+      "predicted_count": 77,
+      "actual_count": 77,
+      "correct_count": 31
+    },
+    "CITES": {
+      "precision": 0.4225352112676056,
+      "recall": 0.4225352112676056,
+      "f1": 0.4225352112676056,
+      "predicted_count": 71,
+      "actual_count": 71,
+      "correct_count": 30
+    },
+    "CONTRASTS": {
+      "precision": 0.42857142857142855,
+      "recall": 0.42857142857142855,
+      "f1": 0.42857142857142855,
+      "predicted_count": 70,
+      "actual_count": 70,
+      "correct_count": 30
+    },
+    "EXTENDS": {
+      "precision": 0.4393939393939394,
+      "recall": 0.4393939393939394,
+      "f1": 0.4393939393939394,
+      "predicted_count": 66,
+      "actual_count": 66,
+      "correct_count": 29
+    },
+    "REFUTES": {
+      "precision": 0.4852941176470588,
+      "recall": 0.4852941176470588,
+      "f1": 0.4852941176470588,
+      "predicted_count": 68,
+      "actual_count": 68,
+      "correct_count": 33
+    }
+  },
+  "classification_report": {
+    "O": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 9630.0
+    },
+    "B-EXTENDS": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 66.0
+    },
+    "I-EXTENDS": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 196.0
+    },
+    "B-INSPIRED_BY": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 77.0
+    },
+    "I-INSPIRED_BY": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 232.0
+    },
+    "B-REFUTES": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 68.0
+    },
+    "I-REFUTES": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 188.0
+    },
+    "B-USES_METHOD_OF": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 67.0
+    },
+    "I-USES_METHOD_OF": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 195.0
+    },
+    "B-SUPPORTS": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 78.0
+    },
+    "I-SUPPORTS": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 232.0
+    },
+    "B-ELABORATES": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 73.0
+    },
+    "I-ELABORATES": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 223.0
+    },
+    "B-CITES": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 71.0
+    },
+    "I-CITES": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 200.0
+    },
+    "B-REPEATS": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 71.0
+    },
+    "I-REPEATS": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 211.0
+    },
+    "B-CONTRASTS": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 70.0
+    },
+    "I-CONTRASTS": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 193.0
+    },
+    "B-QUALIFIES": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 85.0
+    },
+    "I-QUALIFIES": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 247.0
+    },
+    "accuracy": 1.0,
+    "macro avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 12473.0
+    },
+    "weighted avg": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1-score": 1.0,
+      "support": 12473.0
+    }
+  },
+  "confusion_matrix_text": "\nConfusion Matrix (rows=true, cols=predicted):\nLabel             0   1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16  17  18  19  20\nO              9630   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0\nB-EXTENDS         0  66   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0\nI-EXTENDS         0   0 196   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0\nB-INSPIRED_BY     0   0   0  77   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0\nI-INSPIRED_BY     0   0   0   0 232   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0\nB-REFUTES         0   0   0   0   0  68   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0\nI-REFUTES         0   0   0   0   0   0 188   0   0   0   0   0   0   0   0   0   0   0   0   0   0\nB-USES_METHOD_OF   0   0   0   0   0   0   0  67   0   0   0   0   0   0   0   0   0   0   0   0   0\nI-USES_METHOD_OF   0   0   0   0   0   0   0   0 195   0   0   0   0   0   0   0   0   0   0   0   0\nB-SUPPORTS        0   0   0   0   0   0   0   0   0  78   0   0   0   0   0   0   0   0   0   0   0\nI-SUPPORTS        0   0   0   0   0   0   0   0   0   0 232   0   0   0   0   0   0   0   0   0   0\nB-ELABORATES      0   0   0   0   0   0   0   0   0   0   0  73   0   0   0   0   0   0   0   0   0\nI-ELABORATES      0   0   0   0   0   0   0   0   0   0   0   0 223   0   0   0   0   0   0   0   0\nB-CITES           0   0   0   0   0   0   0   0   0   0   0   0   0  71   0   0   0   0   0   0   0\nI-CITES           0   0   0   0   0   0   0   0   0   0   0   0   0   0 200   0   0   0   0   0   0\nB-REPEATS         0   0   0   0   0   0   0   0   0   0   0   0   0   0   0  71   0   0   0   0   0\nI-REPEATS         0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0 211   0   0   0   0\nB-CONTRASTS       0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0  70   0   0   0\nI-CONTRASTS       0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0 193   0   0\nB-QUALIFIES       0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0  85   0\nI-QUALIFIES       0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0   0 247\n"
+}

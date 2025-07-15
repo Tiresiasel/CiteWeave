@@ -1,0 +1,200 @@
+{
+  "description": "基于实际论文内容的简化测试用例",
+  "papers": [
+    "Porter: Competitive Strategy (竞争战略)",
+    "Rivkin (2000): Imitation of Complex Strategies",
+    "Foss & Saebi (2017): Fifteen Years of Research on Business Model Innovation"
+  ],
+  "test_cases_by_category": {
+    "basic_information": {
+      "description": "基础信息查询 - 基于实际论文元数据",
+      "retrieval_strategy": "metadata_query_author_info",
+      "test_cases": [
+        {
+          "id": "basic_001",
+          "query_cn": "Porter是谁？他的主要贡献是什么？",
+          "query_en": "Who is Michael Porter and what is he known for?",
+          "expected_result_type": "author_info",
+          "complexity": "simple",
+          "evaluation_criteria": ["author_identification", "contribution_accuracy"]
+        },
+        {
+          "id": "basic_002",
+          "query_cn": "Rivkin这篇文章是什么时候发表的？",
+          "query_en": "When was Rivkin's paper on strategy imitation published?",
+          "expected_result_type": "publication_date",
+          "complexity": "simple",
+          "evaluation_criteria": ["correct_year", "journal_name"]
+        },
+        {
+          "id": "basic_003",
+          "query_cn": "商业模式创新这篇综述分析了多少篇论文？",
+          "query_en": "How many papers did Foss and Saebi review in their BMI literature review?",
+          "expected_result_type": "paper_count",
+          "complexity": "simple",
+          "evaluation_criteria": ["accurate_count", "review_scope"]
+        },
+        {
+          "id": "basic_004",
+          "query_cn": "这些论文都发表在哪些期刊上？",
+          "query_en": "Which journals published these papers?",
+          "expected_result_type": "journal_list",
+          "complexity": "simple",
+          "evaluation_criteria": ["journal_accuracy", "completeness"]
+        }
+      ]
+    },
+    "content_queries": {
+      "description": "主题内容查询 - 基于论文核心概念",
+      "retrieval_strategy": "vector_search_semantic_matching",
+      "test_cases": [
+        {
+          "id": "content_001",
+          "query_cn": "什么是竞争战略？",
+          "query_en": "What is competitive strategy according to Porter?",
+          "expected_result_type": "concept_explanation",
+          "complexity": "medium",
+          "evaluation_criteria": ["concept_accuracy", "theoretical_depth"]
+        },
+        {
+          "id": "content_002",
+          "query_cn": "复杂策略为什么难以模仿？",
+          "query_en": "Why are complex strategies difficult to imitate?",
+          "expected_result_type": "theoretical_explanation",
+          "complexity": "medium",
+          "evaluation_criteria": ["theory_accuracy", "mechanism_explanation"]
+        },
+        {
+          "id": "content_003",
+          "query_cn": "商业模式创新的主要问题是什么？",
+          "query_en": "What are the main problems in business model innovation research?",
+          "expected_result_type": "research_gaps",
+          "complexity": "medium",
+          "evaluation_criteria": ["gap_identification", "problem_analysis"]
+        },
+        {
+          "id": "content_004",
+          "query_cn": "这些研究用了什么理论框架？",
+          "query_en": "What theoretical frameworks are used in these studies?",
+          "expected_result_type": "theoretical_framework",
+          "complexity": "medium",
+          "evaluation_criteria": ["framework_identification", "application_accuracy"]
+        }
+      ]
+    },
+    "citation_queries": {
+      "description": "引用关系查询 - 基于实际引用数据",
+      "retrieval_strategy": "graph_database_query",
+      "test_cases": [
+        {
+          "id": "citation_001",
+          "query_cn": "Rivkin的文章引用了哪些重要文献？",
+          "query_en": "What key papers does Rivkin cite in his strategy imitation paper?",
+          "expected_result_type": "reference_list",
+          "complexity": "medium",
+          "evaluation_criteria": ["citation_accuracy", "key_papers_identified"]
+        },
+        {
+          "id": "citation_002",
+          "query_cn": "有哪些论文引用了Porter的竞争战略理论？",
+          "query_en": "Which papers cite Porter's competitive strategy theory?",
+          "expected_result_type": "citing_papers",
+          "complexity": "medium",
+          "evaluation_criteria": ["citation_completeness", "relevance"]
+        },
+        {
+          "id": "citation_003",
+          "query_cn": "Foss和Saebi综述了哪些关键作者的工作？",
+          "query_en": "What key authors did Foss and Saebi review in their BMI survey?",
+          "expected_result_type": "author_list",
+          "complexity": "medium",
+          "evaluation_criteria": ["author_identification", "review_comprehensiveness"]
+        },
+        {
+          "id": "citation_004",
+          "query_cn": "这些作者之间有什么引用关系？",
+          "query_en": "What citation relationships exist between these authors?",
+          "expected_result_type": "citation_network",
+          "complexity": "high",
+          "evaluation_criteria": ["relationship_accuracy", "network_analysis"]
+        }
+      ]
+    },
+    "comparative_queries": {
+      "description": "比较分析查询 - 多文档对比",
+      "retrieval_strategy": "multi_document_comparison",
+      "test_cases": [
+        {
+          "id": "compare_001",
+          "query_cn": "Porter和Rivkin对战略的观点有什么不同？",
+          "query_en": "How do Porter's and Rivkin's views on strategy differ?",
+          "expected_result_type": "comparative_analysis",
+          "complexity": "high",
+          "evaluation_criteria": ["difference_identification", "perspective_accuracy"]
+        },
+        {
+          "id": "compare_002",
+          "query_cn": "2000年和2017年的战略研究有什么变化？",
+          "query_en": "What changes occurred in strategy research between 2000 and 2017?",
+          "expected_result_type": "temporal_comparison",
+          "complexity": "high",
+          "evaluation_criteria": ["temporal_analysis", "evolution_tracking"]
+        },
+        {
+          "id": "compare_003",
+          "query_cn": "竞争战略和商业模式创新有什么关系？",
+          "query_en": "What is the relationship between competitive strategy and business model innovation?",
+          "expected_result_type": "conceptual_relationship",
+          "complexity": "high",
+          "evaluation_criteria": ["relationship_analysis", "conceptual_integration"]
+        },
+        {
+          "id": "compare_004",
+          "query_cn": "这三位作者的研究方法有什么异同？",
+          "query_en": "How do the research methods of these three authors compare?",
+          "expected_result_type": "methodology_comparison",
+          "complexity": "high",
+          "evaluation_criteria": ["method_identification", "similarity_difference_analysis"]
+        }
+      ]
+    },
+    "application_queries": {
+      "description": "应用实践查询 - 理论应用指导",
+      "retrieval_strategy": "practice_case_matching",
+      "test_cases": [
+        {
+          "id": "app_001",
+          "query_cn": "如何应用Porter的竞争战略框架？",
+          "query_en": "How can Porter's competitive strategy framework be applied?",
+          "expected_result_type": "application_guide",
+          "complexity": "medium",
+          "evaluation_criteria": ["practical_guidance", "application_steps"]
+        },
+        {
+          "id": "app_002",
+          "query_cn": "企业如何防止策略被模仿？",
+          "query_en": "How can firms prevent their strategies from being imitated?",
+          "expected_result_type": "prevention_strategies",
+          "complexity": "medium",
+          "evaluation_criteria": ["strategy_practicality", "implementation_feasibility"]
+        },
+        {
+          "id": "app_003",
+          "query_cn": "商业模式创新的最佳实践是什么？",
+          "query_en": "What are the best practices for business model innovation?",
+          "expected_result_type": "best_practices",
+          "complexity": "medium",
+          "evaluation_criteria": ["practice_quality", "implementation_guidance"]
+        },
+        {
+          "id": "app_004",
+          "query_cn": "这些理论对管理实践有什么启示？",
+          "query_en": "What practical implications do these theories offer for management?",
+          "expected_result_type": "practical_implications",
+          "complexity": "medium",
+          "evaluation_criteria": ["implication_relevance", "practical_value"]
+        }
+      ]
+    }
+  }
+} 
