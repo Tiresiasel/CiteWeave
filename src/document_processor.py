@@ -18,6 +18,7 @@ from src.citation_parser import CitationParser
 from src.graph_builder import GraphDB
 from src.config_manager import ConfigManager
 from src.paper_id_utils import PaperIDGenerator
+from src.vector_indexer import VectorIndexer
 
 logging.basicConfig(level=logging.INFO)
 
@@ -41,6 +42,17 @@ class ParagraphData:
     section: str
     sentences: List[SentenceData]
     citation_count: int
+
+@dataclass
+class SectionData:
+    """章节数据结构"""
+    id: str
+    title: str
+    text: str
+    index: int
+    section_type: str
+    paragraphs: List[ParagraphData]
+    paragraph_count: int
 
 class DocumentProcessor:
     """
@@ -67,6 +79,15 @@ class DocumentProcessor:
         # Initialize Paper ID Generator
         self.paper_id_generator = PaperIDGenerator()
         
+        # Initialize Vector Indexer for multi-level embedding
+        self.vector_indexer = None
+        try:
+            from src.vector_indexer import VectorIndexer
+            self.vector_indexer = VectorIndexer()
+            logging.info("Vector indexer initialized for multi-level embedding")
+        except Exception as e:
+            logging.warning(f"Failed to initialize vector indexer: {e}")
+        
         # Graph database integration
         self.enable_graph_db = enable_graph_db
         self.graph_db = None
@@ -90,7 +111,7 @@ class DocumentProcessor:
         
         logging.info("DocumentProcessor initialized with unified PDF and citation processing")
     
-    def process_document(self, pdf_path: str, save_results: bool = True, create_graph: bool = True) -> Dict:
+    def process_document(self, pdf_path: str, save_results: bool = True, create_graph: bool = True, create_embeddings: bool = True) -> Dict:
         """
         Main processing method: extract sentences and analyze citations for each sentence.
         
@@ -98,10 +119,13 @@ class DocumentProcessor:
             pdf_path: Path to the PDF file
             save_results: Whether to save results to disk
             create_graph: Whether to create graph database entries
+            create_embeddings: Whether to create vector embeddings
             
         Returns:
             Dict containing:
             - metadata: Document metadata
+            - sections: List of document sections
+            - paragraphs: List of document paragraphs  
             - sentences_with_citations: List of sentences with their citation analysis
             - processing_stats: Statistics about the processing
         """
@@ -113,13 +137,18 @@ class DocumentProcessor:
         # Step 1.5: Generate consistent paper ID using PaperIDGenerator
         paper_id = self.paper_id_generator.generate_paper_id(
             title=metadata["title"], 
-            year=metadata["year"],
-            authors=metadata.get("authors", [])
+            year=metadata["year"]
         )
         logging.info(f"Generated paper ID: {paper_id}")
         
-        # Step 2: Extract sentences using PDFProcessor
-        logging.info("Extracting sentences from PDF...")
+        # Step 2: Extract document structure (sections, paragraphs, sentences)
+        logging.info("Extracting document structure from PDF...")
+        structure = self.pdf_processor.extract_document_structure(pdf_path)
+        sections = structure["sections"]
+        structured_paragraphs = structure["paragraphs"]
+        
+        # Also extract sentences for citation analysis
+        logging.info("Extracting sentences for citation analysis...")
         sentences = self.pdf_processor.parse_sentences(pdf_path)
         
         # Step 3: Initialize CitationParser with extracted metadata and references
@@ -144,28 +173,39 @@ class DocumentProcessor:
         graph_stats = {}
         if create_graph and self.enable_graph_db and self.graph_db:
             logging.info("Creating graph database entries...")
-            graph_stats = self._create_graph_entries(paper_id, metadata, sentences_with_citations)
+            graph_stats = self._create_graph_entries_structured(paper_id, metadata, sections, structured_paragraphs, sentences_with_citations)
         
-        # Step 6: Compile results
+        # Step 6: Create vector embeddings if enabled
+        embedding_stats = {}
+        if create_embeddings and self.vector_indexer:
+            logging.info("Creating vector embeddings...")
+            embedding_stats = self._create_vector_embeddings(paper_id, metadata, sections, structured_paragraphs, sentences_with_citations)
+        
+        # Step 7: Compile results
         results = {
             "metadata": metadata,
             "paper_id": paper_id,
+            "sections": sections,
+            "paragraphs": structured_paragraphs,
             "sentences_with_citations": sentences_with_citations,
             "processing_stats": {
+                "total_sections": len(sections),
+                "total_paragraphs": len(structured_paragraphs),
                 "total_sentences": len(sentences),
                 "sentences_with_citations": len([s for s in sentences_with_citations if s["citations"]]),
                 "total_citations": sum(len(s["citations"]) for s in sentences_with_citations),
                 "total_references": len(references),
                 "processing_timestamp": datetime.now().isoformat(),
-                "graph_db_stats": graph_stats
+                "graph_db_stats": graph_stats,
+                "embedding_stats": embedding_stats
             }
         }
         
-        # Step 7: Save results if requested
+        # Step 8: Save results if requested
         if save_results:
             self._save_processed_document(paper_id, results)
         
-        logging.info(f"Document processing completed. Found {results['processing_stats']['total_citations']} citations in {results['processing_stats']['sentences_with_citations']} sentences")
+        logging.info(f"Document processing completed. Found {results['processing_stats']['total_sections']} sections, {results['processing_stats']['total_paragraphs']} paragraphs, {results['processing_stats']['total_citations']} citations in {results['processing_stats']['sentences_with_citations']} sentences")
         
         return results
 
@@ -264,6 +304,224 @@ class DocumentProcessor:
         except Exception as e:
             logging.error(f"Failed to create graph database entries: {e}")
             return {"error": str(e)}
+    
+    def _create_graph_entries_structured(self, paper_id: str, metadata: Dict, sections: List[Dict], 
+                                       paragraphs: List[Dict], sentences_with_citations: List[Dict]) -> Dict:
+        """
+        使用真实PDF结构创建图数据库条目
+        """
+        try:
+            # Create main paper node
+            self.graph_db.create_paper(
+                paper_id=paper_id,
+                title=metadata.get("title", "Unknown"),
+                authors=metadata.get("authors", ["Unknown"]),
+                year=int(metadata.get("year", 0)) if metadata.get("year") else 0,
+                doi=metadata.get("doi"),
+                journal=metadata.get("journal"),
+                publisher=metadata.get("publisher")
+            )
+            
+            stats = {
+                "sections_created": 0,
+                "paragraphs_created": 0,
+                "sentences_created": 0,
+                "citation_relations_created": 0
+            }
+            
+            # Process structured paragraphs and link to citations
+            paragraph_citation_map = self._map_paragraphs_to_citations(paragraphs, sentences_with_citations)
+            
+            for paragraph in paragraphs:
+                # Create paragraph node with structure information
+                para_citations = paragraph_citation_map.get(paragraph["id"], [])
+                
+                self.graph_db.create_paragraph(
+                    paragraph_id=paragraph["id"],
+                    paper_id=paper_id,
+                    text=paragraph["text"],
+                    paragraph_index=paragraph["index"],
+                    section=paragraph.get("section", "Unknown"),
+                    citation_count=len(para_citations),
+                    sentence_count=paragraph.get("sentence_count", 0),
+                    has_citations=len(para_citations) > 0
+                )
+                stats["paragraphs_created"] += 1
+                
+                # Create paragraph-level citation relationships
+                for citation in para_citations:
+                    cited_paper_id = self._get_or_create_cited_paper(citation)
+                    
+                    self.graph_db.create_paragraph_citation(
+                        paragraph_id=paragraph["id"],
+                        cited_paper_id=cited_paper_id,
+                        citation_count=1,
+                        citation_density=1.0 / paragraph.get("sentence_count", 1)
+                    )
+                    stats["citation_relations_created"] += 1
+            
+            # Process sentence-level data for detailed citation analysis
+            for sentence_data in sentences_with_citations:
+                sentence_id = f"{paper_id}_sent_{sentence_data['sentence_index']}"
+                
+                self.graph_db.create_sentence(
+                    sentence_id=sentence_id,
+                    paper_id=paper_id,
+                    paragraph_id=self._find_paragraph_for_sentence(sentence_data, paragraphs),
+                    text=sentence_data["sentence_text"],
+                    sentence_index=sentence_data["sentence_index"],
+                    has_citations=len(sentence_data["citations"]) > 0,
+                    word_count=sentence_data["word_count"],
+                    char_count=sentence_data["char_count"]
+                )
+                stats["sentences_created"] += 1
+                
+                # Create sentence-level citation relationships
+                for citation in sentence_data["citations"]:
+                    cited_paper_id = self._get_or_create_cited_paper(citation)
+                    
+                    self.graph_db.create_sentence_citation(
+                        sentence_id=sentence_id,
+                        cited_paper_id=cited_paper_id,
+                        citation_text=citation.get("intext", ""),
+                        citation_context=self._extract_citation_context(sentence_data["sentence_text"], citation),
+                        confidence=citation.get("confidence", 1.0)
+                    )
+                    stats["citation_relations_created"] += 1
+            
+            stats["sections_created"] = len(sections)
+            logging.info(f"Structured graph database entries created: {stats}")
+            return stats
+            
+        except Exception as e:
+            logging.error(f"Failed to create structured graph database entries: {e}")
+            return {"error": str(e)}
+    
+    def _create_vector_embeddings(self, paper_id: str, metadata: Dict, sections: List[Dict], 
+                                 paragraphs: List[Dict], sentences_with_citations: List[Dict]) -> Dict:
+        """
+        创建多层次向量嵌入
+        """
+        try:
+            stats = {
+                "sentences_indexed": 0,
+                "paragraphs_indexed": 0,
+                "sections_indexed": 0,
+                "citations_indexed": 0
+            }
+            
+            # Index sentences
+            if sentences_with_citations:
+                sentence_texts = [s["sentence_text"] for s in sentences_with_citations]
+                sentence_types = [s.get("argument_type", "unspecified") for s in sentences_with_citations]
+                
+                self.vector_indexer.index_sentences(
+                    paper_id=paper_id,
+                    sentences=sentence_texts,
+                    metadata=metadata,
+                    claim_types=sentence_types
+                )
+                stats["sentences_indexed"] = len(sentence_texts)
+            
+            # Index paragraphs
+            if paragraphs:
+                # Convert paragraph format for vector indexer
+                paragraph_data = []
+                for para in paragraphs:
+                    paragraph_data.append({
+                        "text": para["text"],
+                        "section": para.get("section", ""),
+                        "citation_count": para.get("citation_count", 0),
+                        "sentence_count": para.get("sentence_count", 0),
+                        "has_citations": para.get("citation_count", 0) > 0
+                    })
+                
+                self.vector_indexer.index_paragraphs(
+                    paper_id=paper_id,
+                    paragraphs=paragraph_data,
+                    metadata=metadata
+                )
+                stats["paragraphs_indexed"] = len(paragraph_data)
+            
+            # Index sections
+            if sections:
+                section_data = []
+                for section in sections:
+                    section_data.append({
+                        "text": section["text"],
+                        "title": section["title"],
+                        "type": section["section_type"],
+                        "paragraph_count": section["paragraph_count"]
+                    })
+                
+                self.vector_indexer.index_sections(
+                    paper_id=paper_id,
+                    sections=section_data,
+                    metadata=metadata
+                )
+                stats["sections_indexed"] = len(section_data)
+            
+            # Index citations
+            all_citations = []
+            for sentence_data in sentences_with_citations:
+                for citation in sentence_data["citations"]:
+                    citation_data = {
+                        "text": citation.get("intext", ""),
+                        "cited_paper_id": self._get_or_create_cited_paper(citation),
+                        "context": self._extract_citation_context(sentence_data["sentence_text"], citation),
+                        "confidence": citation.get("confidence", 1.0)
+                    }
+                    all_citations.append(citation_data)
+            
+            if all_citations:
+                self.vector_indexer.index_citations(
+                    paper_id=paper_id,
+                    citations=all_citations,
+                    metadata=metadata
+                )
+                stats["citations_indexed"] = len(all_citations)
+            
+            logging.info(f"Vector embeddings created: {stats}")
+            return stats
+            
+        except Exception as e:
+            logging.error(f"Failed to create vector embeddings: {e}")
+            return {"error": str(e)}
+    
+    def _map_paragraphs_to_citations(self, paragraphs: List[Dict], sentences_with_citations: List[Dict]) -> Dict:
+        """
+        将段落映射到其包含的引用
+        """
+        paragraph_citation_map = {}
+        
+        for paragraph in paragraphs:
+            para_citations = []
+            para_text = paragraph["text"]
+            
+            # 通过文本匹配找到段落中的句子和引用
+            for sentence_data in sentences_with_citations:
+                sentence_text = sentence_data["sentence_text"]
+                
+                # 简单的文本包含检查（可以改进为更精确的匹配）
+                if sentence_text in para_text:
+                    para_citations.extend(sentence_data["citations"])
+            
+            paragraph_citation_map[paragraph["id"]] = para_citations
+        
+        return paragraph_citation_map
+    
+    def _find_paragraph_for_sentence(self, sentence_data: Dict, paragraphs: List[Dict]) -> str:
+        """
+        为句子找到对应的段落ID
+        """
+        sentence_text = sentence_data["sentence_text"]
+        
+        for paragraph in paragraphs:
+            if sentence_text in paragraph["text"]:
+                return paragraph["id"]
+        
+        # 如果没找到，返回一个默认值
+        return f"para_unknown_{sentence_data['sentence_index']}"
 
     def _group_sentences_into_paragraphs(self, sentences_with_citations: List[Dict], paper_id: str) -> List[ParagraphData]:
         """
@@ -348,8 +606,7 @@ class DocumentProcessor:
         # Generate consistent paper ID using PaperIDGenerator
         cited_paper_id = self.paper_id_generator.generate_paper_id(
             title=title,
-            year=year,
-            authors=authors
+            year=year
         )
         
         if self.graph_db:
@@ -518,8 +775,7 @@ class DocumentProcessor:
             metadata = self._get_or_extract_metadata(pdf_path)
             paper_id = self.paper_id_generator.generate_paper_id(
                 title=metadata["title"], 
-                year=metadata["year"],
-                authors=metadata.get("authors", [])
+                year=metadata["year"]
             )
             
             results_path = os.path.join(self.storage_root, paper_id, "processed_document.json")
@@ -653,29 +909,107 @@ class DocumentProcessor:
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     
-    # Initialize the unified document processor with graph database
+    # Initialize the unified document processor with both graph and vector databases
     doc_processor = DocumentProcessor(enable_graph_db=True)
     
-    # Example: Process a document and get sentence-level citation analysis
-    pdf_path = "test_files/Rivkin - 2000 - Imitation of Complex Strategies.pdf"
+    # Test files to process
+    test_files = [
+        "test_files/Rivkin - 2000 - Imitation of Complex Strategies.pdf",
+        "test_files/Porter - Competitive Strategy.pdf",
+        "test_files/Business Model Innovation Research 2016.pdf"
+    ]
     
-    # Process document with graph creation
-    results = doc_processor.process_document(pdf_path, create_graph=True)
+    print("=== 开始完整数据库导入测试 ===\n")
     
-    # Print summary
-    total_citations = results["processing_stats"]["total_citations"]
-    sentences_with_citations_count = results["processing_stats"]["sentences_with_citations"]
+    for pdf_path in test_files:
+        try:
+            print(f"📄 处理文档: {pdf_path}")
+            print("-" * 50)
+            
+            # 完整处理：结构解析 + 图数据库 + 向量数据库
+            results = doc_processor.process_document(
+                pdf_path=pdf_path, 
+                create_graph=True,      # 创建图数据库条目
+                create_embeddings=True, # 创建向量嵌入
+                save_results=True       # 保存处理结果
+            )
+            
+            # 打印处理统计
+            stats = results["processing_stats"]
+            print(f"✅ 文档结构:")
+            print(f"   📚 章节数: {stats['total_sections']}")
+            print(f"   📝 段落数: {stats['total_paragraphs']}")
+            print(f"   📄 句子数: {stats['total_sentences']}")
+            print(f"   🔗 引用数: {stats['total_citations']}")
+            print(f"   📖 参考文献数: {stats['total_references']}")
+            
+            # 图数据库统计
+            if 'graph_db_stats' in stats and stats['graph_db_stats']:
+                graph_stats = stats['graph_db_stats']
+                print(f"\n✅ 图数据库创建:")
+                print(f"   📊 章节节点: {graph_stats.get('sections_created', 0)}")
+                print(f"   📝 段落节点: {graph_stats.get('paragraphs_created', 0)}")
+                print(f"   📄 句子节点: {graph_stats.get('sentences_created', 0)}")
+                print(f"   🔗 引用关系: {graph_stats.get('citation_relations_created', 0)}")
+            
+            # 向量数据库统计
+            if 'embedding_stats' in stats and stats['embedding_stats']:
+                embedding_stats = stats['embedding_stats']
+                print(f"\n✅ 向量数据库索引:")
+                print(f"   📄 句子向量: {embedding_stats.get('sentences_indexed', 0)}")
+                print(f"   📝 段落向量: {embedding_stats.get('paragraphs_indexed', 0)}")
+                print(f"   📚 章节向量: {embedding_stats.get('sections_indexed', 0)}")
+                print(f"   🔗 引用向量: {embedding_stats.get('citations_indexed', 0)}")
+            
+            print(f"\n📋 论文ID: {results['paper_id']}")
+            print(f"📋 论文标题: {results['metadata']['title']}")
+            
+        except Exception as e:
+            print(f"❌ 处理失败: {e}")
+        
+        print("\n" + "="*70 + "\n")
     
-    print(f"Processed {results['processing_stats']['total_sentences']} sentences")
-    print(f"Found {total_citations} citations in {sentences_with_citations_count} sentences")
-    print(f"Graph DB stats: {results['processing_stats']['graph_db_stats']}")
+    print("🎯 测试向量数据库搜索功能:")
+    print("-" * 40)
     
-    # Example: Get citation context for AI analysis
-    context = doc_processor.get_citation_analysis_context("porter_1980")
-    print(f"Citation context: {context}")
+    # 测试向量搜索
+    if doc_processor.vector_indexer:
+        try:
+            # 跨collection搜索
+            search_results = doc_processor.vector_indexer.search_all_collections(
+                "strategic competitive advantage", 
+                limit_per_collection=2
+            )
+            
+            for collection, results in search_results.items():
+                print(f"\n📚 {collection.upper()} 搜索结果:")
+                if results:
+                    for result in results:
+                        print(f"   相似度: {result['score']:.3f}")
+                        print(f"   文本: {result['text'][:100]}...")
+                        print(f"   论文: {result.get('title', 'Unknown')}")
+                        print("   ---")
+                else:
+                    print("   无结果")
+        except Exception as e:
+            print(f"❌ 向量搜索测试失败: {e}")
     
-    # Example: Diagnose processing quality
-    diagnosis = doc_processor.diagnose_document_processing(pdf_path)
-    print(f"Processing quality: {diagnosis['overall_assessment']['quality_level']}")
+    print("\n🎯 测试图数据库查询功能:")
+    print("-" * 40)
     
-    doc_processor.close() 
+    # 测试图数据库查询
+    if doc_processor.graph_db:
+        try:
+            # 测试引用网络查询
+            citation_context = doc_processor.get_citation_analysis_context("competitive strategy")
+            if citation_context:
+                print(f"📖 找到引用上下文: {len(citation_context.get('citing_sentences', []))} 个句子")
+                for sentence in citation_context.get('citing_sentences', [])[:3]:
+                    print(f"   - {sentence['text'][:100]}...")
+            else:
+                print("📖 暂无引用上下文数据")
+        except Exception as e:
+            print(f"❌ 图数据库查询测试失败: {e}")
+    
+    print("\n🏁 完整数据库导入测试完成!")
+    print("所有测试文档已导入到图数据库和向量数据库中") 

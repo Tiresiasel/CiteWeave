@@ -447,6 +447,501 @@ class PDFProcessor:
         
         return text
 
+    def extract_document_structure(self, pdf_path: str) -> Dict:
+        """
+        提取PDF文档的真实结构信息，包括段落和章节分割
+        
+        Returns:
+            Dict containing:
+            - sections: List of sections with their content
+            - paragraphs: List of paragraphs with metadata
+            - raw_text_blocks: Original text blocks from PDF
+        """
+        try:
+            if HAS_PYMUPDF:
+                return self._extract_structure_with_pymupdf(pdf_path)
+            elif HAS_PDFPLUMBER:
+                return self._extract_structure_with_pdfplumber(pdf_path)
+            else:
+                # Fallback to basic text extraction with heuristic parsing
+                return self._extract_structure_fallback(pdf_path)
+        except Exception as e:
+            logging.error(f"Failed to extract document structure: {e}")
+            return {"sections": [], "paragraphs": [], "raw_text_blocks": []}
+    
+    def _extract_structure_with_pymupdf(self, pdf_path: str) -> Dict:
+        """使用PyMuPDF提取文档结构"""
+        doc = fitz.open(pdf_path)
+        sections = []
+        paragraphs = []
+        raw_text_blocks = []
+        
+        current_section = None
+        section_index = 0
+        paragraph_index = 0
+        
+        for page_num in range(len(doc)):
+            page = doc[page_num]
+            
+            # 获取页面的文本块信息，包含字体、位置等
+            blocks = page.get_text("dict")["blocks"]
+            
+            for block in blocks:
+                if "lines" not in block:  # 跳过图像块
+                    continue
+                
+                # 提取块中的文本和格式信息
+                block_text = ""
+                font_sizes = []
+                
+                for line in block["lines"]:
+                    line_text = ""
+                    for span in line["spans"]:
+                        text = span["text"].strip()
+                        font_size = span["size"]
+                        font_sizes.append(font_size)
+                        line_text += text + " "
+                    block_text += line_text.strip() + "\n"
+                
+                block_text = block_text.strip()
+                if not block_text:
+                    continue
+                
+                # 分析文本块是否为标题/章节
+                avg_font_size = sum(font_sizes) / len(font_sizes) if font_sizes else 12
+                is_heading = self._is_heading_block(block_text, avg_font_size, font_sizes)
+                
+                raw_text_blocks.append({
+                    "text": block_text,
+                    "page": page_num,
+                    "font_size": avg_font_size,
+                    "is_heading": is_heading,
+                    "bbox": block.get("bbox", [])
+                })
+                
+                # 根据分析结果分类
+                if is_heading:
+                    # 创建新章节
+                    if current_section:
+                        sections.append(current_section)
+                    
+                    current_section = {
+                        "id": f"section_{section_index}",
+                        "title": block_text,
+                        "text": "",
+                        "index": section_index,
+                        "section_type": self._classify_section_type(block_text),
+                        "paragraphs": [],
+                        "page_start": page_num
+                    }
+                    section_index += 1
+                
+                else:
+                    # 处理段落内容
+                    paragraphs_in_block = self._split_block_into_paragraphs(block_text, paragraph_index, page_num)
+                    
+                    for para in paragraphs_in_block:
+                        # 确定段落所属章节
+                        section_name = current_section["title"] if current_section else "Unknown"
+                        para["section"] = section_name
+                        
+                        paragraphs.append(para)
+                        
+                        if current_section:
+                            current_section["paragraphs"].append(para)
+                            current_section["text"] += para["text"] + "\n\n"
+                        
+                        paragraph_index += 1
+        
+        # 添加最后一个章节
+        if current_section:
+            sections.append(current_section)
+        
+        doc.close()
+        
+        # 完善章节信息
+        for section in sections:
+            section["paragraph_count"] = len(section["paragraphs"])
+            section["text"] = section["text"].strip()
+        
+        return {
+            "sections": sections,
+            "paragraphs": paragraphs,
+            "raw_text_blocks": raw_text_blocks
+        }
+    
+    def _extract_structure_with_pdfplumber(self, pdf_path: str) -> Dict:
+        """使用pdfplumber提取文档结构"""
+        import pdfplumber
+        
+        sections = []
+        paragraphs = []
+        raw_text_blocks = []
+        
+        current_section = None
+        section_index = 0
+        paragraph_index = 0
+        
+        with pdfplumber.open(pdf_path) as pdf:
+            for page_num, page in enumerate(pdf.pages):
+                # 提取文本和字符信息
+                chars = page.chars
+                
+                if not chars:
+                    continue
+                
+                # 按行分组字符
+                lines = self._group_chars_into_lines(chars)
+                
+                # 按段落分组行
+                text_blocks = self._group_lines_into_blocks(lines)
+                
+                for block in text_blocks:
+                    block_text = block["text"].strip()
+                    if not block_text:
+                        continue
+                    
+                    # 分析是否为标题
+                    is_heading = self._is_heading_block_pdfplumber(block)
+                    
+                    raw_text_blocks.append({
+                        "text": block_text,
+                        "page": page_num,
+                        "font_size": block.get("avg_font_size", 12),
+                        "is_heading": is_heading,
+                        "bbox": block.get("bbox", [])
+                    })
+                    
+                    if is_heading:
+                        # 创建新章节
+                        if current_section:
+                            sections.append(current_section)
+                        
+                        current_section = {
+                            "id": f"section_{section_index}",
+                            "title": block_text,
+                            "text": "",
+                            "index": section_index,
+                            "section_type": self._classify_section_type(block_text),
+                            "paragraphs": [],
+                            "page_start": page_num
+                        }
+                        section_index += 1
+                    
+                    else:
+                        # 处理段落
+                        paragraphs_in_block = self._split_block_into_paragraphs(block_text, paragraph_index, page_num)
+                        
+                        for para in paragraphs_in_block:
+                            section_name = current_section["title"] if current_section else "Unknown"
+                            para["section"] = section_name
+                            
+                            paragraphs.append(para)
+                            
+                            if current_section:
+                                current_section["paragraphs"].append(para)
+                                current_section["text"] += para["text"] + "\n\n"
+                            
+                            paragraph_index += 1
+        
+        # 添加最后一个章节
+        if current_section:
+            sections.append(current_section)
+        
+        # 完善章节信息
+        for section in sections:
+            section["paragraph_count"] = len(section["paragraphs"])
+            section["text"] = section["text"].strip()
+        
+        return {
+            "sections": sections,
+            "paragraphs": paragraphs,
+            "raw_text_blocks": raw_text_blocks
+        }
+    
+    def _is_heading_block(self, text: str, avg_font_size: float, font_sizes: List[float]) -> bool:
+        """判断文本块是否为标题"""
+        text = text.strip()
+        
+        # 空文本不是标题
+        if not text:
+            return False
+        
+        # 长度判断：标题通常较短
+        if len(text) > 200:
+            return False
+        
+        # 字体大小判断：标题通常字体较大
+        font_size_threshold = 13  # 可调节
+        if avg_font_size > font_size_threshold:
+            return True
+        
+        # 模式匹配：常见标题模式
+        heading_patterns = [
+            r'^\d+\.?\s+[A-Z]',  # "1. Introduction", "2 Methods"
+            r'^[A-Z][A-Z\s]+$',  # "INTRODUCTION", "METHODOLOGY"
+            r'^[A-Z][a-z]+(\s+[A-Z][a-z]+)*$',  # "Introduction", "Literature Review"
+            r'^\d+\.\d+\.?\s+[A-Z]',  # "1.1 Background"
+            r'^Abstract$|^Introduction$|^Conclusion$|^References$|^Methodology$',  # 常见章节名
+        ]
+        
+        for pattern in heading_patterns:
+            if re.match(pattern, text):
+                return True
+        
+        # 行数判断：标题通常只有1-2行
+        lines = text.split('\n')
+        if len(lines) <= 2 and all(len(line.strip()) < 100 for line in lines):
+            # 检查是否包含标题关键词
+            title_keywords = ['introduction', 'background', 'method', 'result', 'conclusion', 
+                            'discussion', 'literature', 'analysis', 'findings', 'summary']
+            text_lower = text.lower()
+            if any(keyword in text_lower for keyword in title_keywords):
+                return True
+        
+        return False
+    
+    def _is_heading_block_pdfplumber(self, block: Dict) -> bool:
+        """pdfplumber版本的标题判断"""
+        text = block["text"].strip()
+        avg_font_size = block.get("avg_font_size", 12)
+        
+        # 基本判断
+        if not text or len(text) > 200:
+            return False
+        
+        # 字体大小判断
+        if avg_font_size > 13:
+            return True
+        
+        # 模式匹配（同上）
+        heading_patterns = [
+            r'^\d+\.?\s+[A-Z]',
+            r'^[A-Z][A-Z\s]+$',
+            r'^[A-Z][a-z]+(\s+[A-Z][a-z]+)*$',
+            r'^\d+\.\d+\.?\s+[A-Z]',
+            r'^Abstract$|^Introduction$|^Conclusion$|^References$|^Methodology$',
+        ]
+        
+        return any(re.match(pattern, text) for pattern in heading_patterns)
+    
+    def _classify_section_type(self, title: str) -> str:
+        """根据标题分类章节类型"""
+        title_lower = title.lower()
+        
+        if any(keyword in title_lower for keyword in ['abstract']):
+            return 'abstract'
+        elif any(keyword in title_lower for keyword in ['introduction', 'background']):
+            return 'introduction'
+        elif any(keyword in title_lower for keyword in ['literature', 'related work', 'prior']):
+            return 'literature_review'
+        elif any(keyword in title_lower for keyword in ['method', 'approach', 'design']):
+            return 'methodology'
+        elif any(keyword in title_lower for keyword in ['result', 'finding', 'analysis']):
+            return 'results'
+        elif any(keyword in title_lower for keyword in ['discussion']):
+            return 'discussion'
+        elif any(keyword in title_lower for keyword in ['conclusion', 'summary']):
+            return 'conclusion'
+        elif any(keyword in title_lower for keyword in ['reference', 'bibliography']):
+            return 'references'
+        else:
+            return 'other'
+    
+    def _split_block_into_paragraphs(self, block_text: str, start_index: int, page_num: int) -> List[Dict]:
+        """将文本块分割为段落"""
+        paragraphs = []
+        
+        # 按空行分割段落
+        raw_paragraphs = re.split(r'\n\s*\n', block_text)
+        
+        for i, para_text in enumerate(raw_paragraphs):
+            para_text = para_text.strip()
+            if not para_text or len(para_text) < 20:  # 跳过太短的段落
+                continue
+            
+            # 清理段落文本
+            para_text = re.sub(r'\s+', ' ', para_text)  # 标准化空格
+            para_text = re.sub(r'-\s*\n\s*', '', para_text)  # 移除连字符换行
+            
+            paragraph = {
+                "id": f"para_{start_index + i}",
+                "text": para_text,
+                "index": start_index + i,
+                "page": page_num,
+                "word_count": len(para_text.split()),
+                "char_count": len(para_text),
+                "citation_count": 0,  # 将在后续处理中更新
+                "sentence_count": len(re.split(r'[.!?]+', para_text))
+            }
+            
+            paragraphs.append(paragraph)
+        
+        return paragraphs
+    
+    def _group_chars_into_lines(self, chars: List[Dict]) -> List[Dict]:
+        """将字符分组为行（pdfplumber专用）"""
+        if not chars:
+            return []
+        
+        # 按y坐标分组字符
+        lines = {}
+        for char in chars:
+            y = round(char['y0'], 1)  # 四舍五入到小数点后1位
+            if y not in lines:
+                lines[y] = []
+            lines[y].append(char)
+        
+        # 转换为列表并排序
+        line_list = []
+        for y in sorted(lines.keys(), reverse=True):  # 从上到下
+            line_chars = sorted(lines[y], key=lambda c: c['x0'])  # 从左到右
+            line_text = ''.join(char['text'] for char in line_chars)
+            
+            if line_text.strip():
+                line_list.append({
+                    "text": line_text,
+                    "y": y,
+                    "chars": line_chars,
+                    "font_sizes": [char.get('size', 12) for char in line_chars]
+                })
+        
+        return line_list
+    
+    def _group_lines_into_blocks(self, lines: List[Dict]) -> List[Dict]:
+        """将行分组为文本块"""
+        if not lines:
+            return []
+        
+        blocks = []
+        current_block = None
+        
+        for line in lines:
+            # 判断是否开始新块（基于行间距）
+            if current_block is None:
+                current_block = {
+                    "text": line["text"],
+                    "lines": [line],
+                    "font_sizes": line["font_sizes"]
+                }
+            else:
+                # 计算行间距
+                prev_y = current_block["lines"][-1]["y"]
+                curr_y = line["y"]
+                line_spacing = abs(prev_y - curr_y)
+                
+                # 如果行间距过大，开始新块
+                if line_spacing > 20:  # 可调节的阈值
+                    # 完成当前块
+                    self._finalize_block(current_block)
+                    blocks.append(current_block)
+                    
+                    # 开始新块
+                    current_block = {
+                        "text": line["text"],
+                        "lines": [line],
+                        "font_sizes": line["font_sizes"]
+                    }
+                else:
+                    # 添加到当前块
+                    current_block["text"] += "\n" + line["text"]
+                    current_block["lines"].append(line)
+                    current_block["font_sizes"].extend(line["font_sizes"])
+        
+        # 添加最后一个块
+        if current_block:
+            self._finalize_block(current_block)
+            blocks.append(current_block)
+        
+        return blocks
+    
+    def _finalize_block(self, block: Dict):
+        """完善文本块信息"""
+        if block["font_sizes"]:
+            block["avg_font_size"] = sum(block["font_sizes"]) / len(block["font_sizes"])
+        else:
+            block["avg_font_size"] = 12
+    
+    def _extract_structure_fallback(self, pdf_path: str) -> Dict:
+        """备用结构提取方法"""
+        # 使用现有的文本提取方法
+        full_text, _ = self.extract_text_with_best_engine(pdf_path)
+        
+        # 基于启发式规则分割章节和段落
+        sections = []
+        paragraphs = []
+        
+        # 简单的章节分割
+        section_patterns = [
+            r'\n\s*(\d+\.?\s+[A-Z][^\n]{5,50})\s*\n',
+            r'\n\s*([A-Z][A-Z\s]{5,30})\s*\n',
+            r'\n\s*(Abstract|Introduction|Methodology|Results|Discussion|Conclusion|References)\s*\n'
+        ]
+        
+        current_pos = 0
+        section_index = 0
+        
+        for pattern in section_patterns:
+            matches = list(re.finditer(pattern, full_text, re.IGNORECASE))
+            
+            for match in matches:
+                section_title = match.group(1).strip()
+                section_start = match.end()
+                
+                # 找到下一个章节的开始
+                next_match = None
+                for next_pattern in section_patterns:
+                    next_matches = list(re.finditer(next_pattern, full_text[section_start:], re.IGNORECASE))
+                    if next_matches:
+                        if next_match is None or next_matches[0].start() < next_match.start():
+                            next_match = next_matches[0]
+                
+                if next_match:
+                    section_end = section_start + next_match.start()
+                else:
+                    section_end = len(full_text)
+                
+                section_text = full_text[section_start:section_end].strip()
+                
+                # 分割段落
+                section_paragraphs = []
+                para_texts = re.split(r'\n\s*\n', section_text)
+                
+                for i, para_text in enumerate(para_texts):
+                    para_text = para_text.strip()
+                    if len(para_text) > 50:  # 只保留有意义的段落
+                        para = {
+                            "id": f"para_{len(paragraphs)}",
+                            "text": para_text,
+                            "index": len(paragraphs),
+                            "section": section_title,
+                            "word_count": len(para_text.split()),
+                            "char_count": len(para_text),
+                            "citation_count": 0,
+                            "sentence_count": len(re.split(r'[.!?]+', para_text))
+                        }
+                        paragraphs.append(para)
+                        section_paragraphs.append(para)
+                
+                section = {
+                    "id": f"section_{section_index}",
+                    "title": section_title,
+                    "text": section_text,
+                    "index": section_index,
+                    "section_type": self._classify_section_type(section_title),
+                    "paragraphs": section_paragraphs,
+                    "paragraph_count": len(section_paragraphs)
+                }
+                
+                sections.append(section)
+                section_index += 1
+        
+        return {
+            "sections": sections,
+            "paragraphs": paragraphs,
+            "raw_text_blocks": []
+        }
+
     def parse_sentences(self, pdf_path: str) -> List[str]:
         """
         Enhanced sentence parsing with content filtering and quality control.

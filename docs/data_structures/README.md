@@ -68,7 +68,7 @@ graph TD
 ## 🧬 Embedding Database Structure (Qdrant/VectorDB)
 
 ### Collections
-- `claims`：句子/claim级向量
+- `sentences`：句子级向量（原claims collection）
 - `paragraphs`：段落级向量
 - `sections`：章节级向量
 - `citations`：引用文本向量
@@ -81,7 +81,7 @@ graph TD
 - `paper_id`: string (与Graph中的Paper节点id一致)
 - `sentence_index`/`paragraph_index`/`section_index`: int
 - `text`: string (原始文本)
-- `claim_type`: string (如有)
+- `sentence_type`: string (如有，原claim_type)
 - `title`: string
 - `authors`: list of string
 - `year`: string/int
@@ -96,14 +96,14 @@ graph TD
 ### 结构示意
 
 ```text
-collection: claims
+collection: sentences
   - id: uuid
     vector: [float, ...] (384维)
     payload:
       paper_id: "..."
       sentence_index: 0
       text: "..."
-      claim_type: "..."
+      sentence_type: "..."
       title: "..."
       authors: ["..."]
       year: "..."

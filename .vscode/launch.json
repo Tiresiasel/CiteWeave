@@ -2,10 +2,25 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: Document Processor",
-      "type": "python",
+      "name": "Python: Debug CiteWeave",
+      "type": "debugpy",
       "request": "launch",
-      "program": "${workspaceFolder}/src/document_processor.py",
+      "program": "${file}",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      },
+      "args": [],
+      "justMyCode": false
+    },
+    {
+      "name": "Python: Module (src)",
+      "type": "debugpy", 
+      "request": "launch",
+      "module": "src.${fileBasenameNoExtension}",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
       "env": {
         "PYTHONPATH": "${workspaceFolder}"
       }

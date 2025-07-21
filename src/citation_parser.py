@@ -12,6 +12,7 @@ import requests
 from lxml import etree
 import logging
 import hashlib
+from src.paper_id_utils import PaperIDGenerator
 
 logging.basicConfig(level=logging.INFO)
 
@@ -25,6 +26,7 @@ class CitationParser:
             full_doc_text = full_doc_text.decode("utf-8", errors="ignore")
         self.full_doc_text = full_doc_text
         self.references = references or self._extract_references_with_grobid()
+        self.paper_id_generator = PaperIDGenerator()
 
     def _extract_references_with_grobid(self) -> List[Dict[str, str]]:
         with open(self.pdf_path, "rb") as f:
@@ -476,14 +478,9 @@ class CitationParser:
     
     def _generate_paper_id(self, title: str, year: str) -> str:
         """
-        Generate a unique paper ID based on the SHA256 hash of the combined paper name and year.
+        Generate a unique paper ID using the unified PaperIDGenerator.
         """
-        title = re.sub(r"[^\w\s]", "", title)       # remove punctuation
-        title = re.sub(r"\s+", " ", title).strip()  # normalize whitespace
-        combined_str = f"{title}_{year}"
-        combined_str = combined_str.lower() # lower_case
-        hash_sha256 = hashlib.sha256(combined_str.encode("utf-8")).hexdigest()
-        return hash_sha256
+        return self.paper_id_generator.generate_paper_id(title, year)
 
     def parse_sentence(self, sentence: str) -> List[Dict[str, str]]:
         """
@@ -495,7 +492,10 @@ class CitationParser:
         for intext in intext_citations:
             matched_ref = self.match_intext_to_reference(intext)
             if matched_ref:
-                paper_id = self._generate_paper_id(matched_ref["title"], matched_ref["year"])
+                paper_id = self._generate_paper_id(
+                    matched_ref["title"], 
+                    matched_ref["year"]
+                )
                 mappings.append({"intext": intext, "reference": matched_ref, "paper_id": paper_id})
         return mappings
 

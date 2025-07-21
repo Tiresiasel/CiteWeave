@@ -8,7 +8,7 @@ are uploaded directly or referenced in citations.
 Key Features:
 - Consistent hashing algorithm for paper IDs
 - Support for generating IDs from minimal citation information
-- Normalization of title and author information
+- Normalization of title and year information
 - Fallback mechanisms for incomplete data
 """
 
@@ -23,6 +23,7 @@ class PaperIDGenerator:
     
     This class ensures consistent paper identification across the system,
     whether papers are directly uploaded or referenced in citations.
+    Paper IDs are generated based on normalized title and year only.
     """
     
     @staticmethod
@@ -105,7 +106,7 @@ class PaperIDGenerator:
     def generate_paper_id(cls, title: str, year: Union[str, int], 
                          authors: Optional[Union[List[str], str]] = None) -> str:
         """
-        Generate a unique paper ID based on title, year, and optionally authors.
+        Generate a unique paper ID based on title and year.
         
         This method ensures consistent paper identification across the system,
         whether papers are uploaded directly or referenced in citations.
@@ -113,7 +114,7 @@ class PaperIDGenerator:
         Args:
             title: Paper title
             year: Publication year
-            authors: Author list (optional, used for disambiguation)
+            authors: Author list (ignored for ID generation)
             
         Returns:
             str: SHA256 hash of normalized paper information
@@ -122,15 +123,8 @@ class PaperIDGenerator:
         norm_title = cls.normalize_title(title)
         norm_year = cls.normalize_year(year)
         
-        # Create base string for hashing
+        # Create string for hashing (title + year only)
         combined_str = f"{norm_title}_{norm_year}"
-        
-        # Add authors for disambiguation if available
-        if authors:
-            norm_authors = cls.normalize_authors(authors)
-            # Use only first author for ID generation to avoid ambiguity
-            first_author = norm_authors[0] if norm_authors else "unknown_author"
-            combined_str = f"{norm_title}_{norm_year}_{first_author}"
         
         # Generate SHA256 hash
         hash_sha256 = hashlib.sha256(combined_str.encode("utf-8")).hexdigest()
@@ -146,16 +140,15 @@ class PaperIDGenerator:
         
         Args:
             citation_info: Dictionary containing citation information
-                Expected keys: 'title', 'year', 'authors' (optional)
+                Expected keys: 'title', 'year'
                 
         Returns:
             str: Generated paper ID
         """
         title = citation_info.get("title", "")
         year = citation_info.get("year", "")
-        authors = citation_info.get("authors", [])
         
-        return cls.generate_paper_id(title, year, authors)
+        return cls.generate_paper_id(title, year)
     
     @classmethod
     def generate_from_reference(cls, reference: Dict) -> str:
@@ -166,7 +159,7 @@ class PaperIDGenerator:
         
         Args:
             reference: Dictionary containing reference information
-                Expected keys: 'title', 'year', 'authors'
+                Expected keys: 'title', 'year'
                 
         Returns:
             str: Generated paper ID
@@ -205,20 +198,18 @@ class PaperIDGenerator:
         return len(paper_id) == 64 and all(c in '0123456789abcdef' for c in paper_id.lower())
 
 
-def generate_paper_id(title: str, year: Union[str, int], 
-                     authors: Optional[Union[List[str], str]] = None) -> str:
+def generate_paper_id(title: str, year: Union[str, int]) -> str:
     """
     Convenience function for generating paper IDs.
     
     Args:
         title: Paper title
         year: Publication year
-        authors: Author list (optional)
         
     Returns:
         str: Generated paper ID
     """
-    return PaperIDGenerator.generate_paper_id(title, year, authors)
+    return PaperIDGenerator.generate_paper_id(title, year)
 
 
 # Backward compatibility - maintain the original function signature
@@ -256,11 +247,10 @@ if __name__ == "__main__":
     for case in test_cases:
         paper_id = generator.generate_paper_id(
             case["title"], 
-            case["year"], 
-            case["authors"]
+            case["year"]
         )
         print(f"Title: {case['title']}")
         print(f"Year: {case['year']}")
-        print(f"Authors: {case['authors']}")
+        print(f"Authors: {case['authors']} (ignored for ID generation)")
         print(f"Paper ID: {paper_id}")
         print("-" * 30) 
