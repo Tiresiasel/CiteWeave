@@ -1,15 +1,25 @@
 # Unified Document Processing Data Structures
 
+## 🔄 **NEW PARALLEL STRUCTURE (2025)**
+
+### Key Architectural Changes
+- **Three Parallel Arrays**: `sections[]`, `paragraphs[]`, `sentences[]`
+- **Unified Citation Format**: Consistent citation structure across all levels
+- **PDF Structure Aware**: Real document structure from PDF parsing
+- **No Nesting**: Flat structure for better performance and querying
+
 ## DocumentProcessor Core Data Structures
 
-### 1. Complete Processing Result
+### 1. Complete Processing Result (NEW FORMAT)
 
 ```json
 {
-  "metadata": "object - document metadata",
-  "paper_id": "string - unique paper identifier",
-  "sentences_with_citations": ["object - sentence-level analysis results list"],
-  "processing_stats": "object - processing statistics"
+  "metadata": "object - enhanced document metadata",
+  "paper_id": "string - unique paper identifier", 
+  "sections": ["object - section-level analysis results"],
+  "paragraphs": ["object - paragraph-level analysis results"],
+  "sentences": ["object - sentence-level analysis results"],
+  "processing_stats": "object - enhanced processing statistics"
 }
 ```
 
@@ -21,29 +31,83 @@
     "authors": ["Jan W. Rivkin"],
     "year": "2000",
     "doi": "10.1287/mnsc.46.6.824.11940",
-    "journal": "Management Science"
+    "journal": "Management Science",
+    "publisher": "INFORMS",
+    "volume": "46",
+    "issue": "6",
+    "pages": "824-844"
   },
   "paper_id": "sha256_hash_of_title_year",
-  "sentences_with_citations": [
+  "sections": [
+    {
+      "section_index": 2,
+      "section_title": "Literature Review",
+      "section_text": "Prior research on strategy imitation...",
+      "section_type": "literature_review",
+      "citations": [
+        {
+          "intext": "(Porter, 1980)",
+          "reference": {
+            "authors": ["Michael E. Porter"],
+            "title": "Competitive Strategy",
+            "year": "1980",
+            "publisher": "Free Press"
+          },
+          "paper_id": "abc123..."
+        }
+      ],
+      "word_count": 450,
+      "char_count": 2890,
+      "paragraph_count": 3
+    }
+  ],
+  "paragraphs": [
+    {
+      "paragraph_index": 15,
+      "paragraph_text": "Porter (1980) argues that competitive advantage stems from strategic positioning.",
+      "section": "Literature Review",
+      "citations": [
+        {
+          "intext": "(Porter, 1980)",
+          "reference": {...},
+          "paper_id": "abc123..."
+        }
+      ],
+      "word_count": 12,
+      "char_count": 89,
+      "sentence_count": 1,
+      "citation_count": 1,
+      "has_citations": true,
+      "page": 3
+    }
+  ],
+  "sentences": [
     {
       "sentence_index": 42,
       "sentence_text": "Porter (1980) argues that competitive advantage stems from strategic positioning.",
-      "has_citations": true,
-      "citations": [...],
-      "argument_analysis": {...},
+      "citations": [
+        {
+          "intext": "(Porter, 1980)",
+          "reference": {...},
+          "paper_id": "abc123..."
+        }
+      ],
       "word_count": 12,
       "char_count": 89
     }
   ],
   "processing_stats": {
+    "total_sections": 8,
+    "total_paragraphs": 156,
     "total_sentences": 644,
     "sentences_with_citations": 38,
+    "paragraphs_with_citations": 32,
+    "sections_with_citations": 6,
     "total_citations": 43,
     "total_references": 85,
-    "sentences_with_argument_relations": 15,
-    "total_argument_relations": 18,
-    "argument_classification_enabled": true,
-    "processing_timestamp": "2025-01-15T14:30:00.000Z"
+    "processing_timestamp": "2025-01-15T14:30:00.000Z",
+    "graph_db_stats": {...},
+    "embedding_stats": {...}
   }
 }
 ```

@@ -11,7 +11,7 @@ from typing import List, Dict, Optional
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from sentence_transformers import SentenceTransformer
-from src.paper_id_utils import PaperIDGenerator
+from paper_id_utils import PaperIDGenerator
 
 
 class VectorIndexer:

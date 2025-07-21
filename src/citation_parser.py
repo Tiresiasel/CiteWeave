@@ -162,36 +162,36 @@ class CitationParser:
         name_pattern = f"{basic_name_chars}+(?:\\s+{basic_name_chars}+)*"
         
         # Define patterns with different prefixes
-        # Pattern 1: Common sentence-starting prefixes
+        # Pattern 1: Common sentence-starting prefixes (including page numbers)
         sentence_prefix_patterns = [
-            rf"(?:^|\.\s+)(?:according\s+to\s+|while\s+)({name_pattern})\s+\((\d{{4}}[a-z]?)\)",
-            rf"(?:^|\.\s+)(?:according\s+to\s+|while\s+)({name_pattern}(?:,\s*{name_pattern})*,\s*(?:and|&)\s*{name_pattern})\s+\((\d{{4}}[a-z]?)\)",
-            rf"(?:^|\.\s+)(?:according\s+to\s+|while\s+)({name_pattern}\s+(?:and|&)\s+{name_pattern})\s+\((\d{{4}}[a-z]?)\)",
-            rf"(?:^|\.\s+)(?:according\s+to\s+|while\s+)({name_pattern}(?:\s+et\s+al\.?))\s+\((\d{{4}}[a-z]?)\)",
+            rf"(?:^|\.\s+)(?:according\s+to\s+|while\s+)({name_pattern})\s+\((\d{{4}}[a-z]?)(?::\s*[^)]+)?\)",
+            rf"(?:^|\.\s+)(?:according\s+to\s+|while\s+)({name_pattern}(?:,\s*{name_pattern})*,\s*(?:and|&)\s*{name_pattern})\s+\((\d{{4}}[a-z]?)(?::\s*[^)]+)?\)",
+            rf"(?:^|\.\s+)(?:according\s+to\s+|while\s+)({name_pattern}\s+(?:and|&)\s+{name_pattern})\s+\((\d{{4}}[a-z]?)(?::\s*[^)]+)?\)",
+            rf"(?:^|\.\s+)(?:according\s+to\s+|while\s+)({name_pattern}(?:\s+et\s+al\.?))\s+\((\d{{4}}[a-z]?)(?::\s*[^)]+)?\)",
         ]
         
-        # Pattern 2: "X by Y" patterns that can appear anywhere
+        # Pattern 2: "X by Y" patterns that can appear anywhere (including page numbers)
         by_prefix_patterns = [
-            rf"(?:research|work|study|studies|analysis|findings?|recent\s+work|recent\s+studies?|as\s+noted)\s+by\s+({name_pattern})\s+\((\d{{4}}[a-z]?)\)",
-            rf"(?:research|work|study|studies|analysis|findings?|recent\s+work|recent\s+studies?|as\s+noted)\s+by\s+({name_pattern}(?:,\s*{name_pattern})*,\s*(?:and|&)\s*{name_pattern})\s+\((\d{{4}}[a-z]?)\)",
-            rf"(?:research|work|study|studies|analysis|findings?|recent\s+work|recent\s+studies?|as\s+noted)\s+by\s+({name_pattern}\s+(?:and|&)\s+{name_pattern})\s+\((\d{{4}}[a-z]?)\)",
-            rf"(?:research|work|study|studies|analysis|findings?|recent\s+work|recent\s+studies?|as\s+noted)\s+by\s+({name_pattern}(?:\s+et\s+al\.?))\s+\((\d{{4}}[a-z]?)\)",
+            rf"(?:research|work|study|studies|analysis|findings?|recent\s+work|recent\s+studies?|as\s+noted)\s+by\s+({name_pattern})\s+\((\d{{4}}[a-z]?)(?::\s*[^)]+)?\)",
+            rf"(?:research|work|study|studies|analysis|findings?|recent\s+work|recent\s+studies?|as\s+noted)\s+by\s+({name_pattern}(?:,\s*{name_pattern})*,\s*(?:and|&)\s*{name_pattern})\s+\((\d{{4}}[a-z]?)(?::\s*[^)]+)?\)",
+            rf"(?:research|work|study|studies|analysis|findings?|recent\s+work|recent\s+studies?|as\s+noted)\s+by\s+({name_pattern}\s+(?:and|&)\s+{name_pattern})\s+\((\d{{4}}[a-z]?)(?::\s*[^)]+)?\)",
+            rf"(?:research|work|study|studies|analysis|findings?|recent\s+work|recent\s+studies?|as\s+noted)\s+by\s+({name_pattern}(?:\s+et\s+al\.?))\s+\((\d{{4}}[a-z]?)(?::\s*[^)]+)?\)",
         ]
         
-        # Pattern 3: "The X by Y" patterns for longer phrases
+        # Pattern 3: "The X by Y" patterns for longer phrases (including page numbers)
         the_by_patterns = [
-            rf"(?:the\s+(?:methodology|approach|work|study|analysis|findings?)\s+(?:proposed|developed|conducted)\s+by)\s+({name_pattern})\s+\((\d{{4}}[a-z]?)\)",
-            rf"(?:the\s+(?:methodology|approach|work|study|analysis|findings?)\s+(?:proposed|developed|conducted)\s+by)\s+({name_pattern}(?:,\s*{name_pattern})*,\s*(?:and|&)\s*{name_pattern})\s+\((\d{{4}}[a-z]?)\)",
-            rf"(?:the\s+(?:methodology|approach|work|study|analysis|findings?)\s+(?:proposed|developed|conducted)\s+by)\s+({name_pattern}\s+(?:and|&)\s+{name_pattern})\s+\((\d{{4}}[a-z]?)\)",
-            rf"(?:the\s+(?:methodology|approach|work|study|analysis|findings?)\s+(?:proposed|developed|conducted)\s+by)\s+({name_pattern}(?:\s+et\s+al\.?))\s+\((\d{{4}}[a-z]?)\)",
+            rf"(?:the\s+(?:methodology|approach|work|study|analysis|findings?)\s+(?:proposed|developed|conducted)\s+by)\s+({name_pattern})\s+\((\d{{4}}[a-z]?)(?::\s*[^)]+)?\)",
+            rf"(?:the\s+(?:methodology|approach|work|study|analysis|findings?)\s+(?:proposed|developed|conducted)\s+by)\s+({name_pattern}(?:,\s*{name_pattern})*,\s*(?:and|&)\s*{name_pattern})\s+\((\d{{4}}[a-z]?)(?::\s*[^)]+)?\)",
+            rf"(?:the\s+(?:methodology|approach|work|study|analysis|findings?)\s+(?:proposed|developed|conducted)\s+by)\s+({name_pattern}\s+(?:and|&)\s+{name_pattern})\s+\((\d{{4}}[a-z]?)(?::\s*[^)]+)?\)",
+            rf"(?:the\s+(?:methodology|approach|work|study|analysis|findings?)\s+(?:proposed|developed|conducted)\s+by)\s+({name_pattern}(?:\s+et\s+al\.?))\s+\((\d{{4}}[a-z]?)(?::\s*[^)]+)?\)",
         ]
         
-        # Pattern 4: Standard patterns without prefixes
+        # Pattern 4: Standard patterns without prefixes (including page numbers)
         standard_patterns = [
-            rf"\b({name_pattern}(?:,\s*{name_pattern})*,\s*(?:and|&)\s*{name_pattern})\s+\((\d{{4}}[a-z]?)\)",
-            rf"\b({name_pattern}(?:\s+et\s+al\.?))\s+\((\d{{4}}[a-z]?)\)",
-            rf"\b({name_pattern}\s+(?:and|&)\s+{name_pattern})\s+\((\d{{4}}[a-z]?)\)",
-            rf"\b({name_pattern})\s+\((\d{{4}}[a-z]?)\)",
+            rf"\b({name_pattern}(?:,\s*{name_pattern})*,\s*(?:and|&)\s*{name_pattern})\s+\((\d{{4}}[a-z]?)(?::\s*\w+)?\)",
+            rf"\b({name_pattern}(?:\s+et\s+al\.?))\s+\((\d{{4}}[a-z]?)(?::\s*\w+)?\)",
+            rf"\b({name_pattern}\s+(?:and|&)\s+{name_pattern})\s+\((\d{{4}}[a-z]?)(?::\s*\w+)?\)",
+            rf"\b({name_pattern})\s+\((\d{{4}}[a-z]?)(?::\s*\w+)?\)",
         ]
 
         all_patterns = sentence_prefix_patterns + by_prefix_patterns + the_by_patterns + standard_patterns

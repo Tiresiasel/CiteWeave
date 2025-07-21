@@ -4,7 +4,7 @@
 
 ```
 data/papers/{paper_id}/
-├── processed_document.json      # Complete processing results
+├── processed_document.json      # Complete processing results (NEW PARALLEL STRUCTURE)
 ├── sentences_with_citations.jsonl  # Sentence-level data (line-based)
 ├── metadata.json               # Document metadata
 └── quality_report.json         # Quality diagnosis report (optional)
@@ -16,8 +16,8 @@ Where `paper_id` = SHA256(title + year)
 
 ### 1. processed_document.json
 
-**Purpose**: Complete document processing results, containing all information
-**Format**: Single JSON object
+**Purpose**: Complete document processing results with **PARALLEL STRUCTURE** for sections, paragraphs, and sentences
+**Format**: Single JSON object with unified citation format across all levels
 **Size**: Usually 50KB - 5MB (depending on document length)
 
 ```json
@@ -28,48 +28,127 @@ Where `paper_id` = SHA256(title + year)
     "year": "string", 
     "doi": "string",
     "journal": "string",
-    "abstract": "string"
+    "abstract": "string",
+    "publisher": "string",
+    "volume": "string",
+    "issue": "string",
+    "pages": "string"
   },
   "paper_id": "string",
-  "sentences_with_citations": [
+  "sections": [
+    {
+      "section_index": "number",
+      "section_title": "string",
+      "section_text": "string",
+      "section_type": "string",
+      "citations": [
+        {
+          "intext": "string",
+          "reference": "object",
+          "paper_id": "string"
+        }
+      ],
+      "word_count": "number",
+      "char_count": "number",
+      "paragraph_count": "number"
+    }
+  ],
+  "paragraphs": [
+    {
+      "paragraph_index": "number",
+      "paragraph_text": "string",
+      "section": "string",
+      "citations": [
+        {
+          "intext": "string",
+          "reference": "object", 
+          "paper_id": "string"
+        }
+      ],
+      "word_count": "number",
+      "char_count": "number",
+      "sentence_count": "number",
+      "citation_count": "number",
+      "has_citations": "boolean"
+    }
+  ],
+  "sentences": [
     {
       "sentence_index": "number",
       "sentence_text": "string",
-      "citations": ["object"],
-      "argument_analysis": "object",
+      "citations": [
+        {
+          "intext": "string",
+          "reference": "object",
+          "paper_id": "string"
+        }
+      ],
       "word_count": "number",
       "char_count": "number"
     }
   ],
   "processing_stats": {
+    "total_sections": "number",
+    "total_paragraphs": "number", 
     "total_sentences": "number",
     "sentences_with_citations": "number",
+    "paragraphs_with_citations": "number",
+    "sections_with_citations": "number",
     "total_citations": "number",
     "total_references": "number",
-    "sentences_with_argument_relations": "number",
-    "total_argument_relations": "number",
-    "argument_classification_enabled": "boolean",
-    "processing_timestamp": "string"
+    "processing_timestamp": "string",
+    "graph_db_stats": "object",
+    "embedding_stats": "object"
   }
 }
 ```
 
+## Key Changes in New Parallel Structure
+
+### 🆕 **Unified Citation Format**
+All levels (sections, paragraphs, sentences) now use the **same citation format**:
+
+```json
+{
+  "intext": "(Author, Year)",
+  "reference": {
+    "authors": ["Author Name"],
+    "title": "Paper Title",
+    "year": "Year",
+    "journal": "Journal Name",
+    "publisher": "Publisher",
+    "raw_text": "Full reference text"
+  },
+  "paper_id": "sha256_hash_of_title_and_year"
+}
+```
+
+### 🆕 **Parallel Array Structure**
+- **sections[]**: All document sections with their aggregated citations
+- **paragraphs[]**: All paragraphs with their citations (no longer nested in sections)
+- **sentences[]**: All sentences with their citations
+
+### 🆕 **Enhanced Statistics**
+- `sections_with_citations`: Number of sections containing citations
+- `paragraphs_with_citations`: Number of paragraphs containing citations
+- `sentences_with_citations`: Number of sentences containing citations
+
 ### 2. sentences_with_citations.jsonl
 
-**Purpose**: Sentence-level data, convenient for streaming processing and querying
-**Format**: One JSON object per line (JSONL format)
+**Purpose**: Sentence-level data, convenient for streaming processing and querying  
+**Format**: One JSON object per line (JSONL format) - **UPDATED WITH NEW STRUCTURE**
 **Size**: Usually 10KB - 1MB
 
 ```jsonl
 {"sentence_index": 0, "sentence_text": "Academic research has shown...", "citations": [], "word_count": 8, "char_count": 45}
-{"sentence_index": 1, "sentence_text": "Porter (1980) argues that...", "citations": [{"intext": "Porter (1980)", "reference": {...}}], "argument_analysis": {"relations": ["CITES"], "entities": [...]}, "word_count": 12, "char_count": 89}
+{"sentence_index": 1, "sentence_text": "Porter (1980) argues that...", "citations": [{"intext": "(Porter, 1980)", "reference": {"authors": ["Michael Porter"], "title": "Competitive Strategy", "year": "1980"}, "paper_id": "abc123..."}], "word_count": 12, "char_count": 89}
 {"sentence_index": 2, "sentence_text": "This framework supports...", "citations": [], "word_count": 15, "char_count": 67}
 ```
 
 **Field Descriptions**:
 - `sentence_index`: Sentence index in the document (starting from 0)
 - `sentence_text`: Cleaned sentence text
-- `citations`: List of citations in this sentence (may be empty)
+- `citations`: List of citations using unified format (may be empty)
 - `argument_analysis`: Argument relation analysis (only when enabled and sentence has citations)
 - `word_count`: Word count statistics
 - `char_count`: Character count statistics

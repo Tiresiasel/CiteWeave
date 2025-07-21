@@ -1,0 +1,211 @@
+# 测试图数据库中的句子节点和段落节点
+
+```{python}
+NEO4J_URI = "bolt://localhost:7687"
+NEO4J_USER = "neo4j"
+NEO4J_PASSWORD = "12345678"
+NEO4J_DATABASE = "neo4j"
+
+def query_sample_nodes_and_relationships():
+    driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+    with driver.session(database=NEO4J_DATABASE) as session:
+        
+        print("=== 1. Sample Sentence Nodes ===")
+        sentences = session.run("""
+            MATCH (s:Sentence)
+            RETURN s.id as id, s.text as text, s.sentence_index as idx, s.has_citations as has_citations
+            LIMIT 5
+        """)
+        for record in sentences:
+            print(json.dumps(dict(record), ensure_ascii=False, indent=2))
+
+        print("\n=== 2. Sample Paragraph Nodes ===")
+        paragraphs = session.run("""
+            MATCH (p:Paragraph)
+            RETURN p.id as id, p.text as text, p.section as section, p.paragraph_index as idx
+            LIMIT 5
+        """)
+        for record in paragraphs:
+            print(json.dumps(dict(record), ensure_ascii=False, indent=2))
+
+        print("\n=== 3. Sentence->Paper CITES Relationships ===")
+        sentence_cites = session.run("""
+            MATCH (s:Sentence)-[r:CITES]->(p:Paper)
+            RETURN s.id as sentence_id, p.id as cited_paper_id, p.title as paper_title, 
+                   r.citation_text as citation_text, r.confidence as confidence
+            LIMIT 10
+        """)
+        for record in sentence_cites:
+            print(f"Sentence: {record['sentence_id']}")
+            print(f"  -> CITES Paper: {record['cited_paper_id']} ({record['paper_title']})")
+            print(f"  -> Citation Text: {record['citation_text']}")
+            print(f"  -> Confidence: {record['confidence']}")
+            print()
+
+        print("\n=== 4. Paragraph->Paper CITES Relationships ===")
+        paragraph_cites = session.run("""
+            MATCH (para:Paragraph)-[r:CITES]->(p:Paper)
+            RETURN para.id as paragraph_id, p.id as cited_paper_id, p.title as paper_title,
+                   r.citation_count as citation_count, r.citation_density as citation_density
+            LIMIT 10
+        """)
+        for record in paragraph_cites:
+            print(f"Paragraph: {record['paragraph_id']}")
+            print(f"  -> CITES Paper: {record['cited_paper_id']} ({record['paper_title']})")
+            print(f"  -> Citation Count: {record['citation_count']}")
+            print(f"  -> Citation Density: {record['citation_density']}")
+            print()
+
+        print("\n=== 5. Complete Citation Path: Sentence->Paragraph->Paper ===")
+        complete_path = session.run("""
+            MATCH (s:Sentence)-[:BELONGS_TO]->(para:Paragraph)-[:BELONGS_TO]->(source_paper:Paper)
+            MATCH (s)-[:CITES]->(cited_paper:Paper)
+            RETURN s.id as sentence_id, para.id as paragraph_id, 
+                   source_paper.title as source_paper, cited_paper.title as cited_paper
+            LIMIT 5
+        """)
+        for record in complete_path:
+            print(f"Sentence: {record['sentence_id']}")
+            print(f"  belongs to Paragraph: {record['paragraph_id']}")
+            print(f"  in Paper: {record['source_paper']}")
+            print(f"  cites Paper: {record['cited_paper']}")
+            print()
+
+        print("\n=== 6. Statistics ===")
+        stats = session.run("""
+            MATCH (s:Sentence) WITH count(s) as sentence_count
+            MATCH (p:Paragraph) WITH sentence_count, count(p) as paragraph_count
+            MATCH (paper:Paper) WITH sentence_count, paragraph_count, count(paper) as paper_count
+            MATCH ()-[c:CITES]->() WITH sentence_count, paragraph_count, paper_count, count(c) as cites_count
+            RETURN sentence_count, paragraph_count, paper_count, cites_count
+        """)
+        stats_result = stats.single()
+        print(f"Total Sentences: {stats_result['sentence_count']}")
+        print(f"Total Paragraphs: {stats_result['paragraph_count']}")
+        print(f"Total Papers: {stats_result['paper_count']}")
+        print(f"Total CITES relationships: {stats_result['cites_count']}")
+
+    driver.close()
+
+def query_specific_sentence_citations(sentence_id):
+    """查询特定句子的引用关系"""
+    driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+    with driver.session(database=NEO4J_DATABASE) as session:
+        
+        print(f"\n=== Citations for Sentence: {sentence_id} ===")
+        citations = session.run("""
+            MATCH (s:Sentence {id: $sentence_id})-[r:CITES]->(p:Paper)
+            RETURN p.id as paper_id, p.title as title, p.stub as is_stub,
+                   r.citation_text as citation_text, r.confidence as confidence
+        """, sentence_id=sentence_id)
+        
+        citation_list = []
+        for record in citations:
+            citation_info = dict(record)
+            citation_list.append(citation_info)
+            print(json.dumps(citation_info, ensure_ascii=False, indent=2))
+        
+        if not citation_list:
+            print(f"No citations found for sentence: {sentence_id}")
+        else:
+            print(f"Found {len(citation_list)} citations for this sentence")
+            
+    driver.close()
+    return citation_list
+
+sentence_list = query_all_sentence_nodes()
+paragraph_list = query_all_paragraph_nodes()
+
+sentence_with_citations = [node for node in sentence_list if node['has_citations']]
+paragraph_with_citations = [node for node in paragraph_list if node['has_citations']]
+
+
+
+
+
+
+
+
+
+```
+
+Query sentence id  and its citations
+```{python}
+
+def query_citation_nodes(sentence_id):
+    driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+    with driver.session(database=NEO4J_DATABASE) as session:
+        citations = session.run("""
+            MATCH (s:Sentence)-[:CITES]->(c:Paper)
+            WHERE s.id = $sentence_id
+            RETURN c.id as id, c.text as text
+        """, sentence_id=sentence_id)
+        citation_nodes = []
+        for record in citations:
+            print(json.dumps(dict(record), ensure_ascii=False, indent=2))
+            citation_nodes.append(dict(record))
+        return citation_nodes
+
+citation_nodes = query_citation_nodes("59dc25f090d92d73bc8357cae6fab34fc8255eca0b23b2e75bb735274e1afa1c_sent_510")
+
+
+# query paper id 0f5df5360df1e5228de68738d534a2225321e05f7080af34b5fb80d8728a78dc
+
+def query_paper_id(paper_id):
+    driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+    with driver.session(database=NEO4J_DATABASE) as session:
+        paper = session.run("""
+            MATCH (p:Paper {id: $paper_id})
+            RETURN p.id as id, p.title as title, p.stub as is_stub, p.authors as authors, p.year as year, p.journal as journal
+        """, paper_id=paper_id) 
+        paper_nodes = []
+        for record in paper:
+            print(json.dumps(dict(record), ensure_ascii=False, indent=2))
+            paper_nodes.append(dict(record))
+        return paper_nodes
+paper_nodes = query_paper_id("07a7d5d66faa5f07bdfc052108040f03027e22ce0cd83806d301e99bf8d03985")
+
+print(paper_nodes)
+
+```
+
+Query all the sentences that cite the paper id 07a7d5d66faa5f07bdfc052108040f03027e22ce0cd83806d301e99bf8d03985
+```{python}
+
+def query_sentences_citing_paper(paper_id):
+    driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+    with driver.session(database=NEO4J_DATABASE) as session:
+        sentences = session.run("""
+            MATCH (s:Sentence)-[r:CITES]->(p:Paper {id: $paper_id})
+            RETURN s.id as sentence_id, s.text as sentence_text, s.sentence_index as sentence_index,
+                   r.citation_text as citation_text, r.confidence as confidence
+        """, paper_id=paper_id)
+        sentences_list = []
+        for record in sentences:
+            print(json.dumps(dict(record), ensure_ascii=False, indent=2))
+            sentences_list.append(dict(record))
+        return sentences_list
+sentences_list = query_sentences_citing_paper("07a7d5d66faa5f07bdfc052108040f03027e22ce0cd83806d301e99bf8d03985")
+
+
+
+def query_paragraphs_citing_paper(paper_id):
+    driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+    with driver.session(database=NEO4J_DATABASE) as session:
+        paragraphs = session.run("""
+            MATCH (p:Paragraph)-[r:CITES]->(paper:Paper {id: $paper_id})
+            RETURN p.id as paragraph_id, p.text as paragraph_text, p.paragraph_index as paragraph_index,
+                   r.citation_count as citation_count, r.citation_density as citation_density
+        """, paper_id=paper_id)
+        paragraphs_list = []
+        for record in paragraphs:
+            print(json.dumps(dict(record), ensure_ascii=False, indent=2))
+            paragraphs_list.append(dict(record))
+        return paragraphs_list
+paragraphs_list = query_paragraphs_citing_paper("07a7d5d66faa5f07bdfc052108040f03027e22ce0cd83806d301e99bf8d03985")
+
+
+
+
+
+

@@ -168,6 +168,7 @@ def test_unicode_citations():
     
     return passed == total
 
+
 if __name__ == "__main__":
     # Run the existing tests first
     print("Running existing citation extraction tests...")
@@ -320,6 +321,48 @@ if __name__ == "__main__":
         {
             "text": "Smith, Jones, and Brown (2020) conducted extensive research on this topic.",
             "expected": ["(Smith, Jones, and Brown, 2020)"]
+        },
+        
+        # Real data cases with page numbers and colons
+        {
+            "text": '"We also refer to the process of developing these novel replacements as business model innovation." Markides (2006: 20) "Business model innovation is the discovery of a fundamentally different business model in an existing business." Santos et al. (2009: 14)',
+            "expected": ["(Markides, 2006)", "(Santos et al., 2009)"]
+        },
+        {
+            "text": '"Business model innovation is a reconfiguration of activities in the existing business model of a firm that is new to the product service market in which the firm competes." Aspara et al. (2010: 47)',
+            "expected": ["(Aspara et al., 2010)"]
+        },
+        {
+            "text": '"Initiatives to create novel value by challenging existing industryspecific business models, roles and relations in certain geographical market areas." Gambardella and McGahan (2010: 263)',
+            "expected": ["(Gambardella and McGahan, 2010)"]
+        },
+        {
+            "text": '"Business-model innovation occurs when a firm adopts a novel approach to commercializing its underlying assets." Yunus et al. (2010: 312)',
+            "expected": ["(Yunus et al., 2010)"]
+        },
+        {
+            "text": '"Business model innovation is about generating new sources of profit by finding novel value proposition/value constellation combinations." Sorescu et al. (2011: S7)',
+            "expected": ["(Sorescu et al., 2011)"]
+        },
+        {
+            "text": 'Bucherer et al. (2012: 184) "We define business model innovation as a process that deliberately changes the core elements of a firm and its business logic."',
+            "expected": ["(Bucherer et al., 2012)"]
+        },
+        {
+            "text": 'Abdelkafi et al. (2013: 13) "A business model innovation happens when the company modifies or improves at least one of the value dimensions."',
+            "expected": ["(Abdelkafi et al., 2013)"]
+        },
+        {
+            "text": '"A BMI can thus be thought of as the introduction of a new business model aimed to create commercial value." Casadesus-Masanell and Zhu (2013: 464)',
+            "expected": ["(Casadesus-Masanell and Zhu, 2013)"]
+        },
+        {
+            "text": 'Corporate business model transformation is defined as "a change in the perceived logic of how value is created by the corporation, when it comes to the value-creating links among the corporation\'s portfolio of businesses, from one point of time to another." Berglund and Sandström (2013: 276)',
+            "expected": ["(Berglund and Sandström, 2013)"]
+        },
+        {
+            "text": '"repartitioning" (altering the boundaries of the firm), "relocation" (changing the location of units currently performing activities), or "relinking" (altering the linkages among the organizational units that perform activities; see also Amit & Zott, 2012, for an architectural definition).',
+            "expected": ["(Amit & Zott, 2012)"]
         }
     ]
     

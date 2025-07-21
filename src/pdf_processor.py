@@ -667,6 +667,10 @@ class PDFProcessor:
         if not text:
             return False
         
+        # 通用页眉页脚识别逻辑
+        if self._is_header_footer_content(text):
+            return False
+        
         # 长度判断：标题通常较短
         if len(text) > 200:
             return False
@@ -701,20 +705,146 @@ class PDFProcessor:
         
         return False
     
+    def _is_header_footer_content(self, text: str) -> bool:
+        """
+        通用页眉页脚检测方法 - 基于内容特征而非特定期刊信息
+        """
+        text = text.strip()
+        text_lower = text.lower()
+        
+        # 1. 纯数字（页码）
+        if re.match(r'^\d+$', text):
+            return True
+        
+        # 1.5. 页码格式（改进）
+        if re.match(r'^\s*page\s+\d+\s*$', text_lower):
+            return True
+        
+        # 2. 版权和法律信息
+        copyright_patterns = [
+            r'©.*\d{4}',  # 版权符号
+            r'copyright.*\d{4}',
+            r'all rights reserved',
+            r'for personal use only',
+            r'downloaded from',
+            r'terms and conditions',
+            r'unauthorized reproduction',
+        ]
+        for pattern in copyright_patterns:
+            if re.search(pattern, text_lower):
+                return True
+        
+        # 3. 出版商和期刊信息模式（通用）
+        publisher_patterns = [
+            r'published by',
+            r'publication details',
+            r'subscription information',
+            r'vol\.\s*\d+.*no\.\s*\d+',  # Volume/Issue信息
+            r'volume\s+\d+.*number\s+\d+',
+            r'issn\s*:?\s*\d{4}-\d{4}',  # ISSN
+            r'doi\s*:?\s*10\.\d+',  # DOI
+        ]
+        for pattern in publisher_patterns:
+            if re.search(pattern, text_lower):
+                return True
+        
+        # 4. URL和网址
+        if re.search(r'https?://|www\.|\.com|\.org|\.edu', text_lower):
+            return True
+        
+        # 5. 引用格式信息（改进）
+        citation_format_patterns = [
+            r'to cite this article',
+            r'citation format',
+            r'how to cite',
+            r'cite as:',
+            r'citation:\s*[A-Z]',  # "Citation: Author"格式
+            r'^citation:\s*\w+',  # 以"Citation:"开头
+        ]
+        for pattern in citation_format_patterns:
+            if re.search(pattern, text_lower):
+                return True
+        
+        # 6. 日期和时间戳
+        if re.search(r'\d{1,2}\s+(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)', text_lower):
+            return True
+        if re.search(r'\d{1,2}:\d{2}', text):  # 时间格式
+            return True
+        
+        # 7. IP地址和技术标识符
+        if re.search(r'\[?[0-9a-f]{4}:[0-9a-f]{4}:[0-9a-f]{4}', text_lower):  # IPv6片段
+            return True
+        if re.search(r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}', text):  # IPv4
+            return True
+        
+        # 8. 非常短的文本（可能是页码或标识符）
+        if len(text) < 5 and not re.match(r'^[A-Z][a-z]*$', text):  # 排除简单的单词
+            return True
+        
+        # 9. 只包含数字、标点和很少字母的文本
+        letter_count = sum(1 for c in text if c.isalpha())
+        if len(text) > 10 and letter_count / len(text) < 0.3:  # 字母占比小于30%
+            return True
+        
+        # 10. 期刊特定模式（更通用，改进）
+        journal_patterns = [
+            r'journal\s+of\s+\w+',
+            r'\w+\s+science\s*/?\s*vol',  # 任何科学期刊
+            r'\w+\s+review\s*/?\s*vol',   # 任何评论期刊
+            r'proceedings\s+of',
+            r'transactions\s+on',
+            r'annals\s+of',
+            r'\w+\s+business\s+review$',  # 商业评论类期刊
+            r'harvard\s+business\s+review$',  # 特定知名期刊
+            r'nature\s+\w*$',  # Nature系列
+            r'science\s*$',  # Science期刊
+        ]
+        for pattern in journal_patterns:
+            if re.search(pattern, text_lower):
+                return True
+        
+        # 11. 引用列表模式（当一行包含太多引用时，可能是页眉）
+        citation_count = len(re.findall(r'\(\d{4}[a-z]?\)', text))
+        if citation_count >= 4 and len(text) < 300:  # 短文本中包含4个以上引用
+            return True
+        
+        # 12. 作者列表在页眉中的模式
+        if re.search(r'^[A-Z][a-z]+\s+et\s+al\.?\s*$', text):  # 只有作者名
+            return True
+        
+        # 13. 多行文本检查（改进）
+        lines = text.split('\n')
+        if len(lines) > 1:
+            # 检查是否包含页码行
+            for line in lines:
+                line = line.strip()
+                if re.match(r'^\s*page\s+\d+\s*$', line.lower()) or re.match(r'^\d+\s*$', line):
+                    return True
+        
+        return False
+    
     def _is_heading_block_pdfplumber(self, block: Dict) -> bool:
         """pdfplumber版本的标题判断"""
         text = block["text"].strip()
         avg_font_size = block.get("avg_font_size", 12)
         
         # 基本判断
-        if not text or len(text) > 200:
+        if not text:
+            return False
+        
+        # 使用相同的通用页眉页脚检测逻辑
+        if self._is_header_footer_content(text):
+            return False
+        
+        # 长度判断
+        if len(text) > 200:
             return False
         
         # 字体大小判断
         if avg_font_size > 13:
             return True
         
-        # 模式匹配（同上）
+        # 模式匹配（同PyMuPDF版本）
         heading_patterns = [
             r'^\d+\.?\s+[A-Z]',
             r'^[A-Z][A-Z\s]+$',
@@ -723,7 +853,20 @@ class PDFProcessor:
             r'^Abstract$|^Introduction$|^Conclusion$|^References$|^Methodology$',
         ]
         
-        return any(re.match(pattern, text) for pattern in heading_patterns)
+        for pattern in heading_patterns:
+            if re.match(pattern, text):
+                return True
+        
+        # 标题关键词检查
+        lines = text.split('\n')
+        if len(lines) <= 2 and all(len(line.strip()) < 100 for line in lines):
+            title_keywords = ['introduction', 'background', 'method', 'result', 'conclusion', 
+                            'discussion', 'literature', 'analysis', 'findings', 'summary']
+            text_lower = text.lower()
+            if any(keyword in text_lower for keyword in title_keywords):
+                return True
+        
+        return False
     
     def _classify_section_type(self, title: str) -> str:
         """根据标题分类章节类型"""
@@ -945,7 +1088,7 @@ class PDFProcessor:
     def parse_sentences(self, pdf_path: str) -> List[str]:
         """
         Enhanced sentence parsing with content filtering and quality control.
-        Uses the best available PDF engine and separates main content from references.
+        Uses academic-text-aware sentence splitting to handle citations properly.
         """
         from nltk.tokenize import sent_tokenize
         import re
@@ -961,8 +1104,8 @@ class PDFProcessor:
         
         logging.info(f"Main content: {len(main_content)} chars, References: {len(reference_section)} chars")
         
-        # Parse sentences from main content only
-        sentences = sent_tokenize(main_content)
+        # Use academic-aware sentence splitting
+        sentences = self._split_sentences_academic_aware(main_content)
         
         # Filter out low-quality sentences
         filtered_sentences = self._filter_invalid_sentences(sentences)
@@ -976,6 +1119,148 @@ class PDFProcessor:
         logging.info(f"Parsed {len(sentences)} raw sentences, filtered to {len(filtered_sentences)} sentences, cleaned to {len(cleaned_sentences)} final sentences")
         
         return cleaned_sentences
+    
+    def _split_sentences_academic_aware(self, text: str) -> List[str]:
+        """
+        学术文本专用的句子分割方法，正确处理引用
+        """
+        from nltk.tokenize import sent_tokenize
+        
+        # 先进行预处理，保护引用不被错误分割
+        text = self._protect_citations_for_splitting(text)
+        
+        # 使用NLTK进行初步分割
+        initial_sentences = sent_tokenize(text)
+        
+        # 后处理：恢复引用并合并被错误分割的句子
+        final_sentences = self._merge_broken_citation_sentences(initial_sentences)
+        
+        return final_sentences
+    
+    def _protect_citations_for_splitting(self, text: str) -> str:
+        """
+        在句子分割前保护引用格式，避免被错误分割
+        """
+        # 保护常见的缩写，特别是在引用中的
+        abbreviation_patterns = [
+            (r'\bet al\.', 'ETAL_PLACEHOLDER'),
+            (r'\bvs\.', 'VS_PLACEHOLDER'),
+            (r'\bpp\.', 'PP_PLACEHOLDER'),
+            (r'\bVol\.', 'VOL_PLACEHOLDER'),
+            (r'\bNo\.', 'NO_PLACEHOLDER'),
+            (r'\bFig\.', 'FIG_PLACEHOLDER'),
+            (r'\bTab\.', 'TAB_PLACEHOLDER'),
+            (r'\bDr\.', 'DR_PLACEHOLDER'),
+            (r'\bProf\.', 'PROF_PLACEHOLDER'),
+            (r'\bMr\.', 'MR_PLACEHOLDER'),
+            (r'\bMs\.', 'MS_PLACEHOLDER'),
+            (r'\bMrs\.', 'MRS_PLACEHOLDER'),
+        ]
+        
+        protected_text = text
+        for pattern, placeholder in abbreviation_patterns:
+            protected_text = re.sub(pattern, placeholder, protected_text, flags=re.IGNORECASE)
+        
+        return protected_text
+    
+    def _merge_broken_citation_sentences(self, sentences: List[str]) -> List[str]:
+        """
+        合并被错误分割的引用句子
+        """
+        merged_sentences = []
+        i = 0
+        
+        while i < len(sentences):
+            current_sentence = sentences[i]
+            
+            # 恢复占位符
+            current_sentence = self._restore_citation_placeholders(current_sentence)
+            
+            # 检查是否需要与下一个句子合并
+            while i + 1 < len(sentences):
+                next_sentence = self._restore_citation_placeholders(sentences[i + 1])
+                
+                # 如果当前句子以引用列表结尾但不完整，或下一句子以引用开头
+                if self._should_merge_sentences(current_sentence, next_sentence):
+                    current_sentence = current_sentence.rstrip() + " " + next_sentence.lstrip()
+                    i += 1
+                else:
+                    break
+            
+            if current_sentence.strip():
+                merged_sentences.append(current_sentence.strip())
+            i += 1
+        
+        return merged_sentences
+    
+    def _restore_citation_placeholders(self, text: str) -> str:
+        """
+        恢复引用占位符为原始文本
+        """
+        replacements = [
+            ('ETAL_PLACEHOLDER', 'et al.'),
+            ('VS_PLACEHOLDER', 'vs.'),
+            ('PP_PLACEHOLDER', 'pp.'),
+            ('VOL_PLACEHOLDER', 'Vol.'),
+            ('NO_PLACEHOLDER', 'No.'),
+            ('FIG_PLACEHOLDER', 'Fig.'),
+            ('TAB_PLACEHOLDER', 'Tab.'),
+            ('DR_PLACEHOLDER', 'Dr.'),
+            ('PROF_PLACEHOLDER', 'Prof.'),
+            ('MR_PLACEHOLDER', 'Mr.'),
+            ('MS_PLACEHOLDER', 'Ms.'),
+            ('MRS_PLACEHOLDER', 'Mrs.'),
+        ]
+        
+        restored_text = text
+        for placeholder, original in replacements:
+            restored_text = restored_text.replace(placeholder, original)
+        
+        return restored_text
+    
+    def _should_merge_sentences(self, current: str, next_sentence: str) -> bool:
+        """
+        判断两个句子是否应该合并
+        """
+        current = current.strip()
+        next_sentence = next_sentence.strip()
+        
+        # 情况1：当前句子以引用列表结尾但不完整（如"et al."）
+        if re.search(r'et al\.$', current):
+            return True
+        
+        # 情况2：当前句子以逗号+引用结尾，下一句子看起来是引用的继续
+        if re.search(r',\s*\([^)]*\d{4}[^)]*\)\s*$', current):
+            # 下一句子以引用开始
+            if re.search(r'^\s*\([^)]*\d{4}[^)]*\)', next_sentence):
+                return True
+            # 或者以逗号+引用开始
+            if re.search(r'^\s*,\s*[A-Z][a-z]+', next_sentence):
+                return True
+        
+        # 情况3：当前句子以作者名结尾，下一句子以年份开始
+        if re.search(r'[A-Z][a-z]+\s+et al\.$', current):
+            if re.search(r'^\s*\(\d{4}\)', next_sentence):
+                return True
+        
+        # 情况4：当前句子不以句号结尾，下一句子不以大写字母开始
+        if not current.endswith('.') and not re.match(r'^\s*[A-Z]', next_sentence):
+            return True
+        
+        # 情况5：下一句子看起来是引用的继续部分
+        citation_continuation_patterns = [
+            r'^\s*\(\d{4}[a-z]?\)',  # (1995a)
+            r'^\s*,\s*\d{4}',        # , 1995
+            r'^\s*;\s*[A-Z][a-z]+',  # ; Porter
+            r'^\s*and\s+[A-Z][a-z]+', # and Smith
+            r'^\s*&\s+[A-Z][a-z]+',  # & Smith
+        ]
+        
+        for pattern in citation_continuation_patterns:
+            if re.match(pattern, next_sentence):
+                return True
+        
+        return False
 
     def _separate_main_content_and_references(self, full_text: str) -> tuple:
         """

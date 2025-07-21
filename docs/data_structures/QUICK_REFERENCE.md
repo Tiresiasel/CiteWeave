@@ -1,55 +1,75 @@
 # Data Structure Quick Reference Index
 
-## 🔍 Common Data Structure Quick Reference (v2.0)
+## 🔍 **PARALLEL STRUCTURE QUICK REFERENCE (v3.0 - 2025)**
 
-### Core Output Formats
+### 🆕 **NEW UNIFIED OUTPUT FORMAT**
 
 | Data Type | File Location | Primary Use |
 |---------|---------|---------|
-| Complete Processing Result | `processed_document.json` | Programmatic access to complete data |
+| **Parallel Structure** | `processed_document.json` | **NEW: sections[], paragraphs[], sentences[] arrays** |
 | Sentence-level Data | `sentences_with_citations.jsonl` | Streaming processing and querying |
 | Metadata | `metadata.json` | Quick access to paper information |
 | Quality Report | `quality_report.json` | Processing quality assessment |
 
-### Key Data Fields (Updated v2.0)
+### Key Data Fields (Updated v3.0)
 
 | Field Name | Type | Description | Example Value |
 |-------|------|------|--------|
-| `paper_id` | string | Unique paper identifier | `sha256_hash_value` |
+| `paper_id` | string | Unique paper identifier (SHA256) | `sha256_hash_value` |
+| `section_index` | number | **NEW:** Section index | `2` |
+| `paragraph_index` | number | **NEW:** Paragraph index | `15` |
 | `sentence_index` | number | Sentence index | `42` |
-| `has_citations` | boolean | Whether sentence contains citations | `true` |
-| `citations` | array | Citation list with embedded argument analysis | `[{"intext": "Porter (1980)", "argument_analysis": {...}}]` |
-| `citation_index` | number | Citation index within sentence | `0`, `1`, `2` |
-| `argument_analysis` | object | Citation-level or sentence-level argument analysis | `{"has_argument_relations": true, "entities": [...]}` |
-| `relation_type` | string | Argument relation type | `"ELABORATES"`, `"SUPPORTS"` |
-| `confidence` | number | Confidence score | `0.856` |
-| `entity_text` | string | Detected argument entity text | `"Porter (1980)"` |
+| `section_title` | string | **NEW:** Section heading | `"Literature Review"` |
+| `section_type` | string | **NEW:** Section type | `"introduction"`, `"methodology"` |
+| `citations` | array | **UNIFIED:** Same format across all levels | `[{"intext": "(Porter, 1980)", "paper_id": "..."}]` |
+| `has_citations` | boolean | Whether contains citations | `true` |
+| `citation_count` | number | **NEW:** Number of citations | `3` |
+| `word_count` | number | Word count statistics | `12` |
+| `char_count` | number | Character count statistics | `89` |
 
-## 🚀 What's New in v2.0
+## 🚀 **What's New in v3.0 (Parallel Structure)**
 
-### Citation-Level Argument Analysis
+### **Revolutionary Parallel Array Design**
 
-**Major Change**: Argument analysis is now embedded directly in each citation, creating a one-to-one mapping.
+**Major Architectural Change**: Complete restructuring from nested to parallel arrays.
 
-#### Old Structure (v1.0):
+#### Old Nested Structure (v2.0):
 ```json
 {
-  "citations": [{"intext": "Porter (1980)", "paper_id": "..."}],
-  "argument_analysis": {
-    "entities": [
-      {
-        "relation_type": "SUPPORTS",
-        "matched_citation_index": 0,
-        "matched_paper_id": "..."
-      }
-    ]
-  }
+  "sentences_with_citations": [
+    {
+      "sentence_index": 42,
+      "citations": [...],
+      "argument_analysis": {...}
+    }
+  ]
 }
 ```
 
-#### New Structure (v2.0):
+#### New Parallel Structure (v3.0):
 ```json
 {
+  "sections": [
+    {
+      "section_index": 2,
+      "section_title": "Literature Review",
+      "citations": [{"intext": "(Porter, 1980)", "paper_id": "..."}]
+    }
+  ],
+  "paragraphs": [
+    {
+      "paragraph_index": 15,
+      "section": "Literature Review", 
+      "citations": [{"intext": "(Porter, 1980)", "paper_id": "..."}]
+    }
+  ],
+  "sentences": [
+    {
+      "sentence_index": 42,
+      "citations": [{"intext": "(Porter, 1980)", "paper_id": "..."}]
+    }
+  ]
+}
   "has_citations": true,
   "citations": [
     {

@@ -1,4 +1,15 @@
 {
+  "pdf_processing": {
+    "enable_mineru": false,
+    "mineru_fallback": true,
+    "preferred_engine": "auto",
+    "mineru_config": {
+      "timeout": 300,
+      "enable_formula": true,
+      "enable_table": true,
+      "device": "auto"
+    }
+  },
   "embedding": {
     "provider": "ollama",
     "model": "bge-m3"
