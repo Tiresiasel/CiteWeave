@@ -2,12 +2,13 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Debug MultiAgentSystem",
+      "name": "Python: Document Processor",
       "type": "python",
       "request": "launch",
-      "module": "src.agents.multi_agent_system",
-      "cwd": "${workspaceFolder}",
-      "console": "integratedTerminal"
+      "program": "${workspaceFolder}/src/document_processor.py",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}"
+      }
     }
   ]
 } 

@@ -215,6 +215,21 @@
             "raw_text": "R Nelson; S Winter (1982). An Evolutionary Theory of Economic Change. An Evolutionary Theory of Economic Change. , Belknap, Cambridge, MA"
           },
           "paper_id": "62db22156b34ac94234efe08e17ec653e23354133913700d5b773e56827d217c"
+        },
+        {
+          "intext": "(Porter, 1980)",
+          "reference": {
+            "authors": [
+              "M Porter"
+            ],
+            "title": "What is strategy?",
+            "year": "1980",
+            "journal": "Competitive Strategy",
+            "publisher": "Free Press",
+            "pub_place": "",
+            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
+          },
+          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
         }
       ],
       "word_count": 39,
@@ -325,6 +340,38 @@
             "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
           },
           "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
+        },
+        {
+          "intext": "(Dierickx and Cool, 1989)",
+          "reference": {
+            "authors": [
+              "I Dierickx",
+              "K Cool"
+            ],
+            "title": "Asset stock accumulation and sustainability of competitive advantage",
+            "year": "1989",
+            "journal": "Management Sci",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "I Dierickx; K Cool (1989). Asset stock accumulation and sustainability of competitive advantage. Management Sci"
+          },
+          "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
+        },
+        {
+          "intext": "(Lippman and Rumelt, 1982)",
+          "reference": {
+            "authors": [
+              "S Lippman",
+              "R Rumelt"
+            ],
+            "title": "Uncertain imitability: An analysis of interfirm differences in efficiency under competition",
+            "year": "1982",
+            "journal": "Bell J. Econom",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "S Lippman; R Rumelt (1982). Uncertain imitability: An analysis of interfirm differences in efficiency under competition. Bell J. Econom"
+          },
+          "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
         }
       ],
       "word_count": 45,
@@ -440,23 +487,7 @@
     {
       "sentence_index": 46,
       "sentence_text": "Authors differ, however, in how they deﬁne “complex knowledge.” To Winter (1987), complexity reﬂects “the amount of information required to characterize the item of knowledge .",
-      "citations": [
-        {
-          "intext": "(Winter, 1987)",
-          "reference": {
-            "authors": [
-              "S Winter"
-            ],
-            "title": "Knowledge and competence as strategic assets",
-            "year": "1987",
-            "journal": "The Competitive Challenge: Strategies for Industrial Innovation and Renewal",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "S Winter (1987). Knowledge and competence as strategic assets. The Competitive Challenge: Strategies for Industrial Innovation and Renewal"
-          },
-          "paper_id": "60ece7cd04a17319fef327a80fc3a3fac66d06c2defdac7c4c1a19acfaf240e5"
-        }
-      ],
+      "citations": [],
       "word_count": 26,
       "char_count": 176
     },
@@ -510,23 +541,7 @@
     {
       "sentence_index": 49,
       "sentence_text": "(1985) consider a new product complex if it “requires extensive reorganization of interdependent procedures and/or the coordination of many skills and multiple departments.” The deﬁnition of complexity which I adopt from Simon (1962) encompasses the two major concepts from the knowledge management literature: the sheer number of elements in an item of knowledge and the degree of interaction among those elements.",
-      "citations": [
-        {
-          "intext": "(Simon, 1962)",
-          "reference": {
-            "authors": [
-              "H Simon"
-            ],
-            "title": "The architecture of complexity",
-            "year": "1962",
-            "journal": "Proc. Amer. Philos. Soc",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "H Simon (1962). The architecture of complexity. Proc. Amer. Philos. Soc"
-          },
-          "paper_id": "06b571b34e9d9569c66a2115797ea047b2c795a688637208917c7d734363aa93"
-        }
-      ],
+      "citations": [],
       "word_count": 61,
       "char_count": 415
     },
@@ -784,23 +799,7 @@
     {
       "sentence_index": 79,
       "sentence_text": "The model is an adaptation of a tool developed by Kauffman (1993) in the context of evolutionary biology and introduced into management science by Levinthal (1997).",
-      "citations": [
-        {
-          "intext": "(Kauffman, 1993)",
-          "reference": {
-            "authors": [
-              "S Kauffman"
-            ],
-            "title": "The Origins of Order: Self-Organization and Selection in Evolution",
-            "year": "1993",
-            "journal": "Management Sci",
-            "publisher": "Oxford University Press",
-            "pub_place": "Oxford, U.K. Levinthal, D",
-            "raw_text": "S Kauffman (1993). The Origins of Order: Self-Organization and Selection in Evolution. Management Sci. Oxford University Press, Oxford, U.K. Levinthal, D"
-          },
-          "paper_id": "307593f9ecc1765cd2b63e22d05bd76b99429b0bcfe9692c826a2d9b46926438"
-        }
-      ],
+      "citations": [],
       "word_count": 26,
       "char_count": 164
     },
@@ -1214,23 +1213,7 @@
     {
       "sentence_index": 131,
       "sentence_text": "(1997), MacDufﬁe (1995), Milgrom and Roberts (1990, 1995), Porter (1996), and Siggelkow (1998).",
-      "citations": [
-        {
-          "intext": "(Siggelkow, 1998)",
-          "reference": {
-            "authors": [
-              "N Siggelkow"
-            ],
-            "title": "Benefits of focus, evolution of fit, and agency issues in the mutual fund industry",
-            "year": "1998",
-            "journal": "Benefits of focus, evolution of fit, and agency issues in the mutual fund industry",
-            "publisher": "",
-            "pub_place": "Cambridge, MA",
-            "raw_text": "N Siggelkow (1998). Benefits of focus, evolution of fit, and agency issues in the mutual fund industry. Benefits of focus, evolution of fit, and agency issues in the mutual fund industry. , Cambridge, MA"
-          },
-          "paper_id": "2176476ea125b406f0c66ca4c3c0d015ad9a673ee5df8af4c372f36183db33b9"
-        }
-      ],
+      "citations": [],
       "word_count": 13,
       "char_count": 95
     },
@@ -1853,23 +1836,7 @@
     {
       "sentence_index": 213,
       "sentence_text": "The particular process for generating landscapes and the use of simulation are taken, unmodiﬁed, from Kauffman (1993).",
-      "citations": [
-        {
-          "intext": "(Kauffman, 1993)",
-          "reference": {
-            "authors": [
-              "S Kauffman"
-            ],
-            "title": "The Origins of Order: Self-Organization and Selection in Evolution",
-            "year": "1993",
-            "journal": "Management Sci",
-            "publisher": "Oxford University Press",
-            "pub_place": "Oxford, U.K. Levinthal, D",
-            "raw_text": "S Kauffman (1993). The Origins of Order: Self-Organization and Selection in Evolution. Management Sci. Oxford University Press, Oxford, U.K. Levinthal, D"
-          },
-          "paper_id": "307593f9ecc1765cd2b63e22d05bd76b99429b0bcfe9692c826a2d9b46926438"
-        }
-      ],
+      "citations": [],
       "word_count": 17,
       "char_count": 118
     },
@@ -2711,6 +2678,22 @@
             "raw_text": "J March; H Simon (1958). . Organizations. Wiley, New York"
           },
           "paper_id": "4dafb610fc9b2813ab61bbbf96e737facdceab34ef51e710a0793c461bf5c3d1"
+        },
+        {
+          "intext": "(Nelson and Winter, 1982)",
+          "reference": {
+            "authors": [
+              "R Nelson",
+              "S Winter"
+            ],
+            "title": "An Evolutionary Theory of Economic Change",
+            "year": "1982",
+            "journal": "An Evolutionary Theory of Economic Change",
+            "publisher": "",
+            "pub_place": "Belknap, Cambridge, MA",
+            "raw_text": "R Nelson; S Winter (1982). An Evolutionary Theory of Economic Change. An Evolutionary Theory of Economic Change. , Belknap, Cambridge, MA"
+          },
+          "paper_id": "62db22156b34ac94234efe08e17ec653e23354133913700d5b773e56827d217c"
         }
       ],
       "word_count": 20,
@@ -2784,7 +2767,7 @@
       "sentence_text": "Finally, the NP-completeness of the strategy formulation problem poses a question for the recent, important stream of research on complementarities (e.g., Milgrom and Roberts 1990, 1995; Topkis 1998 and references therein).",
       "citations": [
         {
-          "intext": "(Milgrom and Roberts, 1990)",
+          "intext": "(Milgrom and Roberts 1990, 1995)",
           "reference": {
             "authors": [
               "P Milgrom",
@@ -2870,24 +2853,7 @@
     {
       "sentence_index": 342,
       "sentence_text": "Under those conditions, the optimal choice x (p) is monotone nondecreasing in p. Milgrom and Roberts (1990) use these results to show how declining costs of communication, computers, and ﬂexible machines could prompt an optimizing ﬁrm to lower prices, invest in ﬂexible production, broaden product lines, shorten production runs, reduce inventory, buy inputs rather than make them, and adopt team-based human resource practices.",
-      "citations": [
-        {
-          "intext": "(Milgrom and Roberts, 1990)",
-          "reference": {
-            "authors": [
-              "P Milgrom",
-              "J Roberts"
-            ],
-            "title": "Complementarities and fit: Strategy, structure, and organizational change in manufacturing",
-            "year": "1990",
-            "journal": "J. Accounting Econom",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
-          },
-          "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
-        }
-      ],
+      "citations": [],
       "word_count": 63,
       "char_count": 428
     },
@@ -3281,23 +3247,7 @@
     {
       "sentence_index": 396,
       "sentence_text": "more difﬁcult for intermediate levels of K. Weinberger (1991), however, succeeds in doing so via the Central Limit Theorem and a series of approximations.",
-      "citations": [
-        {
-          "intext": "(Weinberger, 1991)",
-          "reference": {
-            "authors": [
-              "E Weinberger"
-            ],
-            "title": "Local properties of Kauffman's N-k model: A tunably rugged energy landscape",
-            "year": "1991",
-            "journal": "Phys. Rev. A",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "E Weinberger (1991). Local properties of Kauffman's N-k model: A tunably rugged energy landscape. Phys. Rev. A"
-          },
-          "paper_id": "6c4f5e24b3bc614fc0f955cd3fce9c54320cd1f8cda43d8802bb0329f3ee3924"
-        }
-      ],
+      "citations": [],
       "word_count": 24,
       "char_count": 154
     },
@@ -4113,7 +4063,7 @@
       "sentence_text": "This ﬁgure was inspired by Kauffman (1993), ﬁg.",
       "citations": [
         {
-          "intext": "(Kauffman, 1993)",
+          "intext": "(was inspired by Kauffman, 1993)",
           "reference": {
             "authors": [
               "S Kauffman"
@@ -5040,6 +4990,21 @@
             "raw_text": "R Miles; C Snow (1978). Organizational Strategy, Structure, and Process. Organizational Strategy, Structure, and Process. McGraw-Hill"
           },
           "paper_id": "40d4dc87e16a0a521b82e37fad5781ae352165208ae08eab67dea38494d1e59d"
+        },
+        {
+          "intext": "(Porter, 1980)",
+          "reference": {
+            "authors": [
+              "M Porter"
+            ],
+            "title": "What is strategy?",
+            "year": "1980",
+            "journal": "Competitive Strategy",
+            "publisher": "Free Press",
+            "pub_place": "",
+            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
+          },
+          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
         }
       ],
       "word_count": 24,
@@ -5145,7 +5110,23 @@
     {
       "sentence_index": 634,
       "sentence_text": "A ﬁrm might expand its scope of operations, increasing N, or focus on a portion of the total value chain, reducing N. In altering the complexity of its strategy, a ﬁrm will face the tension identiﬁed in §1: a more modular, less coupled system adjusts more readily to environmental change and is less subject to inertia (Levinthal 1997, Sorenson 1997), but it is more easily attacked by imitators.",
-      "citations": [],
+      "citations": [
+        {
+          "intext": "(Sorenson, 1997)",
+          "reference": {
+            "authors": [
+              "O Sorenson"
+            ],
+            "title": "The complexity catastrophe in the computer industry: Interdependence and adaptability in organizational evolution",
+            "year": "1997",
+            "journal": "The complexity catastrophe in the computer industry: Interdependence and adaptability in organizational evolution",
+            "publisher": "",
+            "pub_place": "Stanford, CA",
+            "raw_text": "O Sorenson (1997). The complexity catastrophe in the computer industry: Interdependence and adaptability in organizational evolution. The complexity catastrophe in the computer industry: Interdependence and adaptability in organizational evolution. , Stanford, CA"
+          },
+          "paper_id": "5cd0482f21a069bdb50fff71b27cb4da8929c62c19283bd541eb5652a820f3c8"
+        }
+      ],
       "word_count": 68,
       "char_count": 396
     },
@@ -5232,9 +5213,15 @@
   ],
   "processing_stats": {
     "total_sentences": 644,
-    "sentences_with_citations": 38,
-    "total_citations": 43,
+    "sentences_with_citations": 32,
+    "total_citations": 42,
     "total_references": 38,
-    "processing_timestamp": "2025-07-15T13:40:23.318381"
+    "processing_timestamp": "2025-07-21T12:14:47.927824",
+    "graph_db_stats": {
+      "paragraphs_created": 129,
+      "sentences_created": 644,
+      "citation_relations_created": 42,
+      "cited_papers_created": 0
+    }
   }
 }

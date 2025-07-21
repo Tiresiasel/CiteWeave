@@ -2,36 +2,87 @@
 document_processor.py
 Unified document processing pipeline that coordinates PDF processing and citation analysis.
 Performs sentence-level citation analysis as the primary output.
+Enhanced with sentence+paragraph dual-layer citation network architecture.
 """
 
 import os
 import json
 import logging
+import re
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
+from dataclasses import dataclass
 
 from src.pdf_processor import PDFProcessor
 from src.citation_parser import CitationParser
+from src.graph_builder import GraphDB
+from src.config_manager import ConfigManager
+from src.paper_id_utils import PaperIDGenerator
 
 logging.basicConfig(level=logging.INFO)
+
+@dataclass
+class SentenceData:
+    """句子数据结构"""
+    id: str
+    text: str
+    index: int
+    has_citations: bool
+    citations: List[Dict]
+    word_count: int
+    char_count: int
+
+@dataclass  
+class ParagraphData:
+    """段落数据结构"""
+    id: str
+    text: str
+    index: int
+    section: str
+    sentences: List[SentenceData]
+    citation_count: int
 
 class DocumentProcessor:
     """
     Unified document processor that coordinates PDF processing and citation analysis.
     Main responsibility: Extract sentences and analyze citations for each sentence.
+    Enhanced with sentence+paragraph dual-layer citation network architecture.
     """
     
-    def __init__(self, storage_root: str = "./data/papers/", preferred_pdf_engine: str = "auto"):
+    def __init__(self, storage_root: str = "./data/papers/", preferred_pdf_engine: str = "auto", 
+                 config_path: str = "config", enable_graph_db: bool = True):
         """
         Initialize the document processor with both PDF and citation processing capabilities.
         
         Args:
             storage_root: Root directory for storing processed documents
             preferred_pdf_engine: Preferred PDF processing engine ("auto", "pymupdf", etc.)
+            config_path: Path to configuration files
+            enable_graph_db: Whether to enable graph database integration
         """
         self.storage_root = storage_root
         self.pdf_processor = PDFProcessor(storage_root=storage_root, preferred_engine=preferred_pdf_engine)
         self.citation_parser = None  # Will be initialized per document
+        
+        # Initialize Paper ID Generator
+        self.paper_id_generator = PaperIDGenerator()
+        
+        # Graph database integration
+        self.enable_graph_db = enable_graph_db
+        self.graph_db = None
+        if enable_graph_db:
+            try:
+                config_manager = ConfigManager(config_path)
+                neo4j_config = config_manager.neo4j_config
+                self.graph_db = GraphDB(
+                    uri=neo4j_config["uri"],
+                    user=neo4j_config["username"], 
+                    password=neo4j_config["password"]
+                )
+                logging.info("Graph database integration enabled")
+            except Exception as e:
+                logging.warning(f"Failed to initialize graph database: {e}")
+                self.enable_graph_db = False
         
         # Cache for avoiding duplicate processing
         self._metadata_cache = {}
@@ -39,13 +90,14 @@ class DocumentProcessor:
         
         logging.info("DocumentProcessor initialized with unified PDF and citation processing")
     
-    def process_document(self, pdf_path: str, save_results: bool = True) -> Dict:
+    def process_document(self, pdf_path: str, save_results: bool = True, create_graph: bool = True) -> Dict:
         """
         Main processing method: extract sentences and analyze citations for each sentence.
         
         Args:
             pdf_path: Path to the PDF file
             save_results: Whether to save results to disk
+            create_graph: Whether to create graph database entries
             
         Returns:
             Dict containing:
@@ -57,7 +109,14 @@ class DocumentProcessor:
         
         # Step 1: Extract metadata (shared between PDF and citation processing)
         metadata = self._get_or_extract_metadata(pdf_path)
-        paper_id = self.pdf_processor._generate_paper_id(metadata["title"], metadata["year"])
+        
+        # Step 1.5: Generate consistent paper ID using PaperIDGenerator
+        paper_id = self.paper_id_generator.generate_paper_id(
+            title=metadata["title"], 
+            year=metadata["year"],
+            authors=metadata.get("authors", [])
+        )
+        logging.info(f"Generated paper ID: {paper_id}")
         
         # Step 2: Extract sentences using PDFProcessor
         logging.info("Extracting sentences from PDF...")
@@ -81,7 +140,13 @@ class DocumentProcessor:
         logging.info(f"Analyzing citations for {len(sentences)} sentences...")
         sentences_with_citations = self._analyze_sentences_citations(sentences)
         
-        # Step 5: Compile results
+        # Step 5: Create graph database entries if enabled
+        graph_stats = {}
+        if create_graph and self.enable_graph_db and self.graph_db:
+            logging.info("Creating graph database entries...")
+            graph_stats = self._create_graph_entries(paper_id, metadata, sentences_with_citations)
+        
+        # Step 6: Compile results
         results = {
             "metadata": metadata,
             "paper_id": paper_id,
@@ -91,17 +156,237 @@ class DocumentProcessor:
                 "sentences_with_citations": len([s for s in sentences_with_citations if s["citations"]]),
                 "total_citations": sum(len(s["citations"]) for s in sentences_with_citations),
                 "total_references": len(references),
-                "processing_timestamp": datetime.now().isoformat()
+                "processing_timestamp": datetime.now().isoformat(),
+                "graph_db_stats": graph_stats
             }
         }
         
-        # Step 6: Save results if requested
+        # Step 7: Save results if requested
         if save_results:
             self._save_processed_document(paper_id, results)
         
         logging.info(f"Document processing completed. Found {results['processing_stats']['total_citations']} citations in {results['processing_stats']['sentences_with_citations']} sentences")
         
         return results
+
+    def _create_graph_entries(self, paper_id: str, metadata: Dict, sentences_with_citations: List[Dict]) -> Dict:
+        """
+        Create graph database entries using the new sentence+paragraph architecture.
+        
+        Args:
+            paper_id: Unique paper identifier
+            metadata: Document metadata
+            sentences_with_citations: Processed sentences with citation analysis
+            
+        Returns:
+            Statistics about graph creation
+        """
+        try:
+            # Create main paper node
+            self.graph_db.create_paper(
+                paper_id=paper_id,
+                title=metadata.get("title", "Unknown"),
+                authors=metadata.get("authors", ["Unknown"]),
+                year=int(metadata.get("year", 0)) if metadata.get("year") else 0,
+                doi=metadata.get("doi"),
+                journal=metadata.get("journal"),
+                publisher=metadata.get("publisher")
+            )
+            
+            # Group sentences into paragraphs
+            paragraphs = self._group_sentences_into_paragraphs(sentences_with_citations, paper_id)
+            
+            stats = {
+                "paragraphs_created": 0,
+                "sentences_created": 0,
+                "citation_relations_created": 0,
+                "cited_papers_created": 0
+            }
+            
+            # Process each paragraph
+            for paragraph_data in paragraphs:
+                # Create paragraph node
+                self.graph_db.create_paragraph(
+                    paragraph_id=paragraph_data.id,
+                    paper_id=paper_id,
+                    text=paragraph_data.text,
+                    paragraph_index=paragraph_data.index,
+                    section=paragraph_data.section,
+                    citation_count=paragraph_data.citation_count,
+                    sentence_count=len(paragraph_data.sentences),
+                    has_citations=paragraph_data.citation_count > 0
+                )
+                stats["paragraphs_created"] += 1
+                
+                # Process sentences in paragraph
+                for sentence in paragraph_data.sentences:
+                    # Create sentence node
+                    self.graph_db.create_sentence(
+                        sentence_id=sentence.id,
+                        paper_id=paper_id,
+                        paragraph_id=paragraph_data.id,
+                        text=sentence.text,
+                        sentence_index=sentence.index,
+                        has_citations=sentence.has_citations,
+                        word_count=sentence.word_count,
+                        char_count=sentence.char_count
+                    )
+                    stats["sentences_created"] += 1
+                    
+                    # Create sentence-level citation relationships
+                    for citation in sentence.citations:
+                        cited_paper_id = self._get_or_create_cited_paper(citation)
+                        
+                        self.graph_db.create_sentence_citation(
+                            sentence_id=sentence.id,
+                            cited_paper_id=cited_paper_id,
+                            citation_text=citation.get("intext", ""),
+                            citation_context=self._extract_citation_context(sentence.text, citation),
+                            confidence=citation.get("confidence", 1.0)
+                        )
+                        stats["citation_relations_created"] += 1
+                
+                # Create paragraph-level citation relationships (aggregated)
+                paragraph_citations = self._aggregate_paragraph_citations(paragraph_data)
+                for cited_paper_id, count in paragraph_citations.items():
+                    citation_density = count / len(paragraph_data.sentences) if paragraph_data.sentences else 0
+                    
+                    self.graph_db.create_paragraph_citation(
+                        paragraph_id=paragraph_data.id,
+                        cited_paper_id=cited_paper_id,
+                        citation_count=count,
+                        citation_density=citation_density
+                    )
+            
+            logging.info(f"Graph database entries created: {stats}")
+            return stats
+            
+        except Exception as e:
+            logging.error(f"Failed to create graph database entries: {e}")
+            return {"error": str(e)}
+
+    def _group_sentences_into_paragraphs(self, sentences_with_citations: List[Dict], paper_id: str) -> List[ParagraphData]:
+        """
+        Group sentences into paragraphs for the new architecture.
+        Simple implementation - can be enhanced with more sophisticated paragraph detection.
+        """
+        paragraphs = []
+        current_paragraph_sentences = []
+        paragraph_index = 0
+        
+        for i, sentence_data in enumerate(sentences_with_citations):
+            sentence_obj = SentenceData(
+                id=f"{paper_id}_sent_{i}",
+                text=sentence_data["sentence_text"],
+                index=sentence_data["sentence_index"],
+                has_citations=len(sentence_data["citations"]) > 0,
+                citations=sentence_data["citations"],
+                word_count=sentence_data["word_count"],
+                char_count=sentence_data["char_count"]
+            )
+            
+            current_paragraph_sentences.append(sentence_obj)
+            
+            # Simple paragraph break detection (every 5 sentences or at natural breaks)
+            if (i + 1) % 5 == 0 or i == len(sentences_with_citations) - 1:
+                if current_paragraph_sentences:
+                    paragraph_text = " ".join([s.text for s in current_paragraph_sentences])
+                    total_citations = sum(len(s.citations) for s in current_paragraph_sentences)
+                    
+                    paragraph = ParagraphData(
+                        id=f"{paper_id}_para_{paragraph_index}",
+                        text=paragraph_text,
+                        index=paragraph_index,
+                        section=self._determine_section(paragraph_text, paragraph_index),
+                        sentences=current_paragraph_sentences,
+                        citation_count=total_citations
+                    )
+                    
+                    paragraphs.append(paragraph)
+                    current_paragraph_sentences = []
+                    paragraph_index += 1
+        
+        return paragraphs
+
+    def _determine_section(self, paragraph_text: str, paragraph_index: int) -> str:
+        """Determine paragraph section based on content and position."""
+        text_lower = paragraph_text.lower()
+        
+        if paragraph_index < 3:
+            return "Introduction"
+        elif "method" in text_lower or "approach" in text_lower:
+            return "Methodology"
+        elif "result" in text_lower or "finding" in text_lower:
+            return "Results"
+        elif "conclusion" in text_lower or "summary" in text_lower:
+            return "Conclusion"
+        elif "literature" in text_lower or "prior" in text_lower:
+            return "Literature Review"
+        else:
+            return "Main Content"
+
+    def _aggregate_paragraph_citations(self, paragraph_data: ParagraphData) -> Dict[str, int]:
+        """Aggregate citation counts at paragraph level."""
+        cited_papers = {}
+        
+        for sentence in paragraph_data.sentences:
+            for citation in sentence.citations:
+                cited_paper_id = self._get_or_create_cited_paper(citation)
+                cited_papers[cited_paper_id] = cited_papers.get(cited_paper_id, 0) + 1
+        
+        return cited_papers
+
+    def _get_or_create_cited_paper(self, citation: Dict) -> str:
+        """Get or create a cited paper node, returning its ID using PaperIDGenerator."""
+        reference = citation.get("reference", {})
+        
+        # Extract reference information
+        title = reference.get("title", "Unknown Title")
+        year = reference.get("year", "Unknown")
+        authors = reference.get("authors", ["Unknown"])
+        
+        # Generate consistent paper ID using PaperIDGenerator
+        cited_paper_id = self.paper_id_generator.generate_paper_id(
+            title=title,
+            year=year,
+            authors=authors
+        )
+        
+        if self.graph_db:
+            # Create stub paper node with generated ID
+            self.graph_db.create_paper(
+                paper_id=cited_paper_id,
+                title=title,
+                authors=authors,
+                year=int(year) if year != "Unknown" and year.isdigit() else 0,
+                stub=True,
+                doi=reference.get("doi"),
+                journal=reference.get("journal")
+            )
+        
+        return cited_paper_id
+
+    def _extract_citation_context(self, sentence_text: str, citation: Dict) -> str:
+        """Extract citation context from sentence."""
+        intext = citation.get("intext", "")
+        if intext in sentence_text:
+            start = sentence_text.find(intext)
+            context_start = max(0, start - 50)
+            context_end = min(len(sentence_text), start + len(intext) + 50)
+            return sentence_text[context_start:context_end]
+        return sentence_text
+
+    def get_citation_analysis_context(self, cited_paper_id: str) -> Dict:
+        """
+        Get citation context for AI analysis using the new architecture.
+        This is the core advantage: directly retrieve all relevant information.
+        """
+        if not self.graph_db:
+            return {"error": "Graph database not available"}
+        
+        return self.graph_db.get_citation_context_for_ai_analysis(cited_paper_id)
+
+    # ==================== 原有方法保持不变 ====================
     
     def _analyze_sentences_citations(self, sentences: List[str]) -> List[Dict]:
         """
@@ -231,7 +516,11 @@ class DocumentProcessor:
         """
         try:
             metadata = self._get_or_extract_metadata(pdf_path)
-            paper_id = self.pdf_processor._generate_paper_id(metadata["title"], metadata["year"])
+            paper_id = self.paper_id_generator.generate_paper_id(
+                title=metadata["title"], 
+                year=metadata["year"],
+                authors=metadata.get("authors", [])
+            )
             
             results_path = os.path.join(self.storage_root, paper_id, "processed_document.json")
             
@@ -354,27 +643,39 @@ class DocumentProcessor:
         
         return recommendations
 
+    def close(self):
+        """Close database connections."""
+        if self.graph_db:
+            self.graph_db.close()
+
 
 # Example usage and integration
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     
-    # Initialize the unified document processor
-    doc_processor = DocumentProcessor()
+    # Initialize the unified document processor with graph database
+    doc_processor = DocumentProcessor(enable_graph_db=True)
     
     # Example: Process a document and get sentence-level citation analysis
     pdf_path = "test_files/Rivkin - 2000 - Imitation of Complex Strategies.pdf"
     
-    # Get sentences with citations
-    sentences_with_citations = doc_processor.get_sentences_with_citations(pdf_path)
+    # Process document with graph creation
+    results = doc_processor.process_document(pdf_path, create_graph=True)
     
     # Print summary
-    total_citations = sum(len(s["citations"]) for s in sentences_with_citations)
-    sentences_with_citations_count = len([s for s in sentences_with_citations if s["citations"]])
+    total_citations = results["processing_stats"]["total_citations"]
+    sentences_with_citations_count = results["processing_stats"]["sentences_with_citations"]
     
-    print(f"Processed {len(sentences_with_citations)} sentences")
+    print(f"Processed {results['processing_stats']['total_sentences']} sentences")
     print(f"Found {total_citations} citations in {sentences_with_citations_count} sentences")
+    print(f"Graph DB stats: {results['processing_stats']['graph_db_stats']}")
+    
+    # Example: Get citation context for AI analysis
+    context = doc_processor.get_citation_analysis_context("porter_1980")
+    print(f"Citation context: {context}")
     
     # Example: Diagnose processing quality
     diagnosis = doc_processor.diagnose_document_processing(pdf_path)
-    print(f"Processing quality: {diagnosis['overall_assessment']['quality_level']}") 
+    print(f"Processing quality: {diagnosis['overall_assessment']['quality_level']}")
+    
+    doc_processor.close() 

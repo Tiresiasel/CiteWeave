@@ -17,7 +17,17 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
-### CitationParser Module - COMPLETED ✅ (2024-12)
+
+## Renewed GraphDB Structure (2025-07-21)
+- **Major structural change:** The citation relationships in the graph are now strictly from Sentence→Paper and Paragraph→Paper. The previous Argument→Paper citation relationships have been removed/replaced. This ensures all citation edges are anchored at the sentence or paragraph level, making the graph structure more precise, queryable, and robust.
+- Unified paper_id generation using `PaperIDGenerator` (SHA256) for all Paper nodes and embedding payloads
+- GraphDB `Paragraph` node now includes `has_citations` attribute
+- DocumentProcessor and GraphDB integration: Paragraph creation now sets `has_citations` based on `citation_count`
+- Updated `docs/data_structures/README.md` to reflect current graph and embedding database structure
+- Confirmed that all graph operations (`MERGE`) are idempotent (no duplicate nodes/edges)
+- Added/updated test scripts for graph structure and citation relationships 
+
+### CitationParser Module - COMPLETED ✅ (2025-07-14)
 
 **Status**: Fully implemented and tested with comprehensive coverage
 
