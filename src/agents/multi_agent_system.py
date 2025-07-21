@@ -22,10 +22,10 @@ from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-from src.graph_builder import GraphDB
-from src.vector_indexer import VectorIndexer
-from src.author_paper_index import AuthorPaperIndex
-from src.enhanced_llm_manager import EnhancedLLMManager
+from src.storage.graph_builder import GraphDB
+from src.storage.vector_indexer import VectorIndexer
+from src.storage.author_paper_index import AuthorPaperIndex
+from src.llm.enhanced_llm_manager import EnhancedLLMManager
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

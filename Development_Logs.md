@@ -91,6 +91,12 @@ pip install magic-pdf[full]  # Install MinerU
 - **LLM-First Query Routing:** The system routes queries to the correct database/tool (graph, vector, PDF) based on LLM-extracted intent and entities, eliminating reliance on brittle rule-based logic.
 - **Comprehensive Logging for All Data Retrieval:** All data retrieval steps (tool calls, database queries, LLM responses) are logged with input, output, and error details, ensuring every piece of retrieved data is traceable.
 - **Production-Grade Observability:** The logging and modular agent design make the system suitable for production deployment, debugging, and audit.
+- **Information Confirmation Layer (2025-07-21):** Added a new layer that shows users what information has been gathered and asks for confirmation before providing the final answer. This includes:
+  - **InformationSummaryAgent**: Summarizes gathered data in user-friendly format with confidence assessment
+  - **UserConfirmationAgent**: Handles user choices (continue/expand/refine) and routes accordingly
+  - **Enhanced Workflow**: New workflow steps between data collection and response generation
+  - **Interactive Methods**: `research_question_with_confirmation()` and `continue_with_confirmation()` for interactive usage
+  - **User Control**: Users can see what was found and choose to continue, expand search, or refine the approach
 
 ### CitationParser Module - COMPLETED ✅ (2025-07-14)
 
