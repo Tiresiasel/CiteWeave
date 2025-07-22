@@ -50,7 +50,14 @@ class QueryDBAgent:
             self.vector_indexer = None
             
         # Add papers directory path
-        self.papers_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "papers")
+        def find_project_root():
+            cur = os.path.abspath(os.getcwd())
+            while cur != "/" and not os.path.exists(os.path.join(cur, "README.md")):
+                cur = os.path.dirname(cur)
+            return cur
+
+        project_root = find_project_root()
+        self.papers_dir = os.path.join(project_root, "data", "papers")
         if not os.path.exists(self.papers_dir):
             raise FileNotFoundError(f"Papers directory not found: {self.papers_dir}")
             
