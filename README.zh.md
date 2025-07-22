@@ -220,4 +220,4 @@ Exiting chat.
 
 CiteWeave 仍处于早期开发阶段，可能存在bug或功能不全。如遇到问题，欢迎[提交 issue](https://github.com/Tiresiasel/CiteWeave/issues)或PR，您的反馈和贡献非常宝贵！
 
-如果你觉得本项目有趣或希望合作，欢迎直接联系我。 
+如果你觉得本项目有趣或希望合作，欢迎直接联系我 (machespresso@gmail.com)。

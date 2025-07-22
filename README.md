@@ -229,4 +229,4 @@ This project is licensed under the Apache License 2.0. See the LICENSE file for 
 
 CiteWeave is in an early stage of development and may have bugs or missing features. If you encounter any issues, please feel free to [open an issue](https://github.com/Tiresiasel/CiteWeave/issues) or submit a pull request. Your feedback and contributions are very welcome!
 
-If you find this project interesting or want to collaborate, you can contact me directly.
+If you find this project interesting or want to collaborate, you can contact me directly (machespresso@gmail.com).
