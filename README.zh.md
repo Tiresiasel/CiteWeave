@@ -64,7 +64,7 @@ graph TD
 ## ⚡ 快速开始：环境搭建
 
 1. **配置Python环境**
-   - 安装依赖：`pip install -r requirements.txt`（或用 `poetry install`）
+   - 安装依赖：`pip install -r requirements.txt`
 
 2. **配置环境变量**
    - 复制模板：`cp .env_template .env`

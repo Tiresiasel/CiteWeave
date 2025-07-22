@@ -65,7 +65,7 @@ graph TD
 
 1. **Set Up Your Python Environment**
    - Python 3.12 is recommended.
-   - Install dependencies: `pip install -r requirements.txt` (or use `poetry install` if you prefer Poetry).
+   - Install dependencies: `pip install -r requirements.txt`.
    - **First-time only:** Download the NLTK punkt tokenizer (required for sentence splitting):
      ```bash
      python -m nltk.downloader punkt
