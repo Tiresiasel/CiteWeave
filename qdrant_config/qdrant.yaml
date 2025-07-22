@@ -1,0 +1,33 @@
+storage:
+  storage_path: /qdrant/storage
+  # Enable WAL for better durability
+  enable_wal: true
+  # Optimize for read-heavy workloads
+  optimize_threshold: 20000
+
+service:
+  http_port: 6333
+  grpc_port: 6334
+  enable_tls: false
+  # Allow CORS for web interface
+  cors:
+    allowed_origins:
+      - "*"
+    allowed_methods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    allowed_headers:
+      - "*"
+
+cluster:
+  # Single node setup for development
+  enabled: false
+
+telemetry:
+  # Disable telemetry for privacy
+  enabled: false
+
+log_level: INFO 

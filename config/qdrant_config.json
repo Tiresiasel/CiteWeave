@@ -1,0 +1,29 @@
+{
+  "host": "localhost",
+  "port": 6333,
+  "grpc_port": 6334,
+  "prefer_grpc": false,
+  "https": false,
+  "api_key": null,
+  "prefix": null,
+  "timeout": 60.0,
+  "host_override": null,
+  "collections": {
+    "sentences": {
+      "vector_size": 384,
+      "distance": "Cosine"
+    },
+    "paragraphs": {
+      "vector_size": 384,
+      "distance": "Cosine"
+    },
+    "sections": {
+      "vector_size": 384,
+      "distance": "Cosine"
+    },
+    "citations": {
+      "vector_size": 384,
+      "distance": "Cosine"
+    }
+  }
+} 

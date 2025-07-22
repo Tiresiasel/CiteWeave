@@ -1809,7 +1809,7 @@ if __name__ == "__main__":
 
     # Import required modules
     from src.graph_builder import GraphDB
-    from src.vector_indexer import VectorIndexer
+    from src.storage.vector_indexer import VectorIndexer
     from src.author_paper_index import AuthorPaperIndex
 
     # Load Neo4j configuration

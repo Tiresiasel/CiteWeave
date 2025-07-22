@@ -368,14 +368,25 @@ class PDFProcessor:
             }
 
     def _extract_metadata_with_grobid(self, pdf_path: str) -> Dict:
-        with open(pdf_path, "rb") as f:
-            files = {"input": (os.path.basename(pdf_path), f, "application/pdf")}
-            headers = {"Accept": "application/xml"}
-            response = requests.post(
-                "http://localhost:8070/api/processHeaderDocument",
-                files=files,
-                headers=headers
-            )
+        try:
+            with open(pdf_path, "rb") as f:
+                files = {"input": (os.path.basename(pdf_path), f, "application/pdf")}
+                headers = {"Accept": "application/xml"}
+                response = requests.post(
+                    "http://localhost:8070/api/processHeaderDocument",
+                    files=files,
+                    headers=headers,
+                    timeout=30  # Add timeout
+                )
+        except requests.exceptions.ConnectionError:
+            logging.warning(f"GROBID service not available at localhost:8070 - skipping metadata extraction")
+            return {}
+        except requests.exceptions.Timeout:
+            logging.warning(f"GROBID request timed out - skipping metadata extraction")
+            return {}
+        except Exception as e:
+            logging.warning(f"Failed to connect to GROBID: {e}")
+            return {}
 
         if response.status_code != 200 or not response.text.strip().startswith("<"):
             logging.warning(f"Grobid did not return valid XML for {pdf_path}:\n{response.text[:300]}")

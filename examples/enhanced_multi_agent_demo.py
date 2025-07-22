@@ -174,7 +174,7 @@ def demo_configuration():
     print("=" * 30)
     
     try:
-        from enhanced_llm_manager import EnhancedLLMManager
+        from src.llm.enhanced_llm_manager import EnhancedLLMManager
         
         config_path = os.path.join(os.path.dirname(__file__), "..", "config", "model_config.json")
         llm_manager = EnhancedLLMManager(config_path)
@@ -201,7 +201,7 @@ async def test_language_processing():
     print("=" * 30)
     
     try:
-        from enhanced_llm_manager import EnhancedLLMManager
+        from src.llm.enhanced_llm_manager import EnhancedLLMManager
         
         config_path = os.path.join(os.path.dirname(__file__), "..", "config", "model_config.json")
         llm_manager = EnhancedLLMManager(config_path)

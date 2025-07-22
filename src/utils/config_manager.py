@@ -7,8 +7,7 @@ import json
 import os
 from typing import Any, Dict, Optional
 
-CONFIG_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "config")
-
+CONFIG_DIR = "config"
 class ConfigManager:
     """
     Centralized manager for loading and accessing project configuration files.

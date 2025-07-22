@@ -11,6 +11,7 @@ import logging
 import re
 from typing import List, Dict, Optional, Tuple
 from datetime import datetime
+import shutil  # Add this at the top if not already present
 
 from src.processing.pdf.pdf_processor import PDFProcessor
 from src.processing.citation_parser import CitationParser
@@ -52,7 +53,7 @@ class DocumentProcessor:
         
         if enable_mineru:
             try:
-                from pdf_processor_mineru import MinerUPDFProcessor
+                from src.processing.pdf.pdf_processor_mineru import MinerUPDFProcessor
                 self.pdf_processor = MinerUPDFProcessor(
                     storage_root=storage_root, 
                     preferred_engine=preferred_pdf_engine,
@@ -62,15 +63,15 @@ class DocumentProcessor:
                 logging.info("Initialized with MinerU-enhanced PDF processor (enabled via config)")
             except ImportError:
                 logging.warning("MinerU enabled in config but not available, using traditional processor")
-                from pdf_processor import PDFProcessor
+                from src.processing.pdf.pdf_processor import PDFProcessor
                 self.pdf_processor = PDFProcessor(storage_root=storage_root, preferred_engine=preferred_pdf_engine)
             except Exception as e:
                 logging.warning(f"Failed to initialize MinerU processor, using traditional: {e}")
-                from pdf_processor import PDFProcessor
+                from src.processing.pdf.pdf_processor import PDFProcessor
                 self.pdf_processor = PDFProcessor(storage_root=storage_root, preferred_engine=preferred_pdf_engine)
         else:
             # 使用传统PDF处理器
-            from pdf_processor import PDFProcessor
+            from src.processing.pdf.pdf_processor import PDFProcessor
             self.pdf_processor = PDFProcessor(storage_root=storage_root, preferred_engine=preferred_pdf_engine)
             logging.info("Initialized with traditional PDF processor (MinerU disabled in config)")
         
@@ -79,7 +80,7 @@ class DocumentProcessor:
         # Initialize Vector Indexer for multi-level embedding
         self.vector_indexer = None
         try:
-            from vector_indexer import VectorIndexer
+            from src.storage.vector_indexer import VectorIndexer
             self.vector_indexer = VectorIndexer()
             logging.info("Vector indexer initialized for multi-level embedding")
         except Exception as e:
@@ -137,6 +138,16 @@ class DocumentProcessor:
             year=metadata["year"]
         )
         logging.info(f"Generated paper ID: {paper_id}")
+
+        # Copy the original PDF into the paper's folder
+        paper_dir = os.path.join(self.storage_root, paper_id)
+        os.makedirs(paper_dir, exist_ok=True)
+        pdf_dest = os.path.join(paper_dir, "original.pdf")
+        if not os.path.exists(pdf_dest):
+            shutil.copy2(pdf_path, pdf_dest)
+            logging.info(f"Copied original PDF to {pdf_dest}")
+        else:
+            logging.info(f"Original PDF already exists at {pdf_dest}")
         
         # Step 2: Extract document structure (sections, paragraphs, sentences)
         logging.info("Extracting document structure from PDF...")
@@ -156,6 +167,7 @@ class DocumentProcessor:
         # Step 4: Initialize CitationParser with extracted metadata and references
         logging.info("Initializing citation analysis...")
         references = self._get_or_extract_references(pdf_path)
+        
         
         # Initialize CitationParser with shared data
         self.citation_parser = CitationParser(

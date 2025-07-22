@@ -18,7 +18,12 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
-## 🔄 **MAJOR ARCHITECTURAL OVERHAUL (2025-07-16)**
+## **CLI Interface Development (2025-07-22)**
+
+- **Enhanced CLI Interface**: Added a new CLI interface for the multi-agent research system.
+- **Improved Documentation**: Added a new CLI interface for the folder batch upload.
+
+## **MAJOR ARCHITECTURAL OVERHAUL (2025-07-16)**
 
 ### **Parallel Structure Redesign - COMPLETED ✅**
 - **Revolutionary Change**: Complete redesign of `processed_document.json` structure

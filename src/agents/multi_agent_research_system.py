@@ -7,12 +7,18 @@ import json
 import logging
 import uuid
 import os
+import sys
 from typing import Dict, List, Optional, Tuple, Any, Union, TypedDict, Annotated
 from dataclasses import dataclass, asdict
 from enum import Enum
 import time
 import operator
 import re
+
+# Add project root to Python path for imports
+project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+if project_root not in sys.path:
+    sys.path.insert(0, project_root)
 
 try:
     from langgraph.graph import StateGraph, END, START
@@ -355,14 +361,39 @@ Return ONLY a JSON object with the extracted entities."""
             primary_entity = question
             primary_entity_type = "concept"
         
-        # Determine query focus
+        # Use LLM to determine query focus
         query_focus = "concept_search"
-        if "cite" in question_lower:
-            query_focus = "reverse_citation"
-        elif "paper" in question_lower or "article" in question_lower:
-            query_focus = "paper_search"
-        elif author_names:
-            query_focus = "author_search"
+        try:
+            focus_model = self.model_config_manager.get_model_instance("query_analyzer")
+            if focus_model:
+                system_prompt = """You are an expert at determining the focus of academic research queries. Your job is to classify the query focus.
+
+QUERY FOCUS TYPES:
+- reverse_citation: "Who cites X?", "Papers citing X", "Citation context of X"
+- paper_search: "Find paper about Y", "Paper titled Z", "article about"
+- author_search: "Papers by author X", "X's publications"
+- concept_search: "What is X?", "Explain concept Y", general research questions
+
+Return ONLY the focus type: reverse_citation, paper_search, author_search, or concept_search"""
+
+                user_prompt = f"Determine the focus of this query: {question}"
+                
+                messages = [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=user_prompt)
+                ]
+                
+                response = focus_model.invoke(messages)
+                response_content = response.content.strip().lower()
+                
+                if response_content in ["reverse_citation", "paper_search", "author_search", "concept_search"]:
+                    query_focus = response_content
+                elif author_names:
+                    query_focus = "author_search"
+        except Exception as e:
+            # Fallback logic
+            if author_names:
+                query_focus = "author_search"
         
         return {
             "author_names": list(set(author_names)),
@@ -400,6 +431,8 @@ class ResearchState(TypedDict):
     reflection_result: Optional[Dict[str, Any]]
     information_summary: Optional[Dict[str, Any]]  # New: Summary of gathered information
     user_confirmation: Optional[str]  # New: User's confirmation (continue/expand)
+    additional_queries: Optional[List[str]]  # New: Additional queries from user instructions
+    conversation_history: Optional[List[Dict[str, Any]]]  # New: Chat conversation history
     final_response: Optional[str]
     messages: Annotated[List[Any], operator.add]
     error: Optional[str]
@@ -432,93 +465,127 @@ class ReflectionResult:
     confidence: float
     collected_info: Dict[str, Any]
 
-class QuestionAnalysisAgent:
-    """问题分析智能体"""
+class LLMQuestionAnalysisAgent:
+    """LLM-based question analysis agent - completely replaces hardcoded logic"""
     
     def __init__(self, model_config_manager: ModelConfigManager = None):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.model_config_manager = model_config_manager or ModelConfigManager()
+        self.entity_extractor = IntelligentEntityExtractor(self.model_config_manager)
     
     def analyze_question(self, question: str, request_id=None) -> QueryIntent:
-        """分析用户问题，提取查询意图"""
-        log_event("QuestionAnalysisAgent", "input", {"question": question}, level=logging.DEBUG, request_id=request_id)
-        self.logger.info(f"Analyzing question: {question}")
+        """Use LLM to analyze user question and extract query intent"""
+        log_event("LLMQuestionAnalysisAgent", "input", {"question": question}, level=logging.DEBUG, request_id=request_id)
+        self.logger.info(f"Analyzing question with LLM: {question}")
         
-        question_lower = question.lower()
-        
-        # 检测查询类型
-        if "引用" in question and ("观点" in question or "内容" in question):
-            # 如果是"引用X的文章"，这是反向引用分析
-            query_type = QueryType.REVERSE_CITATION_ANALYSIS
-            required_info = ["citing_papers", "citation_contexts", "cited_viewpoints"]
-        elif "引用" in question and ("的文章" in question or "论文" in question):
-            # 如果只是"引用X的文章"，也是反向引用分析
-            query_type = QueryType.REVERSE_CITATION_ANALYSIS
-            required_info = ["citing_papers", "citation_contexts"]
-        elif "文章" in question or "论文" in question:
-            query_type = QueryType.PAPER_SEARCH
-            required_info = ["paper_metadata", "paper_content"]
-        elif "作者" in question or "author" in question_lower:
-            query_type = QueryType.AUTHOR_SEARCH
-            required_info = ["author_papers", "author_info"]
-        else:
-            query_type = QueryType.CONCEPT_SEARCH
-            required_info = ["relevant_content"]
-        
-        # 提取目标实体
-        target_entity = self._extract_target_entity(question)
-        
-        # 确定实体类型
-        if query_type in [QueryType.CITATION_ANALYSIS, QueryType.REVERSE_CITATION_ANALYSIS]:
-            entity_type = EntityType.AUTHOR
-        elif query_type == QueryType.PAPER_SEARCH:
-            entity_type = EntityType.PAPER
-        else:
-            entity_type = EntityType.CONCEPT
-        
-        # 评估复杂度
-        complexity = "high" if len(required_info) > 2 else "medium"
-        
-        intent = QueryIntent(
-            query_type=query_type,
-            target_entity=target_entity,
-            entity_type=entity_type,
-            required_info=required_info,
-            complexity=complexity,
-            original_question=question
-        )
-        
-        log_event("QuestionAnalysisAgent", "output", asdict(intent), level=logging.INFO, request_id=request_id)
-        return intent
-    
-    def _extract_target_entity(self, question: str) -> str:
-        """提取目标实体名称"""
-        # 简单的实体提取逻辑，可以后续优化
-        question_lower = question.lower()
-        
-        # 查找常见模式
-        if "波特" in question or "porter" in question_lower:
-            return "porter"
-        elif "引用" in question:
-            # 尝试提取引用后的名字
-            import re
-            # 匹配中文和英文名字模式
-            patterns = [
-                r'引用([^\s的]{2,10})',
-                r'([A-Za-z]+(?:\s+[A-Za-z]+)*)',
-            ]
-            for pattern in patterns:
-                match = re.search(pattern, question)
-                if match:
-                    return match.group(1).strip()
-        
-        # 默认返回问题中的关键词
-        words = question.split()
-        for word in words:
-            if len(word) > 2 and word not in ["的", "文章", "论文", "引用", "观点", "什么"]:
-                return word
-        
-        return "unknown"
+        try:
+            # Step 1: Extract entities using LLM
+            log_event("LLMQuestionAnalysisAgent", "step_start", {"step": "entity_extraction"}, level=logging.INFO, request_id=request_id)
+            entities = self.entity_extractor.extract_entities(question, request_id)
+            log_event("LLMQuestionAnalysisAgent", "step_finish", {"step": "entity_extraction", "entities": entities}, level=logging.INFO, request_id=request_id)
+            
+            # Step 2: Use LLM for query intent analysis
+            query_analyzer_model = self.model_config_manager.get_model_instance("query_analyzer")
+            if query_analyzer_model:
+                system_prompt = """You are an expert academic research query analyzer. Your job is to understand the user's research intent and extract structured information.
+
+QUERY TYPES:
+- reverse_citation_analysis: "Who cites X?", "Papers citing X", "Citation context of X"
+- citation_analysis: "What does X cite?", "References in X paper"  
+- author_search: "Papers by author X", "X's publications"
+- paper_search: "Find paper about Y", "Paper titled Z"
+- concept_search: "What is X?", "Explain concept Y"
+
+ENTITY EXTRACTION:
+- For citation queries: Extract the AUTHOR NAME being cited (e.g., "Rivkin", "Porter", "Smith")
+- For paper queries: Extract the PAPER TITLE or keywords
+- For author queries: Extract the AUTHOR NAME
+- For concept queries: Extract the CONCEPT term
+
+REQUIRED INFORMATION MAPPING:
+- reverse_citation_analysis: ["citing_papers", "citation_contexts", "cited_viewpoints"]
+- citation_analysis: ["cited_papers", "citation_contexts"]
+- author_search: ["author_papers", "author_info"]
+- paper_search: ["paper_metadata", "paper_content"]
+- concept_search: ["relevant_content", "concept_explanations"]
+
+Return ONLY a JSON object with: query_type, target_entity, entity_type, required_info, complexity, reasoning"""
+                
+                entities_context = f"\nExtracted entities: {json.dumps(entities, ensure_ascii=False)}"
+                user_prompt = f"Analyze this research question: {question}{entities_context}"
+                
+                messages = [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=user_prompt)
+                ]
+                
+                log_event("LLMQuestionAnalysisAgent", "step_start", {"step": "llm_intent_analysis"}, level=logging.INFO, request_id=request_id)
+                response = query_analyzer_model.invoke(messages)
+                log_event("LLMQuestionAnalysisAgent", "step_finish", {"step": "llm_intent_analysis", "llm_response": response.content[:200]}, level=logging.INFO, request_id=request_id)
+                
+                # Parse LLM response
+                try:
+                    response_content = response.content.strip()
+                    if "```json" in response_content:
+                        json_start = response_content.find("```json") + 7
+                        json_end = response_content.find("```", json_start)
+                        json_text = response_content[json_start:json_end].strip()
+                    elif "{" in response_content and "}" in response_content:
+                        json_start = response_content.find("{")
+                        json_end = response_content.rfind("}") + 1
+                        json_text = response_content[json_start:json_end]
+                    else:
+                        raise ValueError("No JSON found in response")
+                    
+                    query_intent_data = json.loads(json_text)
+                    
+                    # Create QueryIntent object
+                    intent = QueryIntent(
+                        query_type=QueryType(query_intent_data.get("query_type", "concept_search")),
+                        target_entity=query_intent_data.get("target_entity", entities.get("primary_entity", "unknown")),
+                        entity_type=EntityType(query_intent_data.get("entity_type", entities.get("primary_entity_type", "concept"))),
+                        required_info=query_intent_data.get("required_info", ["relevant_content"]),
+                        complexity=query_intent_data.get("complexity", "medium"),
+                        original_question=question
+                    )
+                    
+                except Exception as e:
+                    log_event("LLMQuestionAnalysisAgent", "llm_parsing_error", {"error": str(e)}, level=logging.WARNING, request_id=request_id)
+                    # Fallback to entity extraction results
+                    intent = QueryIntent(
+                        query_type=QueryType(entities.get("query_focus", "concept_search")),
+                        target_entity=entities.get("primary_entity", "unknown"),
+                        entity_type=EntityType(entities.get("primary_entity_type", "concept")),
+                        required_info=["relevant_content"],
+                        complexity="medium",
+                        original_question=question
+                    )
+            else:
+                # Fallback when no LLM is available
+                log_event("LLMQuestionAnalysisAgent", "fallback_used", {"reason": "no_llm_available"}, level=logging.WARNING, request_id=request_id)
+                intent = QueryIntent(
+                    query_type=QueryType(entities.get("query_focus", "concept_search")),
+                    target_entity=entities.get("primary_entity", "unknown"),
+                    entity_type=EntityType(entities.get("primary_entity_type", "concept")),
+                    required_info=["relevant_content"],
+                    complexity="medium",
+                    original_question=question
+                )
+            
+            log_event("LLMQuestionAnalysisAgent", "output", asdict(intent), level=logging.INFO, request_id=request_id)
+            return intent
+            
+        except Exception as e:
+            log_event("LLMQuestionAnalysisAgent", "error", {"error": str(e)}, level=logging.ERROR, request_id=request_id)
+            # Ultimate fallback
+            return QueryIntent(
+                query_type=QueryType.CONCEPT_SEARCH,
+                target_entity="unknown",
+                entity_type=EntityType.CONCEPT,
+                required_info=["relevant_content"],
+                complexity="medium",
+                original_question=question
+            )
 
 class FuzzyMatchingAgent:
     """模糊匹配智能体"""
@@ -528,49 +595,85 @@ class FuzzyMatchingAgent:
         self.logger = logging.getLogger(self.__class__.__name__)
         self.model_config_manager = model_config_manager or ModelConfigManager()
     
-    def find_matching_entities(self, entity_name: str, entity_type: EntityType, request_id=None) -> Tuple[List[Dict], float]:
+    def find_matching_entities(self, entity_name: str, entity_type: EntityType, request_id=None, query_type: str = None) -> Tuple[List[Dict], float]:
         """查找匹配的实体"""
-        log_event("FuzzyMatchingAgent", "input", {"entity_name": entity_name, "entity_type": entity_type.value}, level=logging.DEBUG, request_id=request_id)
-        self.logger.info(f"Finding matches for {entity_type.value}: {entity_name}")
+        log_event("FuzzyMatchingAgent", "input", {"entity_name": entity_name, "entity_type": entity_type.value, "query_type": query_type}, level=logging.DEBUG, request_id=request_id)
+        self.logger.info(f"Finding matches for {entity_type.value}: {entity_name} (query_type: {query_type})")
+        
+        # For citation queries, ALWAYS prioritize graph database
+        is_citation_query = query_type in ["reverse_citation_analysis", "citation_analysis"] if query_type else False
         
         if entity_type == EntityType.AUTHOR:
-            return self._find_matching_authors(entity_name)
+            matches, confidence = self._find_matching_authors(entity_name, request_id)
+            
+            # For citation queries, if graph DB failed, don't fall back to vector search
+            if is_citation_query and not matches:
+                self.logger.warning(f"Citation query requires graph database for author '{entity_name}', but no matches found. Vector search fallback disabled for citation queries.")
+                return [], 0.0
+            
+            return matches, confidence
         elif entity_type == EntityType.PAPER:
-            return self._find_matching_papers(entity_name)
+            matches, confidence = self._find_matching_papers(entity_name)
+            
+            # For citation queries, if graph DB failed, don't fall back to vector search
+            if is_citation_query and not matches:
+                self.logger.warning(f"Citation query requires graph database for paper '{entity_name}', but no matches found. Vector search fallback disabled for citation queries.")
+                return [], 0.0
+            
+            return matches, confidence
+        elif entity_type == EntityType.CONCEPT:
+            return self._find_matching_concepts(entity_name)
         else:
             return [], 0.0
     
-    def _find_matching_authors(self, author_name: str) -> Tuple[List[Dict], float]:
+    def _find_matching_authors(self, author_name: str, request_id=None) -> Tuple[List[Dict], float]:
         """查找匹配的作者"""
         try:
             # 首先尝试图数据库查询
             results = self.query_agent.get_papers_id_by_author(author_name)
             
-            if results.get("found"):
-                matches = results.get("results", [])
-                if len(matches) == 1:
+            # Check for successful graph database results
+            if results.get("status") in ["single_match", "multiple_matches"]:
+                if results.get("status") == "single_match":
+                    # Single match case
+                    paper_info = results.get("paper_info", {})
+                    matches = [{
+                        "id": paper_info.get("paper_id"),
+                        "paper_id": paper_info.get("paper_id"),
+                        "name": paper_info.get("matched_author", ""),
+                        "authors": paper_info.get("authors", []),
+                        "title": paper_info.get("title", ""),
+                        "year": paper_info.get("year", ""),
+                        "match_score": paper_info.get("match_ratio", 0.0)
+                    }]
                     confidence = 0.9
-                elif len(matches) <= 3:
-                    confidence = 0.7
                 else:
-                    confidence = 0.5
+                    # Multiple matches case
+                    candidates = results.get("candidates", [])
+                    matches = []
+                    for candidate in candidates:
+                        matches.append({
+                            "id": candidate.get("paper_id"),
+                            "paper_id": candidate.get("paper_id"),
+                            "name": candidate.get("matched_author", ""),
+                            "authors": candidate.get("authors", []),
+                            "title": candidate.get("title", ""),
+                            "year": candidate.get("year", ""),
+                            "match_score": candidate.get("match_ratio", 0.0)
+                        })
+                    
+                    if len(matches) == 1:
+                        confidence = 0.9
+                    elif len(matches) <= 3:
+                        confidence = 0.7
+                    else:
+                        confidence = 0.5
                 
-                # 格式化匹配结果
-                formatted_matches = []
-                for match in matches:
-                    formatted_matches.append({
-                        "id": match.get("paper_id"),
-                        "name": ", ".join(match.get("authors", [])),
-                        "title": match.get("title", ""),
-                        "year": match.get("year", ""),
-                        "match_score": match.get("match_score", 0.0)
-                    })
-                
-                log_event("FuzzyMatchingAgent", "candidates", {"matches": matches, "confidence": confidence}, level=logging.INFO, request_id=request_id)
-                return formatted_matches, confidence
+                log_event("FuzzyMatchingAgent", "graph_db_success", {"matches": matches, "confidence": confidence, "status": results.get("status")}, level=logging.INFO, request_id=request_id)
+                return matches, confidence
             
-            # 如果图数据库不可用，使用向量搜索回退
-            self.logger.info("Graph DB not available, trying vector search for author")
+            # 如果图数据库不可用或没有找到结果，使用向量搜索回退
+            self.logger.info(f"Graph DB returned status: {results.get('status')}, trying vector search for author")
             return self._find_authors_via_vector_search(author_name)
             
         except Exception as e:
@@ -580,7 +683,7 @@ class FuzzyMatchingAgent:
     def _find_authors_via_vector_search(self, author_name: str) -> Tuple[List[Dict], float]:
         """通过向量搜索查找作者"""
         try:
-            from vector_indexer import VectorIndexer
+            from src.storage.vector_indexer import VectorIndexer
             vector_indexer = VectorIndexer()
             search_results = vector_indexer.search_all_collections(
                 query=author_name, 
@@ -629,21 +732,103 @@ class FuzzyMatchingAgent:
         try:
             results = self.query_agent.get_papers_id_by_title(paper_title)
             
-            if not results.get("found"):
-                return [], 0.0
+            # Check for successful graph database results
+            if results.get("status") in ["single_match", "multiple_matches"]:
+                if results.get("status") == "single_match":
+                    # Single match case
+                    paper_info = results.get("paper_info", {})
+                    matches = [{
+                        "id": paper_info.get("paper_id"),
+                        "paper_id": paper_info.get("paper_id"),
+                        "name": paper_info.get("title", ""),
+                        "title": paper_info.get("title", ""),
+                        "authors": paper_info.get("authors", []),
+                        "year": paper_info.get("year", ""),
+                        "match_score": paper_info.get("similarity_score", 0.0)
+                    }]
+                    confidence = 0.9
+                else:
+                    # Multiple matches case
+                    candidates = results.get("candidates", [])
+                    matches = []
+                    for candidate in candidates:
+                        matches.append({
+                            "id": candidate.get("paper_id"),
+                            "paper_id": candidate.get("paper_id"),
+                            "name": candidate.get("title", ""),
+                            "title": candidate.get("title", ""),
+                            "authors": candidate.get("authors", []),
+                            "year": candidate.get("year", ""),
+                            "match_score": candidate.get("similarity_score", 0.0)
+                        })
+                    
+                    if len(matches) == 1:
+                        confidence = 0.9
+                    elif len(matches) <= 3:
+                        confidence = 0.7
+                    else:
+                        confidence = 0.5
+                
+                log_event("FuzzyMatchingAgent", "graph_db_paper_success", {"matches": matches, "confidence": confidence, "status": results.get("status")}, level=logging.INFO, request_id=request_id)
+                return matches, confidence
             
-            matches = results.get("results", [])
-            if len(matches) == 1:
-                confidence = 0.9
-            elif len(matches) <= 3:
-                confidence = 0.7
-            else:
-                confidence = 0.5
-            
-            return matches, confidence
+            # If graph database failed or no results, return empty
+            self.logger.info(f"Graph DB returned status: {results.get('status')} for paper title search")
+            return [], 0.0
             
         except Exception as e:
             self.logger.error(f"Error finding papers: {e}")
+            return [], 0.0
+    
+    def _find_matching_concepts(self, concept_name: str) -> Tuple[List[Dict], float]:
+        """Find matching concepts using vector search"""
+        try:
+            from src.storage.vector_indexer import VectorIndexer
+            vector_indexer = VectorIndexer()
+            
+            # Search for the concept in all collections
+            search_results = vector_indexer.search_all_collections(
+                query=concept_name, 
+                limit_per_collection=10
+            )
+            
+            # Collect unique papers that mention this concept
+            concept_papers = {}
+            total_matches = 0
+            
+            for collection, results in search_results.items():
+                for result in results:
+                    paper_id = result.get("paper_id")
+                    if paper_id and paper_id not in concept_papers:
+                        concept_papers[paper_id] = {
+                            "id": paper_id,
+                            "paper_id": paper_id,
+                            "name": concept_name,
+                            "title": result.get("title", ""),
+                            "authors": result.get("authors", []),
+                            "year": result.get("year", ""),
+                            "match_score": result.get("score", 0.0),
+                            "collection": collection
+                        }
+                        total_matches += 1
+            
+            matches = list(concept_papers.values())
+            
+            # Calculate confidence based on number of matches
+            if total_matches >= 10:
+                confidence = 0.9
+            elif total_matches >= 5:
+                confidence = 0.7
+            elif total_matches >= 2:
+                confidence = 0.5
+            else:
+                confidence = 0.3
+            
+            self.logger.info(f"Found {len(matches)} papers mentioning concept '{concept_name}' via vector search")
+            return matches, confidence
+            
+        except Exception as e:
+            self.logger.error(f"Error in vector search for concepts: {e}")
             return [], 0.0
 
 class UserClarificationAgent:
@@ -953,7 +1138,7 @@ Return ONLY a JSON object with: query_type, target_entity, entity_type, reasonin
     def _call_llm_with_functions(self, system_prompt: str, user_prompt: str) -> Any:
         """Call LLM with function calling capability"""
         try:
-            from enhanced_llm_manager import EnhancedLLMManager
+            from src.llm.enhanced_llm_manager import EnhancedLLMManager
             
             # Get the configured model for query planning
             model_config_manager = ModelConfigManager()
@@ -962,20 +1147,26 @@ Return ONLY a JSON object with: query_type, target_entity, entity_type, reasonin
             # Use EnhancedLLMManager with configuration
             llm_manager = EnhancedLLMManager(config_path="config/model_config.json")
             
-            # Build messages
+            # For now, use simple text generation instead of function calling
+            # This avoids the complexity of tool conversion
             messages = [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ]
             
-            # Perform Function Calling with configured parameters
-            response = llm_manager.call_with_tools(
+            # Use simple response generation
+            response = llm_manager.generate_response(
                 messages=messages,
-                tools=self.available_functions,
                 max_tokens=planning_config.get("max_tokens", 1000)
             )
             
-            return response
+            # Return a mock response that indicates no function calls
+            # This will trigger the fallback planning logic
+            return type('MockResponse', (), {
+                'tool_calls': [],
+                'content': response,
+                'additional_kwargs': {}
+            })()
                 
         except Exception as e:
             self.logger.error(f"LLM Function Calling failed: {e}")
@@ -994,14 +1185,33 @@ Return ONLY a JSON object with: query_type, target_entity, entity_type, reasonin
             return self._create_error_plan("No response from LLM")
         
         try:
-            # 解析function calls
+            # Parse function calls from LangChain response
+            tool_calls = []
+            
+            # Check for tool_calls attribute (LangChain format)
             if hasattr(response, 'tool_calls') and response.tool_calls:
+                tool_calls = response.tool_calls
+            # Check for tool_calls in additional_kwargs (alternative LangChain format)
+            elif hasattr(response, 'additional_kwargs') and 'tool_calls' in response.additional_kwargs:
+                tool_calls = response.additional_kwargs['tool_calls']
+            # Check for tool_calls in the response content (if it's a dict)
+            elif hasattr(response, 'content') and isinstance(response.content, dict) and 'tool_calls' in response.content:
+                tool_calls = response.content['tool_calls']
+            
+            if tool_calls:
                 step_counter = 1
-                for tool_call in response.tool_calls:
-                    function_name = tool_call.function.name
-                    function_args = json.loads(tool_call.function.arguments)
+                for tool_call in tool_calls:
+                    # Handle different tool call formats
+                    if hasattr(tool_call, 'function'):
+                        function_name = tool_call.function.name
+                        function_args = json.loads(tool_call.function.arguments)
+                    elif isinstance(tool_call, dict):
+                        function_name = tool_call.get('function', {}).get('name', '')
+                        function_args = json.loads(tool_call.get('function', {}).get('arguments', '{}'))
+                    else:
+                        continue
                     
-                    # 确定数据库类型
+                    # Determine database type
                     if function_name.startswith('get_') or function_name.startswith('search_'):
                         if function_name in ['get_papers_citing_paper', 'get_papers_cited_by_paper', 
                                            'get_sentences_citing_paper', 'get_paragraphs_citing_paper',
@@ -1021,9 +1231,9 @@ Return ONLY a JSON object with: query_type, target_entity, entity_type, reasonin
                         })
                         step_counter += 1
                         
-            # If no function calls found, return error
+            # If no function calls found, create fallback plan based on query intent
             if not plan["query_sequence"]:
-                return self._create_error_plan("No function calls found in LLM response")
+                return self._create_fallback_plan(intent, target_entity)
                 
         except Exception as e:
             self.logger.error(f"Failed to parse LLM response: {e}")
@@ -1044,6 +1254,119 @@ Return ONLY a JSON object with: query_type, target_entity, entity_type, reasonin
             "error_message": error_message
         }
 
+    def _create_fallback_plan(self, intent: QueryIntent, target_entity: Dict) -> Dict[str, Any]:
+        """Create a fallback plan based on query intent when function calling fails"""
+        self.logger.info(f"Creating fallback plan for {intent.query_type.value}")
+        
+        plan = {
+            "query_sequence": [],
+            "fallback_strategies": [],
+            "success_criteria": {"minimum_results": 1},
+            "reasoning": f"Fallback plan based on {intent.query_type.value}",
+            "error": False
+        }
+        
+        step_counter = 1
+        # Mapping table for (query_type, entity_type) to (database, method, params_builder, expected_result, reasoning)
+        QUERY_METHOD_MAP = {
+            (QueryType.AUTHOR_SEARCH, EntityType.AUTHOR): (
+                "graph_db", "get_papers_id_by_author", lambda intent, target_entity: {"author_name": intent.target_entity}, "author_papers", "Find papers by the target author"
+            ),
+            (QueryType.PAPER_SEARCH, EntityType.AUTHOR): (
+                "graph_db", "get_papers_id_by_author", lambda intent, target_entity: {"author_name": intent.target_entity}, "author_papers", "Find papers by the target author (from paper_search)"
+            ),
+            (QueryType.PAPER_SEARCH, EntityType.PAPER): (
+                "graph_db", "get_papers_id_by_title", lambda intent, target_entity: {"title": intent.target_entity}, "paper_matches", "Find the target paper by title"
+            ),
+            (QueryType.CONCEPT_SEARCH, EntityType.CONCEPT): (
+                "vector_db", "search_all_collections", lambda intent, target_entity: {"query": intent.target_entity, "limit_per_collection": 10}, "search_results", "Search for content related to the concept"
+            ),
+        }
+
+        # Special handling for citation/reverse citation (need paper_id)
+        if intent.query_type == QueryType.REVERSE_CITATION_ANALYSIS:
+            if target_entity and "paper_id" in target_entity:
+                plan["query_sequence"].append({
+                    "step": step_counter,
+                    "database": "graph_db",
+                    "method": "get_papers_citing_paper",
+                    "params": {"paper_id": target_entity["paper_id"]},
+                    "expected_result": "citing_papers",
+                    "required": True,
+                    "reasoning": "Find papers that cite the target paper"
+                })
+                step_counter += 1
+                plan["query_sequence"].append({
+                    "step": step_counter,
+                    "database": "graph_db",
+                    "method": "get_sentences_citing_paper",
+                    "params": {"paper_id": target_entity["paper_id"]},
+                    "expected_result": "citation_sentences",
+                    "required": False,
+                    "reasoning": "Get citation contexts and viewpoints"
+                })
+                step_counter += 1
+            else:
+                plan["query_sequence"].append({
+                    "step": step_counter,
+                    "database": "vector_db",
+                    "method": "search_all_collections",
+                    "params": {"query": f"citations to {intent.target_entity}", "limit_per_collection": 10},
+                    "expected_result": "search_results",
+                    "required": True,
+                    "reasoning": "Search for citations to the target entity"
+                })
+                step_counter += 1
+        elif intent.query_type == QueryType.CITATION_ANALYSIS:
+            if target_entity and "paper_id" in target_entity:
+                plan["query_sequence"].append({
+                    "step": step_counter,
+                    "database": "graph_db",
+                    "method": "get_papers_cited_by_paper",
+                    "params": {"paper_id": target_entity["paper_id"]},
+                    "expected_result": "cited_papers",
+                    "required": True,
+                    "reasoning": "Find papers cited by the target paper"
+                })
+                step_counter += 1
+        else:
+            # Use mapping table for other cases
+            key = (intent.query_type, intent.entity_type)
+            if key in QUERY_METHOD_MAP:
+                database, method, params_builder, expected_result, reasoning = QUERY_METHOD_MAP[key]
+                plan["query_sequence"].append({
+                    "step": step_counter,
+                    "database": database,
+                    "method": method,
+                    "params": params_builder(intent, target_entity),
+                    "expected_result": expected_result,
+                    "required": True,
+                    "reasoning": reasoning
+                })
+                step_counter += 1
+            else:
+                # Default fallback: concept search
+                plan["query_sequence"].append({
+                    "step": step_counter,
+                    "database": "vector_db",
+                    "method": "search_all_collections",
+                    "params": {"query": intent.original_question, "limit_per_collection": 10},
+                    "expected_result": "search_results",
+                    "required": True,
+                    "reasoning": "General semantic search as fallback"
+                })
+                step_counter += 1
+        
+        # Add fallback strategies
+        plan["fallback_strategies"] = [
+            {
+                "method": "search_all_collections",
+                "params": {"query": intent.original_question, "limit_per_collection": 5},
+                "reasoning": "General semantic search as fallback"
+            }
+        ]
+        return plan
+    
     def _analyze_information_requirements(self, intent: QueryIntent) -> Dict[str, Any]:
         """分析问题需要什么类型的信息"""
         question = intent.original_question.lower()
@@ -1057,35 +1380,68 @@ Return ONLY a JSON object with: query_type, target_entity, entity_type, reasonin
             "primary_focus": "unknown"
         }
         
-        # 分析关键词模式
-        if "引用" in question and ("的" in question and ("文章" in question or "论文" in question)):
-            if "观点" in question or "内容" in question or "分别是什么" in question:
-                requirements.update({
-                    "needs_citing_papers": True,
-                    "needs_citation_contexts": True,
-                    "needs_viewpoints": True,
-                    "primary_focus": "reverse_citation_with_content"
-                })
+        # Use LLM to analyze information requirements
+        try:
+            requirements_model = self.model_config_manager.get_model_instance("query_analyzer")
+            if requirements_model:
+                system_prompt = """You are an expert at analyzing academic research query requirements. Your job is to determine what information is needed.
+
+REQUIREMENT TYPES:
+- needs_citing_papers: Papers that cite the target
+- needs_cited_papers: Papers cited by the target  
+- needs_citation_contexts: Context around citations
+- needs_viewpoints: Opinions, arguments, or viewpoints
+- needs_author_papers: Papers by specific authors
+- needs_content_search: General content analysis
+
+PRIMARY FOCUS TYPES:
+- reverse_citation_with_content: Who cites X and what do they say about it
+- reverse_citation: Who cites X (basic)
+- forward_citation: What does X cite
+- author_analysis: Analysis of author's work
+- content_analysis: General content research
+
+Return ONLY a JSON object with the requirements and primary_focus."""
+
+                user_prompt = f"Analyze the information requirements for this query: {question}"
+                
+                messages = [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=user_prompt)
+                ]
+                
+                response = requirements_model.invoke(messages)
+                
+                try:
+                    response_content = response.content.strip()
+                    if "```json" in response_content:
+                        json_start = response_content.find("```json") + 7
+                        json_end = response_content.find("```", json_start)
+                        json_text = response_content[json_start:json_end].strip()
+                    elif "{" in response_content and "}" in response_content:
+                        json_start = response_content.find("{")
+                        json_end = response_content.rfind("}") + 1
+                        json_text = response_content[json_start:json_end]
+                    else:
+                        raise ValueError("No JSON found in response")
+                    
+                    llm_requirements = json.loads(json_text)
+                    requirements.update(llm_requirements)
+                    
+                except Exception as e:
+                    # Fallback to basic requirements
+                    requirements.update({
+                        "needs_content_search": True,
+                        "primary_focus": "content_analysis"
+                    })
             else:
+                # Fallback when no LLM is available
                 requirements.update({
-                    "needs_citing_papers": True,
-                    "primary_focus": "reverse_citation"
+                    "needs_content_search": True,
+                    "primary_focus": "content_analysis"
                 })
-        
-        elif "被引用" in question or "引用了" in question:
-            requirements.update({
-                "needs_cited_papers": True,
-                "primary_focus": "forward_citation"
-            })
-        
-        elif ("作者" in question and ("文章" in question or "论文" in question)) or \
-             (("的论文" in question or "的文章" in question) and not "引用" in question):
-            requirements.update({
-                "needs_author_papers": True,
-                "primary_focus": "author_analysis"
-            })
-        
-        elif "研究" in question or "内容" in question or "概念" in question:
+        except Exception as e:
+            # Ultimate fallback
             requirements.update({
                 "needs_content_search": True,
                 "primary_focus": "content_analysis"
@@ -1476,7 +1832,7 @@ class DataRetrievalCoordinator:
         
         try:
             if not self.vector_indexer:
-                from vector_indexer import VectorIndexer
+                from src.storage.vector_indexer import VectorIndexer
                 vector_indexer = VectorIndexer()
             else:
                 vector_indexer = self.vector_indexer
@@ -1647,7 +2003,7 @@ class ReflectionAgent:
     def _ai_evaluate_sufficiency(self, intent: QueryIntent, collected_data: Dict[str, Any]) -> Dict[str, Any]:
         """Use LLM to evaluate information sufficiency"""
         try:
-            from enhanced_llm_manager import EnhancedLLMManager
+            from src.llm.enhanced_llm_manager import EnhancedLLMManager
             
             # Use configured model for reflection
             llm_manager = EnhancedLLMManager(config_path="config/model_config.json")
@@ -1691,30 +2047,49 @@ class ReflectionAgent:
                 }
             }
             
-            response = llm_manager.call_with_tools(
+            # Use simple text generation instead of function calling
+            response = llm_manager.generate_response(
                 messages=messages,
-                tools=[evaluation_function],
                 max_tokens=reflection_config.get("max_tokens", 800)
             )
             
-            # Parse the evaluation result
-            if hasattr(response, 'tool_calls') and response.tool_calls:
-                tool_call = response.tool_calls[0]
-                if tool_call.function.name == "evaluate_information_sufficiency":
-                    evaluation_args = json.loads(tool_call.function.arguments)
-                    
-                    self.logger.info(f"AI evaluation reasoning: {evaluation_args.get('reasoning', 'No reasoning provided')}")
-                    
-                    return {
-                        "sufficient": evaluation_args.get("sufficient", False),
-                        "confidence": evaluation_args.get("confidence", 0.0),
-                        "missing_aspects": evaluation_args.get("missing_aspects", []),
-                        "next_queries": [],  # AI can suggest additional queries if needed
-                        "reasoning": evaluation_args.get("reasoning", "")
-                    }
+            # Parse the evaluation result from text response
+            # Since we're using simple text generation, we'll use a fallback approach
+            self.logger.info(f"AI evaluation response: {response}")
             
-            # Fallback if no proper function call
-            return {"sufficient": True, "confidence": 0.5, "missing_aspects": [], "next_queries": []}
+            # Simple heuristic-based evaluation
+            response_lower = response.lower()
+            
+            # Check for sufficiency indicators
+            sufficient_indicators = ["sufficient", "adequate", "enough", "complete", "good"]
+            insufficient_indicators = ["insufficient", "inadequate", "not enough", "missing", "lacking", "poor"]
+            
+            sufficient = True
+            confidence = 0.5
+            
+            if any(indicator in response_lower for indicator in insufficient_indicators):
+                sufficient = False
+                confidence = 0.3
+            elif any(indicator in response_lower for indicator in sufficient_indicators):
+                sufficient = True
+                confidence = 0.7
+            
+            # Extract missing aspects from the response
+            missing_aspects = []
+            if "missing" in response_lower or "lack" in response_lower:
+                # Simple extraction of missing aspects
+                lines = response.split('\n')
+                for line in lines:
+                    if any(word in line.lower() for word in ["missing", "lack", "need", "require"]):
+                        missing_aspects.append(line.strip())
+            
+            return {
+                "sufficient": sufficient,
+                "confidence": confidence,
+                "missing_aspects": missing_aspects[:3],  # Limit to 3 aspects
+                "next_queries": [],  # AI can suggest additional queries if needed
+                "reasoning": response[:200] + "..." if len(response) > 200 else response
+            }
             
         except Exception as e:
             self.logger.error(f"AI evaluation error: {e}")
@@ -1809,17 +2184,35 @@ Format the summary in a user-friendly way that helps the user decide if they wan
 
 Be specific about what was found and what could be explored further."""
             
-            # Create a structured summary of collected data
+            # First aggregate data with specific statistics  
+            aggregated_stats = self._aggregate_and_count_data(collected_data)
+            
+            # Create structured summary with pre-calculated numbers
             data_summary = self._structure_collected_data(collected_data)
+            
+            # Convert query_intent to JSON-serializable format
+            serializable_intent = {}
+            if query_intent:
+                for key, value in query_intent.items():
+                    if hasattr(value, 'value'):  # Handle enums
+                        serializable_intent[key] = value.value
+                    else:
+                        serializable_intent[key] = value
             
             user_prompt = f"""Question: {question}
 
-Query Intent: {json.dumps(query_intent, ensure_ascii=False)}
+Query Intent: {json.dumps(serializable_intent, ensure_ascii=False)}
 
-Collected Data Summary:
+Pre-Aggregated Data Statistics:
+Total Items Found: {aggregated_stats['total_items']}
+Database Breakdown: {json.dumps(aggregated_stats['database_stats'], ensure_ascii=False)}
+Content Type Totals: {json.dumps(aggregated_stats['collection_stats'], ensure_ascii=False)}
+Method Breakdown: {json.dumps(aggregated_stats['method_breakdown'], ensure_ascii=False)}
+
+Detailed Summary:
 {data_summary}
 
-Please create a comprehensive summary of what information has been gathered and what could be explored further."""
+Please create a comprehensive summary that highlights these specific numbers and suggests areas for further exploration."""
             
             messages = [
                 SystemMessage(content=system_prompt),
@@ -1839,39 +2232,200 @@ Please create a comprehensive summary of what information has been gathered and 
             log_event("InformationSummaryAgent", "summarize_error", {"error": str(e)}, level=logging.ERROR, request_id=request_id)
             return self._create_simple_summary(collected_data, query_intent)
     
-    def _structure_collected_data(self, collected_data: Dict[str, Any]) -> str:
-        """Structure the collected data into a readable format"""
+    def _aggregate_and_count_data(self, collected_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Pre-process and aggregate collected data with specific counts and statistics"""
         if not collected_data or "results" not in collected_data:
-            return "No data collected yet."
+            return {
+                "total_items": 0,
+                "database_stats": {
+                    "graph_db": {"count": 0, "methods": {}},
+                    "vector_db": {"count": 0, "collections": {}},
+                    "pdf_db": {"count": 0, "methods": {}}
+                },
+                "collection_stats": {
+                    "sentences": 0,
+                    "paragraphs": 0,
+                    "sections": 0,
+                    "citations": 0,
+                    "papers": 0
+                },
+                "examples": {},
+                "method_breakdown": {}
+            }
         
-        summary_lines = []
+        stats = {
+            "total_items": 0,
+            "database_stats": {
+                "graph_db": {"count": 0, "methods": {}},
+                "vector_db": {"count": 0, "collections": {}},
+                "pdf_db": {"count": 0, "methods": {}}
+            },
+            "collection_stats": {
+                "sentences": 0,
+                "paragraphs": 0,
+                "sections": 0,
+                "citations": 0,
+                "papers": 0
+            },
+            "examples": {},
+            "method_breakdown": {}
+        }
+        
         results = collected_data["results"]
         
         for tool_name, result in results.items():
+            # Handle different result structures
             if isinstance(result, dict):
-                if result.get("found", True):
-                    data = result.get("data", result)
-                    if isinstance(data, list):
-                        summary_lines.append(f"- {tool_name}: Found {len(data)} items")
-                        # Show first few items as examples
-                        if data and len(data) > 0:
-                            if isinstance(data[0], dict):
-                                # Show key information from first item
-                                first_item = data[0]
-                                if "title" in first_item:
-                                    summary_lines.append(f"  Example: {first_item['title'][:100]}...")
-                                elif "content" in first_item:
-                                    summary_lines.append(f"  Example: {first_item['content'][:100]}...")
-                                elif "paper_id" in first_item:
-                                    summary_lines.append(f"  Example: Paper ID {first_item['paper_id']}")
-                    else:
-                        summary_lines.append(f"- {tool_name}: Data available")
+                # Check if it's wrapped in {"found": true, "data": [...]} format
+                if "found" in result:
+                    if not result.get("found", False):
+                        continue
+                    data = result.get("data", [])
                 else:
-                    summary_lines.append(f"- {tool_name}: No results found")
+                    # Direct data structure
+                    data = result
+            elif isinstance(result, list):
+                # Direct list result
+                data = result
             else:
-                summary_lines.append(f"- {tool_name}: {str(result)[:100]}...")
+                # Single item or other format
+                data = [result] if result else []
+            
+            count = len(data) if isinstance(data, list) else (1 if data else 0)
+            
+            # Track by specific method
+            stats["method_breakdown"][tool_name] = count
+            stats["total_items"] += count
+            
+            # Categorize by database and collection type
+            if "get_papers" in tool_name or "papers_id" in tool_name:
+                stats["database_stats"]["graph_db"]["methods"][tool_name] = count
+                stats["database_stats"]["graph_db"]["count"] += count
+                stats["collection_stats"]["papers"] += count
+                
+                # Store examples
+                if data and count > 0:
+                    examples = []
+                    for item in data[:3]:
+                        if isinstance(item, dict):
+                            title = item.get("title", item.get("name", "Unknown"))
+                            authors = item.get("authors", [])
+                            author_str = ", ".join(authors[:2]) if authors else "Unknown"
+                            examples.append({"title": title, "authors": author_str})
+                    stats["examples"][tool_name] = examples
+            
+            elif "sentences" in tool_name:
+                stats["database_stats"]["vector_db"]["collections"]["sentences"] = count
+                stats["database_stats"]["vector_db"]["count"] += count
+                stats["collection_stats"]["sentences"] += count
+                
+                # Store examples
+                if data and count > 0:
+                    examples = []
+                    for item in data[:3]:
+                        if isinstance(item, dict):
+                            text = item.get("text", item.get("content", "Unknown"))
+                            score = item.get("score", 0)
+                            examples.append({"text": text[:150] + "..." if len(text) > 150 else text, "score": score})
+                    stats["examples"][tool_name] = examples
+            
+            elif "paragraphs" in tool_name:
+                stats["database_stats"]["vector_db"]["collections"]["paragraphs"] = count
+                stats["database_stats"]["vector_db"]["count"] += count
+                stats["collection_stats"]["paragraphs"] += count
+            
+            elif "sections" in tool_name:
+                stats["database_stats"]["vector_db"]["collections"]["sections"] = count
+                stats["database_stats"]["vector_db"]["count"] += count
+                stats["collection_stats"]["sections"] += count
+            
+            elif "citations" in tool_name:
+                if "vector" in tool_name or "search" in tool_name:
+                    stats["database_stats"]["vector_db"]["collections"]["citations"] = count
+                    stats["database_stats"]["vector_db"]["count"] += count
+                else:
+                    stats["database_stats"]["graph_db"]["methods"][tool_name] = count
+                    stats["database_stats"]["graph_db"]["count"] += count
+                stats["collection_stats"]["citations"] += count
+            
+            elif "pdf" in tool_name or "content" in tool_name:
+                stats["database_stats"]["pdf_db"]["methods"][tool_name] = count
+                stats["database_stats"]["pdf_db"]["count"] += count
+                
+                # Store examples
+                if data and count > 0:
+                    examples = []
+                    for item in data[:3]:
+                        if isinstance(item, dict):
+                            paper_id = item.get("paper_id", "Unknown")
+                            text = item.get("text", item.get("content", "Unknown"))
+                            examples.append({"paper_id": paper_id, "text": text[:150] + "..." if len(text) > 150 else text})
+                    stats["examples"][tool_name] = examples
         
-        return "\n".join(summary_lines)
+        return stats
+
+    def _structure_collected_data(self, collected_data: Dict[str, Any]) -> str:
+        """Structure collected data using pre-aggregated statistics for LLM processing"""
+        # First aggregate all data into clean statistics
+        stats = self._aggregate_and_count_data(collected_data)
+        
+        if stats["total_items"] == 0:
+            return "No data was collected from any database or PDF sources."
+        
+        # Create structured summary with specific numbers
+        summary_parts = [
+            f"📊 **PRECISE DATA STATISTICS** (Total Items Found: {stats['total_items']})\n"
+        ]
+        
+        # Database-level breakdown with exact numbers
+        summary_parts.append("**DATABASE SOURCE BREAKDOWN:**")
+        for db_name, db_stats in stats["database_stats"].items():
+            if db_stats["count"] > 0:
+                db_display = db_name.replace("_", " ").upper()
+                summary_parts.append(f"• {db_display}: {db_stats['count']} items")
+                
+                # Method/collection details with counts
+                if db_name == "graph_db" and db_stats["methods"]:
+                    for method, count in db_stats["methods"].items():
+                        method_display = method.replace("get_", "").replace("_", " ").title()
+                        summary_parts.append(f"  - {method_display}: {count}")
+                elif db_name == "vector_db" and db_stats["collections"]:
+                    for collection, count in db_stats["collections"].items():
+                        summary_parts.append(f"  - {collection.title()}: {count}")
+                elif db_name == "pdf_db" and db_stats["methods"]:
+                    for method, count in db_stats["methods"].items():
+                        method_display = method.replace("_", " ").title()
+                        summary_parts.append(f"  - {method_display}: {count}")
+        
+        # Content type breakdown with exact numbers
+        summary_parts.append(f"\n**CONTENT TYPE TOTALS:**")
+        for content_type, count in stats["collection_stats"].items():
+            if count > 0:
+                summary_parts.append(f"• {content_type.title()}: {count}")
+        
+        # Individual method breakdown
+        summary_parts.append(f"\n**METHOD-BY-METHOD BREAKDOWN:**")
+        for method, count in stats["method_breakdown"].items():
+            if count > 0:
+                method_display = method.replace("_", " ").title()
+                summary_parts.append(f"• {method_display}: {count} items")
+        
+        # Sample results with examples
+        if stats["examples"]:
+            summary_parts.append(f"\n**SAMPLE RESULTS:**")
+            for method, examples in stats["examples"].items():
+                if examples:
+                    method_display = method.replace("_", " ").title()
+                    summary_parts.append(f"• {method_display} Examples:")
+                    for i, example in enumerate(examples[:2], 1):  # Show max 2 examples per method
+                        if "title" in example:
+                            summary_parts.append(f"  {i}. \"{example['title']}\" by {example.get('authors', 'Unknown')}")
+                        elif "text" in example:
+                            summary_parts.append(f"  {i}. \"{example['text']}\"")
+                        elif "paper_id" in example:
+                            summary_parts.append(f"  {i}. Paper {example['paper_id']}: \"{example['text']}\"")
+        
+        return "\n".join(summary_parts)
     
     def _parse_summary_response(self, summary_content: str, collected_data: Dict[str, Any], query_intent: Dict[str, Any]) -> Dict[str, Any]:
         """Parse the LLM summary response into structured format"""
@@ -1925,6 +2479,160 @@ Please create a comprehensive summary of what information has been gathered and 
             "confidence_level": "medium"
         }
 
+class AdditionalQueryAgent:
+    """Agent responsible for processing additional queries based on user instructions"""
+    
+    def __init__(self, model_config_manager: ModelConfigManager = None):
+        self.model_config_manager = model_config_manager or ModelConfigManager()
+    
+    def parse_user_instructions(self, user_response: str, current_data: Dict[str, Any], question: str, request_id=None) -> List[str]:
+        """Parse user instructions and convert them into specific queries"""
+        log_event("AdditionalQueryAgent", "parse_instructions_start", {"user_response": user_response}, level=logging.INFO, request_id=request_id)
+        
+        try:
+            # Get the configured model for instruction parsing
+            instruction_model = self.model_config_manager.get_model_instance("query_analyzer")
+            
+            if not instruction_model:
+                # Fallback to simple parsing
+                return self._simple_instruction_parsing(user_response)
+            
+            system_prompt = """You are an expert research assistant. Your task is to convert user instructions into specific search queries.
+
+The user has already gathered some information and wants to gather more. Convert their instructions into specific, actionable search queries.
+
+EXAMPLES:
+
+User: "I want more information about the methodology"
+Queries: ["methodology analysis", "research methods", "methodological approach"]
+
+User: "Find more recent papers"
+Queries: ["recent publications", "latest research", "current studies"]
+
+User: "Look for criticism or opposing views"
+Queries: ["criticism", "opposing arguments", "contrary evidence", "alternative viewpoints"]
+
+User: "Get more details about the results"
+Queries: ["research results", "findings analysis", "outcome details", "conclusions"]
+
+User: "Find related concepts"
+Queries: ["related concepts", "similar theories", "connected ideas", "associated topics"]
+
+Return ONLY a JSON array of search query strings."""
+            
+            user_prompt = f"""Original Question: {question}
+
+Current Data Summary: {self._summarize_current_data(current_data)}
+
+User Instruction: {user_response}
+
+Convert the user's instruction into specific search queries:"""
+            
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=user_prompt)
+            ]
+            
+            response = instruction_model.invoke(messages)
+            response_content = response.content
+            
+            # Parse the response
+            try:
+                if "```json" in response_content:
+                    json_start = response_content.find("```json") + 7
+                    json_end = response_content.find("```", json_start)
+                    json_text = response_content[json_start:json_end].strip()
+                elif "[" in response_content and "]" in response_content:
+                    json_start = response_content.find("[")
+                    json_end = response_content.rfind("]") + 1
+                    json_text = response_content[json_start:json_end]
+                else:
+                    raise ValueError("No JSON array found in response")
+                
+                queries = json.loads(json_text)
+                if isinstance(queries, list):
+                    log_event("AdditionalQueryAgent", "parse_instructions_success", {"queries": queries}, level=logging.INFO, request_id=request_id)
+                    return queries
+                else:
+                    raise ValueError("Response is not a list")
+                    
+            except (json.JSONDecodeError, ValueError) as parse_error:
+                log_event("AdditionalQueryAgent", "parse_instructions_fallback", {"error": str(parse_error)}, level=logging.WARNING, request_id=request_id)
+                return self._simple_instruction_parsing(user_response)
+                
+        except Exception as e:
+            log_event("AdditionalQueryAgent", "parse_instructions_error", {"error": str(e)}, level=logging.ERROR, request_id=request_id)
+            return self._simple_instruction_parsing(user_response)
+    
+    def _summarize_current_data(self, current_data: Dict[str, Any]) -> str:
+        """Create a summary of current data for context"""
+        if not current_data or "results" not in current_data:
+            return "No data collected yet."
+        
+        summary = []
+        results = current_data["results"]
+        
+        for tool_name, result in results.items():
+            if isinstance(result, dict) and result.get("found", True):
+                data = result.get("data", [])
+                if isinstance(data, list):
+                    summary.append(f"{tool_name}: {len(data)} items")
+        
+        return "; ".join(summary) if summary else "Some data collected"
+    
+    def _simple_instruction_parsing(self, user_response: str) -> List[str]:
+        """LLM-based parsing of user instructions as fallback"""
+        try:
+            # Try to use LLM for instruction parsing
+            instruction_model = self.model_config_manager.get_model_instance("query_analyzer")
+            if instruction_model:
+                system_prompt = """You are an expert at parsing user instructions for additional research queries. Your job is to convert user requests into specific search queries.
+
+INSTRUCTION TYPES:
+- Methodology requests: "method", "methodology", "approach", "how"
+- Recent research: "recent", "latest", "new", "current", "recently"
+- Criticism/opposition: "criticism", "opposing", "contrary", "against", "problems"
+- Results/findings: "result", "finding", "outcome", "conclusion", "what happened"
+- Related concepts: "related", "similar", "connected", "associated", "other"
+- Specific aspects: "focus on", "specifically", "particular", "detailed"
+
+Return ONLY a JSON array of search queries that would help gather the requested information."""
+
+                user_prompt = f"Parse this user instruction into specific search queries: {user_response}"
+                
+                messages = [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=user_prompt)
+                ]
+                
+                response = instruction_model.invoke(messages)
+                
+                try:
+                    response_content = response.content.strip()
+                    if "```json" in response_content:
+                        json_start = response_content.find("```json") + 7
+                        json_end = response_content.find("```", json_start)
+                        json_text = response_content[json_start:json_end].strip()
+                    elif "[" in response_content and "]" in response_content:
+                        json_start = response_content.find("[")
+                        json_end = response_content.rfind("]") + 1
+                        json_text = response_content[json_start:json_end]
+                    else:
+                        raise ValueError("No JSON array found in response")
+                    
+                    queries = json.loads(json_text)
+                    if isinstance(queries, list):
+                        return queries
+                except Exception as e:
+                    # Fallback to simple parsing
+                    pass
+        except Exception as e:
+            # Fallback to simple parsing
+            pass
+        
+        # Ultimate fallback: use the original response as a query
+        return [user_response]
+
 class UserConfirmationAgent:
     """Agent responsible for requesting and handling user confirmation"""
     
@@ -1969,7 +2677,42 @@ Please respond with: CONTINUE, EXPAND, or REFINE
         return confirmation_message
     
     def parse_user_response(self, user_response: str) -> str:
-        """Parse user's confirmation response"""
+        """LLM-based parsing of user's confirmation response"""
+        try:
+            # Try to use LLM for response parsing
+            response_model = self.model_config_manager.get_model_instance("query_analyzer")
+            if response_model:
+                system_prompt = """You are an expert at parsing user confirmation responses. Your job is to classify the user's response into one of three categories.
+
+RESPONSE CATEGORIES:
+- continue: User wants to proceed with current information and generate final answer
+- expand: User wants to gather more information or search for additional details
+- refine: User wants to modify the search strategy or focus on specific aspects
+
+EXAMPLES:
+- "continue", "yes", "ok", "proceed", "1", "that's enough", "generate answer" → continue
+- "expand", "more", "additional", "search", "2", "get more info", "find more" → expand  
+- "refine", "modify", "change", "3", "focus on", "specifically", "different" → refine
+
+Return ONLY the category name: continue, expand, or refine"""
+
+                user_prompt = f"Classify this user response: {user_response}"
+                
+                messages = [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=user_prompt)
+                ]
+                
+                response = response_model.invoke(messages)
+                response_content = response.content.strip().lower()
+                
+                if response_content in ['continue', 'expand', 'refine']:
+                    return response_content
+        except Exception as e:
+            # Fallback to simple parsing
+            pass
+        
+        # Fallback to simple keyword-based parsing
         response_lower = user_response.strip().lower()
         
         if any(word in response_lower for word in ['continue', 'yes', 'ok', 'proceed', '1']):
@@ -2014,7 +2757,7 @@ class ResponseGenerationAgent:
     def _ai_generate_response(self, intent: QueryIntent, data: Dict[str, Any], reflection_result: ReflectionResult) -> str:
         """Use AI to generate comprehensive response"""
         try:
-            from enhanced_llm_manager import EnhancedLLMManager
+            from src.llm.enhanced_llm_manager import EnhancedLLMManager
             
             # Use configured model for response generation
             llm_manager = EnhancedLLMManager(config_path="config/model_config.json")
@@ -2154,9 +2897,19 @@ class LangGraphResearchSystem:
         # Initialize information summary and confirmation agents
         self.information_summary_agent = InformationSummaryAgent(self.model_config_manager)
         self.user_confirmation_agent = UserConfirmationAgent(self.model_config_manager)
+        self.additional_query_agent = AdditionalQueryAgent(self.model_config_manager)
+        
+        # Initialize research agents
+        self.question_analyzer = LLMQuestionAnalysisAgent(self.model_config_manager)
+        self.fuzzy_matcher = FuzzyMatchingAgent(self.query_agent, self.model_config_manager)
+        self.query_planner = QueryPlanningAgent(self.query_agent, None, self.model_config_manager)  # vector_indexer will be set later
+        self.data_retrieval_coordinator = DataRetrievalCoordinator(self.query_agent, None, self.model_config_manager)  # vector_indexer will be set later
         
         try:
             self.vector_indexer = VectorIndexer()
+            # Update agents with vector indexer
+            self.query_planner.vector_indexer = self.vector_indexer
+            self.data_retrieval_coordinator.vector_indexer = self.vector_indexer
         except Exception as e:
             self.logger.warning(f"Vector indexer not available: {e}")
             self.vector_indexer = None
@@ -3069,6 +3822,505 @@ Please respond with: CONTINUE or EXPAND
         
         # Run the complete workflow with user confirmation
         return self.research_question(question, confirmation)
+    
+    def interactive_research_chat(self, question: str) -> str:
+        """Interactive chat-based research that actually pauses for user input and can gather additional information"""
+        self.logger.info(f"Starting interactive chat research for: {question}")
+        request_id = str(uuid.uuid4())
+        
+        # Initialize conversation state
+        conversation_history = []
+        collected_data = {"results": {}}
+        current_question = question
+        
+        print(f"\n🤖 CiteWeave Interactive Research Chat")
+        print(f"📋 Question: {question}")
+        print("=" * 60)
+        
+        while True:
+            # Step 1: Gather information based on current question
+            print(f"\n🔍 Gathering information for: {current_question}")
+            
+            # Create initial state for this iteration
+            initial_state = ResearchState(
+                question=current_question,
+                query_intent=None,
+                target_entity=None,
+                clarification_needed=False,
+                query_plan=None,
+                collected_data=collected_data,
+                reflection_result=None,
+                information_summary=None,
+                user_confirmation=None,
+                additional_queries=None,
+                conversation_history=conversation_history,
+                final_response=None,
+                messages=[],
+                error=None,
+                request_id=request_id
+            )
+            
+            try:
+                # Execute research directly without going through the full workflow
+                # This avoids the user confirmation step that expects user input
+                research_result = self._execute_research_directly(current_question, request_id)
+                
+                # Update collected data with new results
+                if research_result and "collected_data" in research_result:
+                    new_data = research_result["collected_data"]
+                    if new_data and "results" in new_data:
+                        collected_data["results"].update(new_data["results"])
+                
+                # Create information summary
+                information_summary = self.information_summary_agent.summarize_information(
+                    current_question, collected_data, research_result.get("query_intent", {}), request_id
+                )
+                
+                # Show information summary to user
+                print(f"\n📊 Information Gathered:")
+                print(f"Confidence Level: {information_summary.get('confidence_level', 'medium').upper()}")
+                print(f"\n{information_summary.get('summary_text', 'Information has been gathered.')}")
+                
+                # Show data overview
+                print(f"\n📈 Data Overview:")
+                print(information_summary.get('data_overview', 'No data available'))
+                
+                # Ask user for confirmation
+                print(f"\n👤 Is this information sufficient for your question?")
+                print("1. ✅ Yes, generate final answer")
+                print("2. 🔍 No, gather more information")
+                print("3. 📝 Tell me what specific information you want")
+                print("4. ❌ Exit")
+                
+                user_choice = input("\nEnter your choice (1/2/3/4): ").strip()
+                
+                # Add to conversation history
+                conversation_history.append({
+                    "type": "system_summary",
+                    "question": current_question,
+                    "summary": information_summary,
+                    "timestamp": time.time()
+                })
+                
+                if user_choice == "1":
+                    # User wants final answer
+                    print(f"\n🚀 Generating final answer...")
+                    final_response = self._generate_final_answer(question, collected_data, conversation_history, request_id)
+                    print(f"\n✅ Final Answer:")
+                    print(final_response)
+                    return final_response
+                    
+                elif user_choice == "2":
+                    # User wants more information - ask what specifically
+                    print(f"\n🔍 What additional information would you like me to gather?")
+                    additional_request = input("Enter your request: ").strip()
+                    
+                    if additional_request:
+                        # Parse user instructions into specific queries
+                        additional_queries = self.additional_query_agent.parse_user_instructions(
+                            additional_request, collected_data, question, request_id
+                        )
+                        
+                        # Add to conversation history
+                        conversation_history.append({
+                            "type": "user_request",
+                            "request": additional_request,
+                            "parsed_queries": additional_queries,
+                            "timestamp": time.time()
+                        })
+                        
+                        # Update current question for next iteration
+                        current_question = f"{question} - Additional: {additional_request}"
+                        
+                        # Execute additional queries
+                        print(f"\n🔍 Executing additional queries: {', '.join(additional_queries)}")
+                        additional_data = self._execute_additional_queries(additional_queries, request_id)
+                        
+                        # Merge additional data
+                        if additional_data and "results" in additional_data:
+                            collected_data["results"].update(additional_data["results"])
+                        
+                        continue
+                    else:
+                        print("No additional request provided. Continuing with current information...")
+                        continue
+                        
+                elif user_choice == "3":
+                    # User wants to specify what information they want
+                    print(f"\n📝 What specific information would you like me to gather?")
+                    specific_request = input("Enter your request: ").strip()
+                    
+                    if specific_request:
+                        # Parse specific instructions
+                        specific_queries = self.additional_query_agent.parse_user_instructions(
+                            specific_request, collected_data, question, request_id
+                        )
+                        
+                        # Add to conversation history
+                        conversation_history.append({
+                            "type": "user_specific_request",
+                            "request": specific_request,
+                            "parsed_queries": specific_queries,
+                            "timestamp": time.time()
+                        })
+                        
+                        # Update current question
+                        current_question = f"{question} - Specific: {specific_request}"
+                        
+                        # Execute specific queries
+                        print(f"\n🔍 Executing specific queries: {', '.join(specific_queries)}")
+                        specific_data = self._execute_additional_queries(specific_queries, request_id)
+                        
+                        # Merge specific data
+                        if specific_data and "results" in specific_data:
+                            collected_data["results"].update(specific_data["results"])
+                        
+                        continue
+                    else:
+                        print("No specific request provided. Continuing with current information...")
+                        continue
+                        
+                elif user_choice == "4":
+                    # User wants to exit
+                    print(f"\n👋 Exiting interactive research. Goodbye!")
+                    return "Research session ended by user."
+                    
+                else:
+                    print("Invalid choice. Please enter 1, 2, 3, or 4.")
+                    continue
+                    
+            except Exception as e:
+                log_event("InteractiveChat", "error", {"error": str(e)}, level=logging.ERROR, request_id=request_id)
+                print(f"\n❌ Error during research: {str(e)}")
+                return f"❌ Error during interactive research: {str(e)}"
+    
+    def _execute_additional_queries(self, queries: List[str], request_id: str) -> Dict[str, Any]:
+        """Execute additional queries based on user instructions"""
+        log_event("InteractiveChat", "execute_additional_queries", {"queries": queries}, level=logging.INFO, request_id=request_id)
+        
+        additional_data = {"results": {}}
+        
+        for query in queries:
+            try:
+                # Use vector search for additional queries
+                if self.vector_indexer:
+                    # Search across all collections
+                    search_result = self.vector_indexer.search_all_collections(query, limit_per_collection=5)
+                    additional_data["results"][f"additional_search_{query[:20]}"] = search_result
+                
+                # Also try semantic search for sentences
+                if hasattr(self.query_agent, 'search_relevant_sentences'):
+                    sentence_result = self.query_agent.search_relevant_sentences(query, top_n=5)
+                    additional_data["results"][f"additional_sentences_{query[:20]}"] = sentence_result
+                
+            except Exception as e:
+                log_event("InteractiveChat", "additional_query_error", {"query": query, "error": str(e)}, level=logging.WARNING, request_id=request_id)
+                additional_data["results"][f"error_{query[:20]}"] = {"error": str(e)}
+        
+        return additional_data
+    
+    def _generate_final_answer(self, original_question: str, collected_data: Dict[str, Any], conversation_history: List[Dict], request_id: str) -> str:
+        """Generate final answer based on all collected data and conversation history"""
+        log_event("InteractiveChat", "generate_final_answer", {"data_keys": list(collected_data.get("results", {}).keys())}, level=logging.INFO, request_id=request_id)
+        
+        try:
+            # Get the configured model for response generation
+            response_generator_model = self._get_agent_model("response_generator")
+            
+            if not response_generator_model:
+                # Fallback to simple structured response
+                return self._generate_simple_final_answer(original_question, collected_data, conversation_history)
+            
+            # Create context from conversation history
+            conversation_context = self._create_conversation_context(conversation_history)
+            
+            system_prompt = """You are an expert academic research assistant. Generate a comprehensive final answer 
+            based on all the information gathered through the interactive research process. 
+            
+            Consider the conversation history and user's specific requests when crafting your response.
+            Organize the information logically and provide specific details and citations."""
+            
+            data_summary = ""
+            if collected_data and "results" in collected_data:
+                data_summary = "Collected data:\n"
+                for tool_name, result in collected_data["results"].items():
+                    if isinstance(result, dict) and result.get("found", True):
+                        data = result.get("data", result)
+                        if isinstance(data, list):
+                            data_summary += f"- {tool_name}: {len(data)} items found\n"
+                        else:
+                            data_summary += f"- {tool_name}: Data available\n"
+                    else:
+                        data_summary += f"- {tool_name}: No results or error\n"
+            
+            messages = [
+                SystemMessage(content=system_prompt),
+                HumanMessage(content=f"""Original Question: {original_question}
+
+Conversation History:
+{conversation_context}
+
+{data_summary}
+
+Detailed data: {json.dumps(collected_data, indent=2, ensure_ascii=False)}""")
+            ]
+            
+            response = response_generator_model.invoke(messages)
+            final_response = response.content
+            
+            log_event("InteractiveChat", "final_answer_generated", {"response_length": len(final_response)}, level=logging.INFO, request_id=request_id)
+            return final_response
+            
+        except Exception as e:
+            log_event("InteractiveChat", "final_answer_error", {"error": str(e)}, level=logging.ERROR, request_id=request_id)
+            return self._generate_simple_final_answer(original_question, collected_data, conversation_history)
+    
+    def _create_conversation_context(self, conversation_history: List[Dict]) -> str:
+        """Create context from conversation history"""
+        if not conversation_history:
+            return "No conversation history."
+        
+        context_parts = []
+        for entry in conversation_history:
+            if entry["type"] == "user_request":
+                context_parts.append(f"User requested: {entry['request']}")
+            elif entry["type"] == "user_specific_request":
+                context_parts.append(f"User specifically requested: {entry['request']}")
+            elif entry["type"] == "system_summary":
+                context_parts.append(f"System gathered information for: {entry['question']}")
+        
+        return "\n".join(context_parts)
+    
+    def _execute_research_directly(self, question: str, request_id: str) -> Dict[str, Any]:
+        """Execute research directly using LLM-based analysis"""
+        log_event("InteractiveChat", "execute_research_directly", {"question": question}, level=logging.INFO, request_id=request_id)
+        
+        try:
+            # Step 1: Use LLM-based entity extraction and query analysis
+            log_event("InteractiveChat", "step_start", {"step": "entity_extraction", "question": question}, level=logging.INFO, request_id=request_id)
+            entities = self.entity_extractor.extract_entities(question, request_id)
+            log_event("InteractiveChat", "step_finish", {"step": "entity_extraction", "entities": entities}, level=logging.INFO, request_id=request_id)
+            
+            # Step 2: Use LLM for query intent analysis
+            query_analyzer_model = self._get_agent_model("query_analyzer")
+            if query_analyzer_model:
+                system_prompt = """You are an expert academic research query analyzer. Your job is to understand the user's research intent and extract structured information.
+
+QUERY TYPES:
+- reverse_citation_analysis: "Who cites X?", "Papers citing X", "Citation context of X"
+- citation_analysis: "What does X cite?", "References in X paper"  
+- author_search: "Papers by author X", "X's publications"
+- paper_search: "Find paper about Y", "Paper titled Z"
+- concept_search: "What is X?", "Explain concept Y"
+
+ENTITY EXTRACTION:
+- For citation queries: Extract the AUTHOR NAME being cited (e.g., "Rivkin", "Porter", "Smith")
+- For paper queries: Extract the PAPER TITLE or keywords
+- For author queries: Extract the AUTHOR NAME
+- For concept queries: Extract the CONCEPT term
+
+Return ONLY a JSON object with: query_type, target_entity, entity_type, reasoning"""
+                
+                entities_context = f"\nExtracted entities: {json.dumps(entities, ensure_ascii=False)}"
+                user_prompt = f"Analyze this research question: {question}{entities_context}"
+                
+                messages = [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=user_prompt)
+                ]
+                
+                log_event("InteractiveChat", "step_start", {"step": "llm_intent_analysis", "question": question}, level=logging.INFO, request_id=request_id)
+                response = query_analyzer_model.invoke(messages)
+                log_event("InteractiveChat", "step_finish", {"step": "llm_intent_analysis", "llm_response": response.content[:200]}, level=logging.INFO, request_id=request_id)
+                
+                # Parse LLM response
+                try:
+                    response_content = response.content.strip()
+                    if "```json" in response_content:
+                        json_start = response_content.find("```json") + 7
+                        json_end = response_content.find("```", json_start)
+                        json_text = response_content[json_start:json_end].strip()
+                    elif "{" in response_content and "}" in response_content:
+                        json_start = response_content.find("{")
+                        json_end = response_content.rfind("}") + 1
+                        json_text = response_content[json_start:json_end]
+                    else:
+                        raise ValueError("No JSON found in response")
+                    
+                    query_intent = json.loads(json_text)
+                    
+                except Exception as e:
+                    log_event("InteractiveChat", "llm_parsing_error", {"error": str(e)}, level=logging.WARNING, request_id=request_id)
+                    # Fallback to entity extraction results
+                    query_intent = {
+                        "query_type": entities.get("query_focus", "concept_search"),
+                        "target_entity": entities.get("primary_entity", question),
+                        "entity_type": entities.get("primary_entity_type", "concept"),
+                        "reasoning": "Fallback from entity extraction"
+                    }
+            else:
+                # Fallback when no LLM is available
+                query_intent = {
+                    "query_type": entities.get("query_focus", "concept_search"),
+                    "target_entity": entities.get("primary_entity", question),
+                    "entity_type": entities.get("primary_entity_type", "concept"),
+                    "reasoning": "No LLM available, using entity extraction"
+                }
+            
+            # Step 3: Find target entity using fuzzy matching
+            entity_type = EntityType(query_intent.get("entity_type", "concept"))
+            matches, confidence = self.fuzzy_matcher.find_matching_entities(
+                query_intent.get("target_entity", "unknown"), 
+                entity_type, 
+                request_id,
+                query_intent.get("query_type", "concept_search")  # Pass query_type for citation query handling
+            )
+            
+            if not matches:  # No matches found
+                return {
+                    "collected_data": {"results": {}},
+                    "query_intent": query_intent,
+                    "error": f"No {entity_type.value} found for '{query_intent.get('target_entity', 'unknown')}'"
+                }
+            
+            # Step 3.5: Intelligently select the best target entity
+            target_entity = self._select_best_target_entity(
+                matches, 
+                query_intent.get("query_type", "concept_search"),
+                entity_type,
+                request_id
+            )
+            
+            # Step 4: Create query plan
+            query_plan = self.query_planner.create_query_plan(
+                QueryIntent(
+                    query_type=QueryType(query_intent.get("query_type", "concept_search")),
+                    target_entity=query_intent.get("target_entity", "unknown"),
+                    entity_type=entity_type,
+                    required_info=["relevant_content"],
+                    complexity="medium",
+                    original_question=question
+                ), 
+                target_entity, 
+                request_id
+            )
+            
+            # Step 5: Execute query plan
+            collected_data = self.data_retrieval_coordinator.execute_query_plan(query_plan, request_id)
+            
+            return {
+                "collected_data": collected_data,
+                "query_intent": query_intent,
+                "target_entity": target_entity
+            }
+            
+        except Exception as e:
+            log_event("InteractiveChat", "execute_research_error", {"error": str(e)}, level=logging.ERROR, request_id=request_id)
+            return {
+                "collected_data": {"results": {}},
+                "error": str(e)
+            }
+    
+    def _generate_simple_final_answer(self, original_question: str, collected_data: Dict[str, Any], conversation_history: List[Dict]) -> str:
+        """Generate a simple structured final answer"""
+        response_parts = []
+        response_parts.append(f"# Research Results\n")
+        response_parts.append(f"**Original Question**: {original_question}\n")
+        
+        # Add conversation context
+        if conversation_history:
+            response_parts.append("## Research Process:")
+            for entry in conversation_history:
+                if entry["type"] in ["user_request", "user_specific_request"]:
+                    response_parts.append(f"- User requested: {entry['request']}")
+            response_parts.append("")
+        
+        # Add findings
+        if collected_data and "results" in collected_data:
+            response_parts.append("## Findings:\n")
+            results = collected_data["results"]
+            
+            for tool_name, result in results.items():
+                if isinstance(result, dict) and result.get("found", False):
+                    data = result.get("data", [])
+                    if data:
+                        response_parts.append(f"### {tool_name.replace('_', ' ').title()}")
+                        response_parts.append(f"Found {len(data)} items:\n")
+                        
+                        for i, item in enumerate(data[:5], 1):
+                            if isinstance(item, dict):
+                                title = item.get("title", item.get("text", "Unknown"))
+                                response_parts.append(f"{i}. {title[:100]}...")
+                        
+                        if len(data) > 5:
+                            response_parts.append(f"... and {len(data) - 5} more items\n")
+                    else:
+                        response_parts.append(f"### {tool_name.replace('_', ' ').title()}")
+                        response_parts.append("No specific data found\n")
+                else:
+                    response_parts.append(f"### {tool_name.replace('_', ' ').title()}")
+                    response_parts.append("Search completed but no results found\n")
+        else:
+            response_parts.append("No data was collected for this query.\n")
+        
+        response_parts.append("\n*This is a simplified response generated without LLM processing.*")
+        
+        return "\n".join(response_parts)
+
+    def _select_best_target_entity(self, matches: List[Dict], query_type: str, entity_type: EntityType, request_id: str) -> Dict:
+        """Intelligently select the best target entity from multiple matches"""
+        if len(matches) == 1:
+            return matches[0]
+        
+        # For citation queries, prioritize papers that actually have citations
+        if query_type in ["reverse_citation_analysis", "citation_analysis"] and entity_type == EntityType.AUTHOR:
+            # Check which papers have citations
+            papers_with_citations = []
+            papers_without_citations = []
+            
+            for match in matches:
+                paper_id = match.get("id") or match.get("paper_id")
+                if paper_id:
+                    # Check if this paper has any citations
+                    citing_papers = self.query_agent.get_papers_citing_paper(paper_id)
+                    if citing_papers:
+                        papers_with_citations.append((match, len(citing_papers)))
+                    else:
+                        papers_without_citations.append(match)
+            
+            # Prioritize papers with citations
+            if papers_with_citations:
+                # Sort by number of citations (descending)
+                papers_with_citations.sort(key=lambda x: x[1], reverse=True)
+                best_match = papers_with_citations[0][0]
+                log_event("InteractiveChat", "entity_selection", {
+                    "strategy": "citation_priority",
+                    "selected_paper": best_match.get("title", "Unknown"),
+                    "citations_count": papers_with_citations[0][1],
+                    "total_candidates": len(matches)
+                }, level=logging.INFO, request_id=request_id)
+                return best_match
+            
+            # If no papers have citations, fall back to match score
+            if papers_without_citations:
+                best_match = max(papers_without_citations, key=lambda x: x.get("match_score", 0))
+                log_event("InteractiveChat", "entity_selection", {
+                    "strategy": "match_score_fallback",
+                    "selected_paper": best_match.get("title", "Unknown"),
+                    "match_score": best_match.get("match_score", 0),
+                    "total_candidates": len(matches)
+                }, level=logging.INFO, request_id=request_id)
+                return best_match
+        
+        # For other query types, use match score
+        best_match = max(matches, key=lambda x: x.get("match_score", 0))
+        log_event("InteractiveChat", "entity_selection", {
+            "strategy": "match_score",
+            "selected_paper": best_match.get("title", "Unknown"),
+            "match_score": best_match.get("match_score", 0),
+            "total_candidates": len(matches)
+        }, level=logging.INFO, request_id=request_id)
+        return best_match
 
     def _load_config(self) -> Dict[str, Any]:
         """Load configuration"""
@@ -3083,16 +4335,18 @@ Please respond with: CONTINUE or EXPAND
 
 if __name__ == "__main__":
     """Test function"""
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     system = LangGraphResearchSystem()
     
-    # Test question
-    test_question = "The paper cite Rivkin, what is the citation context?"
-    
     print("🤖 CiteWeave Multi-Agent Research System")
-    print("=" * 50)
-    print(f"Question: {test_question}")
-    print("=" * 50)
+    print("=" * 60)
+    print("Interactive Chat Mode (Default)")
+    print("=" * 60)
     
-    result = system.research_question(test_question)
-    print(result)
+    # Interactive chat mode by default
+    test_question = input("Enter your research question: ").strip()
+    if not test_question:
+        test_question = "What papers cite Rivkin's work on strategy?"
+        print(f"Using default question: {test_question}")
+    
+    result = system.interactive_research_chat(test_question)

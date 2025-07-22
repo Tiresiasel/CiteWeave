@@ -1,0 +1,43 @@
+# Docker Compose configuration for CiteWeave services (Qdrant + GROBID)
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: citeweave-qdrant
+    ports:
+      - "6333:6333"  # REST API
+      - "6334:6334"  # gRPC API
+    volumes:
+      - qdrant_storage:/qdrant/storage
+      - ./qdrant_config:/qdrant/config
+    environment:
+      - QDRANT__SERVICE__HTTP_PORT=6333
+      - QDRANT__SERVICE__GRPC_PORT=6334
+      - QDRANT__SERVICE__ENABLE_TLS=false
+      - QDRANT__STORAGE__STORAGE_PATH=/qdrant/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  grobid:
+    image: lfoppiano/grobid:0.8.0
+    container_name: citeweave-grobid
+    ports:
+      - "8070:8070"  # GROBID API
+    environment:
+      - JAVA_OPTS=-Xmx4g
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8070/api/isalive"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+volumes:
+  qdrant_storage:
+    driver: local 

@@ -340,6 +340,80 @@ Context: {context}"""),
         """Get list of supported languages"""
         return self.config.get("supported_languages", ["en"])
 
+    def call_with_tools(self, messages: List[Dict], tools: List[Dict], max_tokens: int = 1000) -> Any:
+        """Call LLM with function calling capability"""
+        try:
+            # Get the query_analyzer model for function calling
+            model = self.get_agent_model("query_analyzer")
+            
+            # Convert messages to LangChain format
+            langchain_messages = []
+            for msg in messages:
+                if msg["role"] == "system":
+                    langchain_messages.append(SystemMessage(content=msg["content"]))
+                elif msg["role"] == "user":
+                    langchain_messages.append(HumanMessage(content=msg["content"]))
+                elif msg["role"] == "assistant":
+                    langchain_messages.append(AIMessage(content=msg["content"]))
+            
+            # Convert tools to LangChain format
+            from langchain.tools import tool
+            from langchain_core.tools import BaseTool
+            
+            langchain_tools = []
+            for tool_def in tools:
+                # Create a simple tool function
+                def create_tool_function(tool_name, tool_description, tool_parameters):
+                    @tool(name=tool_name, description=tool_description)
+                    def tool_function(**kwargs):
+                        # This is a placeholder - the actual execution happens elsewhere
+                        return {"tool_name": tool_name, "parameters": kwargs, "status": "called"}
+                    return tool_function
+                
+                tool_func = create_tool_function(
+                    tool_def["name"],
+                    tool_def["description"],
+                    tool_def["parameters"]
+                )
+                langchain_tools.append(tool_func)
+            
+            # Bind tools to the model
+            model_with_tools = model.bind_tools(langchain_tools)
+            
+            # Call the model
+            response = model_with_tools.invoke(langchain_messages)
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Function calling failed: {e}")
+            return None
+
+    def generate_response(self, messages: List[Dict], max_tokens: int = 2000, temperature: float = 0.2) -> str:
+        """Generate a simple text response without function calling"""
+        try:
+            # Get the response_generator model
+            model = self.get_agent_model("response_generator")
+            
+            # Convert messages to LangChain format
+            langchain_messages = []
+            for msg in messages:
+                if msg["role"] == "system":
+                    langchain_messages.append(SystemMessage(content=msg["content"]))
+                elif msg["role"] == "user":
+                    langchain_messages.append(HumanMessage(content=msg["content"]))
+                elif msg["role"] == "assistant":
+                    langchain_messages.append(AIMessage(content=msg["content"]))
+            
+            # Call the model
+            response = model.invoke(langchain_messages)
+            
+            return response.content if hasattr(response, 'content') else str(response)
+            
+        except Exception as e:
+            logger.error(f"Response generation failed: {e}")
+            return "I apologize, but I encountered an error while generating the response."
+
 # Example usage and testing
 if __name__ == "__main__":
     import asyncio

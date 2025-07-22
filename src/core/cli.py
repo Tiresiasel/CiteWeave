@@ -7,6 +7,7 @@ import argparse
 import sys
 import logging
 from src.processing.pdf.document_processor import DocumentProcessor
+from src.agents.multi_agent_research_system import LangGraphResearchSystem
 
 def main():
     """Main entry point for the CLI."""
@@ -23,9 +24,16 @@ def main():
     query_parser = subparsers.add_parser("query", help="Query the argument graph.")
     query_parser.add_argument("question", type=str, help="Question to ask.")
 
+    # Chat command
+    chat_parser = subparsers.add_parser("chat", help="Start an interactive chat with the multi-agent research system.")
+
     # Diagnose command
     diagnose_parser = subparsers.add_parser("diagnose", help="Diagnose PDF processing quality.")
     diagnose_parser.add_argument("pdf_path", type=str, help="Path to the PDF file.")
+
+    # Batch upload command
+    batch_upload_parser = subparsers.add_parser("batch-upload", help="Upload and process all PDF files in a directory.")
+    batch_upload_parser.add_argument("directory", type=str, help="Path to the directory containing PDF files.")
 
     args = parser.parse_args()
 
@@ -38,6 +46,10 @@ def main():
         handle_query_command(args)
     elif args.command == "diagnose":
         handle_diagnose_command(args)
+    elif args.command == "chat":
+        handle_chat_command(args)
+    elif args.command == "batch-upload":
+        handle_batch_upload_command(args)
     else:
         parser.print_help()
 
@@ -80,14 +92,16 @@ def handle_upload_command(args):
         print(f"Total references: {stats['total_references']}")
         
         # Show some example citations
-        sentences_with_cites = [s for s in results['sentences_with_citations'] if s['citations']]
+        sentences_with_cites = [s for s in results.get('sentences_with_citations', []) if s.get('citations')]
+        if not results.get('sentences_with_citations'):
+            print("Warning: No 'sentences_with_citations' found in results. This document may not contain any extracted citation sentences.")
         if sentences_with_cites:
             print(f"\nExample sentences with citations:")
             for i, sentence in enumerate(sentences_with_cites[:3]):  # Show first 3
-                print(f"\n{i+1}. {sentence['sentence_text'][:100]}...")
-                for cite in sentence['citations']:
-                    ref = cite['reference']
-                    print(f"   → {cite['intext']} → {ref.get('title', 'Unknown')[:50]}... ({ref.get('year', 'Unknown')})")
+                print(f"\n{i+1}. {sentence.get('sentence_text', '')[:100]}...")
+                for cite in sentence.get('citations', []):
+                    ref = cite.get('reference', {})
+                    print(f"   → {cite.get('intext', '')} → {ref.get('title', 'Unknown')[:50]}... ({ref.get('year', 'Unknown')})")
         
     except Exception as e:
         print(f"Error processing document: {e}")
@@ -136,6 +150,60 @@ def handle_diagnose_command(args):
         print(f"Error diagnosing document: {e}")
         logging.exception("Diagnose command failed")
         sys.exit(1)
+
+def handle_chat_command(args):
+    """Handle the chat command for interactive multi-turn conversation."""
+    try:
+        system = LangGraphResearchSystem()
+        print("🤖 CiteWeave Multi-Agent Research System (Chat Mode)")
+        print("=" * 60)
+        print("Type 'exit' or 'quit' to end the chat.")
+        print("=" * 60)
+        while True:
+            question = input("You: ").strip()
+            if question.lower() in ("exit", "quit"):
+                print("Exiting chat.")
+                break
+            if not question:
+                continue
+            result = system.interactive_research_chat(question)
+            print(f"\nAI: {result}\n")
+    except Exception as e:
+        print(f"Error during chat: {e}")
+        logging.exception("Chat command failed")
+        sys.exit(1)
+
+def handle_batch_upload_command(args):
+    """Handle the batch-upload command to process all PDFs in a directory."""
+    import os
+    import glob
+    directory = args.directory
+    if not os.path.isdir(directory):
+        print(f"Error: {directory} is not a valid directory.")
+        sys.exit(1)
+    # Find all PDF files (recursively)
+    pdf_files = glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True)
+    if not pdf_files:
+        print(f"No PDF files found in {directory}.")
+        sys.exit(0)
+    print(f"Found {len(pdf_files)} PDF files in {directory}. Starting batch upload...")
+    success_count = 0
+    fail_count = 0
+    for idx, pdf_path in enumerate(pdf_files, 1):
+        print(f"\n[{idx}/{len(pdf_files)}] Processing: {pdf_path}")
+        try:
+            class Args:
+                pass
+            file_args = Args()
+            file_args.pdf_path = pdf_path
+            file_args.diagnose = False
+            file_args.force = False
+            handle_upload_command(file_args)
+            success_count += 1
+        except Exception as e:
+            print(f"Failed to process {pdf_path}: {e}")
+            fail_count += 1
+    print(f"\nBatch upload complete. Success: {success_count}, Failed: {fail_count}")
 
 if __name__ == "__main__":
     main() 

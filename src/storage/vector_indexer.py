@@ -15,31 +15,88 @@ from src.utils.paper_id_utils import PaperIDGenerator
 
 
 class VectorIndexer:
-    def __init__(self, paper_root: str = "./data/papers/", index_path: str = "./data/vector_index"):
+    def __init__(self, paper_root: str = "./data/papers/", config_path: str = "config/qdrant_config.json"):
         self.paper_root = paper_root
-        self.client = QdrantClient(path=index_path)
+        self.config_path = config_path
+        
+        # Load Qdrant configuration
+        self.qdrant_config = self._load_qdrant_config()
+        
+        # Initialize Qdrant client with server connection
+        client_kwargs = {
+            "host": self.qdrant_config.get("host", "localhost"),
+            "port": self.qdrant_config.get("port", 6333),
+            "prefer_grpc": self.qdrant_config.get("prefer_grpc", False),
+            "https": self.qdrant_config.get("https", False),
+            "timeout": self.qdrant_config.get("timeout", 60.0)
+        }
+        
+        # Add optional parameters only if they exist
+        if self.qdrant_config.get("api_key"):
+            client_kwargs["api_key"] = self.qdrant_config["api_key"]
+        if self.qdrant_config.get("prefix"):
+            client_kwargs["prefix"] = self.qdrant_config["prefix"]
+        
+        self.client = QdrantClient(**client_kwargs)
+        
         self.model = SentenceTransformer("all-MiniLM-L6-v2")
         self.paper_id_generator = PaperIDGenerator()
         
-        # 确保所有必要的collections存在
+        # Ensure all necessary collections exist
         self._ensure_collections()
     
+    def _load_qdrant_config(self) -> dict:
+        """Load Qdrant configuration from JSON file"""
+        try:
+            with open(self.config_path, 'r') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            print(f"Warning: Qdrant config file {self.config_path} not found, using defaults")
+            return {
+                "host": "localhost",
+                "port": 6333,
+                "grpc_port": 6334,
+                "prefer_grpc": False,
+                "https": False,
+                "timeout": 60.0
+            }
+        except json.JSONDecodeError as e:
+            print(f"Error parsing Qdrant config: {e}")
+            return {
+                "host": "localhost", 
+                "port": 6333,
+                "grpc_port": 6334,
+                "prefer_grpc": False,
+                "https": False,
+                "timeout": 60.0
+            }
+    
     def _ensure_collections(self):
-        """确保所有必要的collections存在"""
-        collections_to_create = ["sentences", "paragraphs", "sections", "citations"]
+        """Ensure all necessary collections exist with proper configuration"""
+        collections_config = self.qdrant_config.get("collections", {})
+        default_collections = ["sentences", "paragraphs", "sections", "citations"]
         
-        for collection_name in collections_to_create:
+        for collection_name in default_collections:
             try:
-                # 检查collection是否存在
+                # Check if collection exists
                 self.client.get_collection(collection_name)
                 print(f"Collection '{collection_name}' already exists")
-            except:
-                # 如果不存在则创建
+            except Exception as e:
+                # If collection doesn't exist, create it
+                collection_config = collections_config.get(collection_name, {})
+                vector_size = collection_config.get("vector_size", 384)
+                distance = Distance.COSINE
+                
+                if collection_config.get("distance", "Cosine").lower() == "euclidean":
+                    distance = Distance.EUCLID
+                elif collection_config.get("distance", "Cosine").lower() == "dot":
+                    distance = Distance.DOT
+                
                 self.client.create_collection(
                     collection_name=collection_name,
-                    vectors_config=VectorParams(size=384, distance=Distance.COSINE)
+                    vectors_config=VectorParams(size=vector_size, distance=distance)
                 )
-                print(f"Created collection '{collection_name}'")
+                print(f"Created collection '{collection_name}' with vector_size={vector_size}, distance={distance}")
 
     def index_sentences(self, paper_id: str, sentences: List[str], metadata: dict,
                         claim_types: Optional[List[str]] = None):

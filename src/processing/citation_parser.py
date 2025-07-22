@@ -25,19 +25,40 @@ class CitationParser:
         if full_doc_text is not None and isinstance(full_doc_text, bytes):
             full_doc_text = full_doc_text.decode("utf-8", errors="ignore")
         self.full_doc_text = full_doc_text
-        self.references = references or self._extract_references_with_grobid()
+        
+        # Only try to extract references if not provided and GROBID is available
+        if references is not None:
+            self.references = references
+        else:
+            try:
+                self.references = self._extract_references_with_grobid()
+            except Exception as e:
+                logging.warning(f"Failed to extract references with GROBID: {e}")
+                self.references = []
+        
         self.paper_id_generator = PaperIDGenerator()
 
     def _extract_references_with_grobid(self) -> List[Dict[str, str]]:
-        with open(self.pdf_path, "rb") as f:
-            files = {"input": (self.pdf_path, f, "application/pdf")}
-            headers = {"Accept": "application/xml"}
+        try:
+            with open(self.pdf_path, "rb") as f:
+                files = {"input": (self.pdf_path, f, "application/pdf")}
+                headers = {"Accept": "application/xml"}
 
-            response = requests.post(
-                "http://localhost:8070/api/processReferences",
-                files=files,
-                headers=headers
-            )
+                response = requests.post(
+                    "http://localhost:8070/api/processReferences",
+                    files=files,
+                    headers=headers,
+                    timeout=30  # Add timeout
+                )
+        except requests.exceptions.ConnectionError:
+            logging.warning(f"GROBID service not available at localhost:8070 - skipping reference extraction")
+            return []
+        except requests.exceptions.Timeout:
+            logging.warning(f"GROBID request timed out - skipping reference extraction")
+            return []
+        except Exception as e:
+            logging.warning(f"Failed to connect to GROBID: {e}")
+            return []
 
         # Handle different GROBID response codes
         if response.status_code == 204:
