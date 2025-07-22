@@ -17,6 +17,20 @@ try:
 except ImportError:
     pass  # If python-dotenv is not installed, skip
 
+import os
+import sys
+
+def find_project_root():
+    cur = os.path.abspath(os.getcwd())
+    while cur != "/" and not os.path.exists(os.path.join(cur, "README.md")):
+        cur = os.path.dirname(cur)
+    return cur
+
+project_root = find_project_root()
+if os.getcwd() != project_root:
+    os.chdir(project_root)
+    print(f"[INFO] Changed working directory to project root: {project_root}")
+
 # Set up logging based on environment variable (before importing other modules)
 env = os.environ.get("CITEWEAVE_ENV", "production").lower()
 import logging
