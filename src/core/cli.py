@@ -189,21 +189,23 @@ def handle_diagnose_command(args):
         sys.exit(1)
 
 def handle_chat_command(args):
-    """Handle the chat command for interactive multi-turn conversation."""
+    """Handle the chat command for interactive multi-turn conversation (stateless AI version)."""
     try:
         system = LangGraphResearchSystem()
         print("🤖 CiteWeave Multi-Agent Research System (Chat Mode)")
         print("=" * 60)
         print("Type 'exit' or 'quit' to end the chat.")
         print("=" * 60)
+        history = []
+        user_input = input("You: ").strip()
+        if user_input.lower() in ("exit", "quit"):
+            print("Exiting chat.")
+            return
         while True:
-            question = input("You: ").strip()
-            if question.lower() in ("exit", "quit"):
-                print("Exiting chat.")
-                break
-            if not question:
+            if not user_input:
+                user_input = input("You: ").strip()
                 continue
-            # --- Spinner logic ---
+            # --- Only use spinner when waiting for AI response ---
             spinner_running = True
             def spinner():
                 symbols = ['|', '/', '-', '\\']
@@ -218,11 +220,27 @@ def handle_chat_command(args):
             spinner_thread.start()
             # --- Run AI ---
             try:
-                result = system.interactive_research_chat(question)
+                response = system.interactive_research_chat(user_input, history)
             finally:
                 spinner_running = False
                 spinner_thread.join()
-            print(f"{result}\n")
+                print()  # Ensure a newline after spinner before showing result
+            print(response["text"])
+            history.append({"user": user_input, "ai": response["text"]})
+            # If AI wants a menu/choice, prompt the user
+            if response.get("needs_user_choice"):
+                for idx, option in enumerate(response["menu"], 1):
+                    print(f"{idx}. {option}")
+                user_choice = input("Enter your choice: ").strip()
+                if user_choice.lower() in ("exit", "quit"):
+                    print("Exiting chat.")
+                    break
+                user_input = user_choice
+            else:
+                user_input = input("You: ").strip()
+                if user_input.lower() in ("exit", "quit"):
+                    print("Exiting chat.")
+                    break
     except Exception as e:
         print(f"Error during chat: {e}")
         logging.exception("Chat command failed")

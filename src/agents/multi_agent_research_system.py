@@ -3778,174 +3778,56 @@ Please respond with: CONTINUE or EXPAND
         # Run the complete workflow with user confirmation
         return self.research_question(question, confirmation)
     
-    def interactive_research_chat(self, question: str) -> str:
-        """Interactive chat-based research that actually pauses for user input and can gather additional information"""
-        self.logger.info(f"Starting interactive chat research for: {question}")
+    def interactive_research_chat(self, user_input: str, history: Optional[list] = None) -> dict:
+        """
+        Stateless, non-interactive chat function for CLI integration.
+        - Accepts user input and conversation history.
+        - Returns a dict with:
+            - 'text': the AI's message
+            - 'needs_user_choice': bool
+            - 'menu': list of options (if a menu is needed)
+        - Never calls input() or print().
+        - All user interaction is handled by the CLI.
+        """
+        self.logger.info(f"Starting stateless chat for: {user_input}")
         request_id = str(uuid.uuid4())
-        
-        # Initialize conversation state
-        conversation_history = []
+        conversation_history = history or []
         collected_data = {"results": {}}
-        current_question = question
-        
-        print(f"\n🤖 CiteWeave Interactive Research Chat")
-        print(f"📋 Question: {question}")
-        print("=" * 60)
-        
-        while True:
-            # Step 1: Gather information based on current question
-            print(f"\n🔍 Gathering information for: {current_question}")
-            
-            # Create initial state for this iteration
-            initial_state = ResearchState(
-                question=current_question,
-                query_intent=None,
-                target_entity=None,
-                clarification_needed=False,
-                query_plan=None,
-                collected_data=collected_data,
-                reflection_result=None,
-                information_summary=None,
-                user_confirmation=None,
-                additional_queries=None,
-                conversation_history=conversation_history,
-                final_response=None,
-                messages=[],
-                error=None,
-                request_id=request_id
+        current_question = user_input
+        try:
+            research_result = self._execute_research_directly(current_question, request_id)
+            if research_result and "collected_data" in research_result:
+                new_data = research_result["collected_data"]
+                if new_data and "results" in new_data:
+                    collected_data["results"].update(new_data["results"])
+            information_summary = self.information_summary_agent.summarize_information(
+                current_question, collected_data, research_result.get("query_intent", {}), request_id
             )
-            
-            try:
-                # Execute research directly without going through the full workflow
-                # This avoids the user confirmation step that expects user input
-                research_result = self._execute_research_directly(current_question, request_id)
-                
-                # Update collected data with new results
-                if research_result and "collected_data" in research_result:
-                    new_data = research_result["collected_data"]
-                    if new_data and "results" in new_data:
-                        collected_data["results"].update(new_data["results"])
-                
-                # Create information summary
-                information_summary = self.information_summary_agent.summarize_information(
-                    current_question, collected_data, research_result.get("query_intent", {}), request_id
-                )
-                
-                # Show information summary to user
-                print(f"\n📊 Information Gathered:")
-                print(f"Confidence Level: {information_summary.get('confidence_level', 'medium').upper()}")
-                print(f"\n{information_summary.get('summary_text', 'Information has been gathered.')}")
-                
-                # Show data overview
-                print(f"\n📈 Data Overview:")
-                print(information_summary.get('data_overview', 'No data available'))
-                
-                # Ask user for confirmation
-                print(f"\n👤 Is this information sufficient for your question?")
-                print("1. ✅ Yes, generate final answer")
-                print("2. 🔍 No, gather more information")
-                print("3. 📝 Tell me what specific information you want")
-                print("4. ❌ Exit")
-                
-                user_choice = input("\nEnter your choice (1/2/3/4): ").strip()
-                
-                # Add to conversation history
-                conversation_history.append({
-                    "type": "system_summary",
-                    "question": current_question,
-                    "summary": information_summary,
-                    "timestamp": time.time()
-                })
-                
-                if user_choice == "1":
-                    # User wants final answer
-                    # Only return the answer text, no preamble or extra print
-                    final_response = self._generate_final_answer(question, collected_data, conversation_history, request_id)
-                    return final_response
-                    
-                elif user_choice == "2":
-                    # User wants more information - ask what specifically
-                    print(f"\n🔍 What additional information would you like me to gather?")
-                    additional_request = input("Enter your request: ").strip()
-                    
-                    if additional_request:
-                        # Parse user instructions into specific queries
-                        additional_queries = self.additional_query_agent.parse_user_instructions(
-                            additional_request, collected_data, question, request_id
-                        )
-                        
-                        # Add to conversation history
-                        conversation_history.append({
-                            "type": "user_request",
-                            "request": additional_request,
-                            "parsed_queries": additional_queries,
-                            "timestamp": time.time()
-                        })
-                        
-                        # Update current question for next iteration
-                        current_question = f"{question} - Additional: {additional_request}"
-                        
-                        # Execute additional queries
-                        print(f"\n🔍 Executing additional queries: {', '.join(additional_queries)}")
-                        additional_data = self._execute_additional_queries(additional_queries, request_id)
-                        
-                        # Merge additional data
-                        if additional_data and "results" in additional_data:
-                            collected_data["results"].update(additional_data["results"])
-                        
-                        continue
-                    else:
-                        print("No additional request provided. Continuing with current information...")
-                        continue
-                        
-                elif user_choice == "3":
-                    # User wants to specify what information they want
-                    print(f"\n📝 What specific information would you like me to gather?")
-                    specific_request = input("Enter your request: ").strip()
-                    
-                    if specific_request:
-                        # Parse specific instructions
-                        specific_queries = self.additional_query_agent.parse_user_instructions(
-                            specific_request, collected_data, question, request_id
-                        )
-                        
-                        # Add to conversation history
-                        conversation_history.append({
-                            "type": "user_specific_request",
-                            "request": specific_request,
-                            "parsed_queries": specific_queries,
-                            "timestamp": time.time()
-                        })
-                        
-                        # Update current question
-                        current_question = f"{question} - Specific: {specific_request}"
-                        
-                        # Execute specific queries
-                        print(f"\n🔍 Executing specific queries: {', '.join(specific_queries)}")
-                        specific_data = self._execute_additional_queries(specific_queries, request_id)
-                        
-                        # Merge specific data
-                        if specific_data and "results" in specific_data:
-                            collected_data["results"].update(specific_data["results"])
-                        
-                        continue
-                    else:
-                        print("No specific request provided. Continuing with current information...")
-                        continue
-                        
-                elif user_choice == "4":
-                    # User wants to exit
-                    print(f"\n👋 Exiting interactive research. Goodbye!")
-                    return "Research session ended by user."
-                    
-                else:
-                    print("Invalid choice. Please enter 1, 2, 3, or 4.")
-                    continue
-                    
-            except Exception as e:
-                log_event("InteractiveChat", "error", {"error": str(e)}, level=logging.ERROR, request_id=request_id)
-                print(f"\n❌ Error during research: {str(e)}")
-                return f"❌ Error during interactive research: {str(e)}"
+            # Compose the main response text
+            text = (
+                f"Information Gathered:\n"
+                f"Confidence Level: {information_summary.get('confidence_level', 'medium').upper()}\n\n"
+                f"{information_summary.get('summary_text', 'Information has been gathered.')}\n\n"
+                f"Data Overview:\n{information_summary.get('data_overview', 'No data available')}\n"
+            )
+            # Always offer the menu after a summary
+            menu = [
+                "Yes, generate final answer",
+                "No, gather more information",
+                "Tell me what specific information you want",
+                "Exit"
+            ]
+            return {
+                "text": text + "\nIs this information sufficient for your question?",
+                "needs_user_choice": True,
+                "menu": menu
+            }
+        except Exception as e:
+            log_event("InteractiveChat", "error", {"error": str(e)}, level=logging.ERROR, request_id=request_id)
+            return {
+                "text": f"❌ Error during interactive research: {str(e)}",
+                "needs_user_choice": False
+            }
     
     def _execute_additional_queries(self, queries: List[str], request_id: str) -> Dict[str, Any]:
         """Execute additional queries based on user instructions"""
