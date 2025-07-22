@@ -35,8 +35,8 @@ if os.getcwd() != project_root:
 env = os.environ.get("CITEWEAVE_ENV", "production").lower()
 import logging
 if env in ("test", "development", "dev"):
-    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-    logging.getLogger().setLevel(logging.DEBUG)
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.getLogger().setLevel(logging.INFO)
 else:
     logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
     logging.getLogger().setLevel(logging.WARNING)
@@ -197,6 +197,10 @@ def handle_chat_command(args):
         print("Type 'exit' or 'quit' to end the chat.")
         print("=" * 60)
         history = []
+        collected_data = None  # <-- Initialize collected_data
+        expecting_menu = False
+        expecting_info_input = False
+        last_question = None
         user_input = input("You: ").strip()
         if user_input.lower() in ("exit", "quit"):
             print("Exiting chat.")
@@ -205,7 +209,6 @@ def handle_chat_command(args):
             if not user_input:
                 user_input = input("You: ").strip()
                 continue
-            # --- Only use spinner when waiting for AI response ---
             spinner_running = True
             def spinner():
                 symbols = ['|', '/', '-', '\\']
@@ -215,32 +218,52 @@ def handle_chat_command(args):
                     print(f"\b{symbols[idx % 4]}", end="", flush=True)
                     idx += 1
                     time.sleep(0.1)
-                print("\b", end="", flush=True)  # Clean up spinner
+                print("\b", end="", flush=True)
             spinner_thread = threading.Thread(target=spinner)
             spinner_thread.start()
-            # --- Run AI ---
             try:
-                response = system.interactive_research_chat(user_input, history)
+                if expecting_menu:
+                    response = system.interactive_research_chat(last_question, history, menu_choice=user_input, collected_data=collected_data)
+                elif expecting_info_input:
+                    response = system.interactive_research_chat(user_input, history, collected_data=collected_data)
+                else:
+                    response = system.interactive_research_chat(user_input, history)
             finally:
                 spinner_running = False
                 spinner_thread.join()
-                print()  # Ensure a newline after spinner before showing result
+                print()
             print(response["text"])
+            # Persist the collected data for the next turn
+            collected_data = response.get("collected_data")
+            if not expecting_menu and not expecting_info_input:
+                last_question = user_input
             history.append({"user": user_input, "ai": response["text"]})
-            # If AI wants a menu/choice, prompt the user
+            # Handle next state
             if response.get("needs_user_choice"):
                 for idx, option in enumerate(response["menu"], 1):
                     print(f"{idx}. {option}")
-                user_choice = input("Enter your choice: ").strip()
-                if user_choice.lower() in ("exit", "quit"):
+                user_input = input("Enter your choice: ").strip()
+                if user_input.lower() in ("exit", "quit"):
                     print("Exiting chat.")
                     break
-                user_input = user_choice
+                expecting_menu = True
+                expecting_info_input = False
+            elif response.get("needs_user_input"):
+                user_input = input("Your input: ").strip()
+                if user_input.lower() in ("exit", "quit"):
+                    print("Exiting chat.")
+                    break
+                expecting_menu = False
+                expecting_info_input = True
             else:
+                # If a final answer is returned, reset collected_data for the new question
+                collected_data = None
                 user_input = input("You: ").strip()
                 if user_input.lower() in ("exit", "quit"):
                     print("Exiting chat.")
                     break
+                expecting_menu = False
+                expecting_info_input = False
     except Exception as e:
         print(f"Error during chat: {e}")
         logging.exception("Chat command failed")

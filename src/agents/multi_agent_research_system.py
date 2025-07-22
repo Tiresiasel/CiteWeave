@@ -686,8 +686,65 @@ class FuzzyMatchingAgent:
             return [], 0.0
     
     def _find_matching_papers(self, paper_title: str, request_id=None) -> Tuple[List[Dict], float]:
-        """查找匹配的论文"""
+        """Find matching papers - support title matching and author year description"""
         try:
+            # Check if this is a paper description (e.g., "Rivkin's 2000 article", "Porter's 1980 paper")
+            import re
+            description_pattern = r"(\w+)'s?\s+(\d{4})\s+(article|paper|study|work)"
+            match = re.search(description_pattern, paper_title, re.IGNORECASE)
+            
+            if match:
+                # This is a description like "Rivkin's 2000 article"
+                author_name = match.group(1)
+                year = match.group(2)
+                self.logger.info(f"Detected paper description: author='{author_name}', year='{year}'")
+                
+                # Search by author and year
+                results = self.query_agent.get_papers_id_by_author(author_name, year=year)
+                
+                # Check for successful results
+                if results.get("status") in ["single_match", "multiple_matches"]:
+                    if results.get("status") == "single_match":
+                        paper_info = results.get("paper_info", {})
+                        matches = [{
+                            "id": paper_info.get("paper_id"),
+                            "paper_id": paper_info.get("paper_id"),
+                            "name": paper_info.get("title", ""),
+                            "title": paper_info.get("title", ""),
+                            "authors": paper_info.get("authors", []),
+                            "year": paper_info.get("year", ""),
+                            "match_score": paper_info.get("match_ratio", 0.0)
+                        }]
+                        confidence = 0.9
+                    else:
+                        # Multiple matches case
+                        candidates = results.get("candidates", [])
+                        matches = []
+                        for candidate in candidates:
+                            matches.append({
+                                "id": candidate.get("paper_id"),
+                                "paper_id": candidate.get("paper_id"),
+                                "name": candidate.get("title", ""),
+                                "title": candidate.get("title", ""),
+                                "authors": candidate.get("authors", []),
+                                "year": candidate.get("year", ""),
+                                "match_score": candidate.get("match_ratio", 0.0)
+                            })
+                        
+                        if len(matches) == 1:
+                            confidence = 0.9
+                        elif len(matches) <= 3:
+                            confidence = 0.7
+                        else:
+                            confidence = 0.5
+                    
+                    log_event("FuzzyMatchingAgent", "graph_db_author_year_success", {"matches": matches, "confidence": confidence, "status": results.get("status"), "author": author_name, "year": year}, level=logging.INFO, request_id=request_id)
+                    return matches, confidence
+                else:
+                    self.logger.info(f"Graph DB returned status: {results.get('status')} for author+year search: {author_name} {year}")
+                    return [], 0.0
+            
+            # Original logic: search by title
             results = self.query_agent.get_papers_id_by_title(paper_title)
             
             # Check for successful graph database results
@@ -1254,7 +1311,7 @@ class QueryPlanningAgent:
                 "graph_db", "get_papers_id_by_author", lambda intent, target_entity: {"author_name": intent.target_entity}, "author_papers", "Find papers by the target author (from paper_search)"
             ),
             (QueryType.PAPER_SEARCH, EntityType.PAPER): (
-                "graph_db", "get_papers_id_by_title", lambda intent, target_entity: {"title": intent.target_entity}, "paper_matches", "Find the target paper by title"
+                "vector_db", "search_all_collections", lambda intent, target_entity: {"query": target_entity.get("title", intent.target_entity), "limit_per_collection": 10}, "search_results", "Search for the matched paper content"
             ),
             (QueryType.CONCEPT_SEARCH, EntityType.CONCEPT): (
                 "vector_db", "search_all_collections", lambda intent, target_entity: {"query": intent.target_entity, "limit_per_collection": 10}, "search_results", "Search for content related to the concept"
@@ -1308,32 +1365,47 @@ class QueryPlanningAgent:
                 })
                 step_counter += 1
         else:
-            # Use mapping table for other cases
-            key = (intent.query_type, intent.entity_type)
-            if key in QUERY_METHOD_MAP:
-                database, method, params_builder, expected_result, reasoning = QUERY_METHOD_MAP[key]
-                plan["query_sequence"].append({
-                    "step": step_counter,
-                    "database": database,
-                    "method": method,
-                    "params": params_builder(intent, target_entity),
-                    "expected_result": expected_result,
-                    "required": True,
-                    "reasoning": reasoning
-                })
-                step_counter += 1
-            else:
-                # Default fallback: concept search
+            # Special handling for paper search when we have a paper_id from fuzzy matching
+            if intent.query_type == QueryType.PAPER_SEARCH and target_entity.get("paper_id"):
+                # We have a specific paper, search its content directly
+                paper_id = target_entity["paper_id"]
                 plan["query_sequence"].append({
                     "step": step_counter,
                     "database": "vector_db",
                     "method": "search_all_collections",
-                    "params": {"query": intent.original_question, "limit_per_collection": 10},
+                    "params": {"query": f"paper_id:{paper_id} {intent.original_question}", "limit_per_collection": 10},
                     "expected_result": "search_results",
                     "required": True,
-                    "reasoning": "General semantic search as fallback"
+                    "reasoning": f"Found specific paper {paper_id}, searching its content"
                 })
                 step_counter += 1
+            else:
+                # Use mapping table for other cases
+                key = (intent.query_type, intent.entity_type)
+                if key in QUERY_METHOD_MAP:
+                    database, method, params_builder, expected_result, reasoning = QUERY_METHOD_MAP[key]
+                    plan["query_sequence"].append({
+                        "step": step_counter,
+                        "database": database,
+                        "method": method,
+                        "params": params_builder(intent, target_entity),
+                        "expected_result": expected_result,
+                        "required": True,
+                        "reasoning": reasoning
+                    })
+                    step_counter += 1
+                else:
+                    # Default fallback: concept search
+                    plan["query_sequence"].append({
+                        "step": step_counter,
+                        "database": "vector_db",
+                        "method": "search_all_collections",
+                        "params": {"query": intent.original_question, "limit_per_collection": 10},
+                        "expected_result": "search_results",
+                        "required": True,
+                        "reasoning": "General semantic search as fallback"
+                    })
+                    step_counter += 1
         
         # Add fallback strategies
         plan["fallback_strategies"] = [
@@ -2277,7 +2349,20 @@ Please create a comprehensive summary that highlights these specific numbers and
             # --- Patch: handle vector search results (dict of lists) ---
             data = result.get("data", result) if isinstance(result, dict) else result
             all_items = []
-            if isinstance(data, dict):
+            
+            # Special handling for PDF content results
+            if tool_name == "get_full_pdf_content":
+                # PDF content should count as 1 paper, not individual sections
+                if result.get("found"):
+                    count = 1
+                    # Create a proper example for PDF content
+                    pdf_title = result.get("metadata", {}).get("title", "PDF Content")
+                    pdf_authors = result.get("metadata", {}).get("authors", [])
+                    author_str = ", ".join(pdf_authors[:2]) if pdf_authors else "Unknown"
+                    stats["examples"][tool_name] = [{"title": pdf_title, "authors": author_str}]
+                else:
+                    count = 0
+            elif isinstance(data, dict):
                 # If dict of lists (e.g., vector search), aggregate all items
                 for collection, items in data.items():
                     if isinstance(items, list):
@@ -2288,10 +2373,11 @@ Please create a comprehensive summary that highlights these specific numbers and
                 count = len(data)
             else:
                 count = 1 if data else 0
+            
             stats["method_breakdown"][tool_name] = count
             stats["total_items"] += count
-            # Store examples
-            if all_items and count > 0:
+            # Store examples (skip if we already handled it in PDF special case)
+            if tool_name != "get_full_pdf_content" and all_items and count > 0:
                 examples = []
                 for item in all_items[:3]:
                     if isinstance(item, dict):
@@ -2966,7 +3052,7 @@ class LangGraphResearchSystem:
                 return {"error": str(e), "found": False}
         
         @tool
-        def search_relevant_sentences(query: str, top_n: int = 10) -> Dict[str, Any]:
+        def search_relevant_sentences(query: str, top_n: int = 50) -> Dict[str, Any]:
             """Search sentences by semantic similarity. Best for finding specific claims or viewpoints."""
             if not self.vector_indexer:
                 return {"error": "Vector indexer not available", "found": False}
@@ -3433,7 +3519,7 @@ Please respond with: CONTINUE or EXPAND
         
         return workflow.compile()
     
-    def _execute_tools_based_on_intent(self, state: ResearchState, query_intent: Dict) -> ResearchState:
+    def _execute_tools_based_on_intent(self, state: ResearchState, query_intent: Dict, matched_entity: Any = None) -> ResearchState:
         """Execute tools based on query intent when LLM is not available"""
         question = state["question"]
         request_id = state.get("request_id")
@@ -3444,176 +3530,103 @@ Please respond with: CONTINUE or EXPAND
         try:
             query_type = query_intent.get("query_type", "concept_search")
             target_entity = query_intent.get("target_entity", "")
-            entity_type = query_intent.get("entity_type", "concept")
-            
-            # Get extracted entities for more intelligent processing
-            extracted_entities = query_intent.get("extracted_entities", {})
-            author_names = extracted_entities.get("author_names", [])
-            paper_titles = extracted_entities.get("paper_titles", [])
-            concepts = extracted_entities.get("concepts", [])
-            
-            # Use the most relevant entity based on query type
-            if query_type == "reverse_citation_analysis" and entity_type == "author":
-                # Use the first author name from extracted entities, fallback to target_entity
-                search_entity = author_names[0] if author_names else target_entity
-                
-                log_event("WorkflowAgent", "reverse_citation_search", {"search_entity": search_entity, "author_names": author_names}, level=logging.DEBUG, request_id=request_id)
-                
-                # Execute author search first for any author
-                author_result = self.tools[4].invoke({"author_name": search_entity})  # get_papers_id_by_author
-                collected_data["results"]["get_papers_id_by_author"] = author_result
-                
-                # Check for multiple author matches and handle ambiguity
-                if author_result.get("found") and author_result.get("data"):
-                    matches = author_result.get("data", [])
+            entity_type = query_intent.get("entity_type", "unknown")
+            author_names = query_intent.get("author_names", [])
+            paper_titles = query_intent.get("paper_titles", [])
+
+            search_author = None # Initialize search_author
+
+            if query_type == "author_search":
+                # If fuzzy matching already found papers, use them directly.
+                if matched_entity and (isinstance(matched_entity, list) or isinstance(matched_entity, dict)):
+                    if isinstance(matched_entity, list):
+                        log_event("WorkflowAgent", "author_search_from_fuzzy_match", {"matched_count": len(matched_entity)}, level=logging.INFO, request_id=request_id)
+                        collected_data["results"]["get_papers_id_by_author"] = matched_entity
+                        search_author = matched_entity[0].get('name') if isinstance(matched_entity[0], dict) else target_entity
+                    else:
+                        log_event("WorkflowAgent", "author_search_from_fuzzy_match", {"matched_count": 1}, level=logging.INFO, request_id=request_id)
+                        collected_data["results"]["get_papers_id_by_author"] = [matched_entity]  # Wrap single match in list
+                        search_author = matched_entity.get('name') if isinstance(matched_entity, dict) else target_entity
+                else:
+                    # Fallback to the original logic if fuzzy matching returned nothing
+                    search_author = author_names[0] if author_names else target_entity
+                    log_event("WorkflowAgent", "author_search_direct", {"search_author": search_author}, level=logging.DEBUG, request_id=request_id)
                     
-                    # If multiple matches found, create clarification response
-                    if len(matches) > 1:
-                        # Group by unique authors to avoid duplicate papers by same author
-                        unique_authors = {}
-                        for match in matches:
-                            authors_str = ", ".join(match.get("authors", []))
-                            if authors_str not in unique_authors:
-                                unique_authors[authors_str] = match
-                        
-                        unique_matches = list(unique_authors.values())
-                        
-                        if len(unique_matches) > 1:
-                            # Create clarification message
-                            clarification_parts = [
-                                f"I found {len(unique_matches)} different authors named {search_entity.title()}. Please specify which one you meant:",
-                                ""
-                            ]
-                            
-                            for i, match in enumerate(unique_matches, 1):
-                                authors = ", ".join(match.get("authors", ["Unknown"]))
-                                title = match.get("title", "Unknown Title")
-                                year = match.get("year", "Unknown Year")
-                                clarification_parts.append(f"{i}. {authors} - \"{title}\" ({year})")
-                            
-                            clarification_parts.extend([
-                                "",
-                                "Please respond with the number of your choice, and I'll analyze the citations for that specific author."
-                            ])
-                            
-                            log_event("WorkflowAgent", "disambiguation_required", {"entity": search_entity, "matches": len(unique_matches)}, level=logging.INFO, request_id=request_id)
-                            
-                            # Return clarification request instead of proceeding
-                            return {**state, "collected_data": {
-                                "results": {"clarification_needed": True},
-                                "clarification_message": "\n".join(clarification_parts),
-                                "clarification_options": unique_matches
-                            }}
+                    # Use graphDB to find papers by author
+                    author_result = self.tools[4].invoke({"author_name": search_author}) # get_papers_id_by_author
+                    collected_data["results"]["get_papers_id_by_author"] = author_result
+
+                # Also query PDF content by the (potentially corrected) author name
+                if search_author:
+                    log_event("WorkflowAgent", "pdf_author_search", {"author": search_author}, level=logging.DEBUG, request_id=request_id)
+                    pdf_result = self.tools[14].invoke({"author": search_author, "content_query": None}) # query_pdf_by_author_and_content
+                    collected_data["results"]["query_pdf_by_author_and_content"] = pdf_result
+
+            elif query_type == "paper_search" or entity_type == "paper":
+                # Check if we have a matched entity from fuzzy matching
+                if matched_entity and (isinstance(matched_entity, list) or isinstance(matched_entity, dict)):
+                    # Use the matched paper directly from the fuzzy matcher
+                    if isinstance(matched_entity, list):
+                        matched_paper = matched_entity[0]
+                    else:
+                        matched_paper = matched_entity
+                    paper_id = matched_paper.get("paper_id")
+                    log_event("WorkflowAgent", "paper_analysis_from_fuzzy_match", {"paper_id": paper_id, "matched_title": matched_paper.get("title")}, level=logging.INFO, request_id=request_id)
                     
-                    # Single match or user already clarified - proceed normally
-                    paper_id = matches[0].get("paper_id")
-                    if paper_id:
-                        log_event("WorkflowAgent", "citation_analysis_start", {"paper_id": paper_id, "search_entity": search_entity}, level=logging.INFO, request_id=request_id)
-                        
+                    # Determine what type of analysis is needed based on the question
+                    content_keywords = ["summarize", "findings", "content", "arguments", "main points"]
+                    is_content_query = any(keyword in question.lower() for keyword in content_keywords)
+                    
+                    if is_content_query:
+                        # Only get full PDF content for summarization queries
+                        log_event("WorkflowAgent", "pdf_content_retrieval", {"paper_id": paper_id}, level=logging.INFO, request_id=request_id)
+                        pdf_content_result = self.tools[11].invoke({"paper_id": paper_id})  # get_full_pdf_content
+                        collected_data["results"]["get_full_pdf_content"] = pdf_content_result
+                    else:
+                        # For citation analysis or general info queries
+                        log_event("WorkflowAgent", "citation_analysis_start", {"paper_id": paper_id}, level=logging.INFO, request_id=request_id)
+                        # Get full content
+                        pdf_content_result = self.tools[11].invoke({"paper_id": paper_id})  # get_full_pdf_content
+                        collected_data["results"]["get_full_pdf_content"] = pdf_content_result
                         # Get citation relationships
                         citing_result = self.tools[0].invoke({"paper_id": paper_id})  # get_papers_citing_paper
                         collected_data["results"]["get_papers_citing_paper"] = citing_result
-                        
-                        # Get citation contexts - THIS IS WHAT USER ASKED FOR!
-                        context_result = self.tools[2].invoke({"paper_id": paper_id})  # get_sentences_citing_paper
-                        collected_data["results"]["get_sentences_citing_paper"] = context_result
-                        
-                        # Get paragraphs for more context
-                        paragraph_result = self.tools[3].invoke({"paper_id": paper_id})  # get_paragraphs_citing_paper
-                        collected_data["results"]["get_paragraphs_citing_paper"] = paragraph_result
-                        
-                        # Get full PDF content for comprehensive analysis
-                        pdf_content_result = self.tools[11].invoke({"paper_id": paper_id})  # get_full_pdf_content
-                        collected_data["results"]["get_full_pdf_content"] = pdf_content_result
-                        
-                        # Search for specific content in author's papers using extracted entities
-                        content_query = " ".join(concepts) if concepts else "citation context"
-                        author_content_result = self.tools[12].invoke({"author_name": search_entity, "content_query": content_query})  # query_pdf_by_author_and_content
-                        collected_data["results"]["query_pdf_by_author_and_content"] = author_content_result
-            
-            elif query_type == "paper_search" or entity_type == "paper":
-                # Use paper titles from extracted entities
-                search_title = paper_titles[0] if paper_titles else target_entity
-                
-                log_event("WorkflowAgent", "paper_search", {"search_title": search_title, "paper_titles": paper_titles}, level=logging.DEBUG, request_id=request_id)
-                
-                # Handle paper title search with disambiguation
-                title_result = self.tools[5].invoke({"title": search_title})  # get_papers_id_by_title
-                collected_data["results"]["get_papers_id_by_title"] = title_result
-                
-                # Check for multiple paper matches and handle ambiguity
-                if title_result.get("found") and title_result.get("data"):
-                    matches = title_result.get("data", [])
-                    
-                    # If multiple matches found, create clarification response
-                    if len(matches) > 1:
-                        # Create clarification message for papers
-                        clarification_parts = [
-                            f"I found {len(matches)} papers with similar titles. Please specify which one you meant:",
-                            ""
-                        ]
-                        
-                        for i, match in enumerate(matches, 1):
-                            title = match.get("title", "Unknown Title")
-                            authors = ", ".join(match.get("authors", ["Unknown Author"]))
-                            year = match.get("year", "Unknown Year")
-                            journal = match.get("journal", "")
-                            journal_info = f" ({journal})" if journal else ""
-                            clarification_parts.append(f"{i}. \"{title}\" by {authors} ({year}){journal_info}")
-                        
-                        clarification_parts.extend([
-                            "",
-                            "Please respond with the number of your choice, and I'll analyze that specific paper."
-                        ])
-                        
-                        log_event("WorkflowAgent", "paper_disambiguation_required", {"search_title": search_title, "matches": len(matches)}, level=logging.INFO, request_id=request_id)
-                        
-                        # Return clarification request instead of proceeding
-                        return {**state, "collected_data": {
-                            "results": {"clarification_needed": True},
-                            "clarification_message": "\n".join(clarification_parts),
-                            "clarification_options": matches
-                        }}
-                    
-                    # Single match or user already clarified - proceed with paper analysis
-                    paper_id = matches[0].get("paper_id")
-                    if paper_id:
-                        log_event("WorkflowAgent", "paper_analysis_start", {"paper_id": paper_id, "search_title": search_title}, level=logging.INFO, request_id=request_id)
-                        
-                        # Get papers citing this paper
-                        citing_result = self.tools[0].invoke({"paper_id": paper_id})  # get_papers_citing_paper
-                        collected_data["results"]["get_papers_citing_paper"] = citing_result
-                        
-                        # Get papers cited by this paper
-                        cited_result = self.tools[1].invoke({"paper_id": paper_id})  # get_papers_cited_by_paper
-                        collected_data["results"]["get_papers_cited_by_paper"] = cited_result
-                        
                         # Get citation contexts
                         context_result = self.tools[2].invoke({"paper_id": paper_id})  # get_sentences_citing_paper
                         collected_data["results"]["get_sentences_citing_paper"] = context_result
-                        
-                        # Get full PDF content
-                        pdf_content_result = self.tools[11].invoke({"paper_id": paper_id})  # get_full_pdf_content
-                        collected_data["results"]["get_full_pdf_content"] = pdf_content_result
-                        # Get full PDF content if required by query
-                        if self._query_requires_full_pdf_content(query_intent):
-                            pdf_content_result = self.tools[11].invoke({"paper_id": paper_id})  # get_full_pdf_content
-                            collected_data["results"]["get_full_pdf_content"] = pdf_content_result
+                
+                else:
+                    # Fallback to title search if no matched entity
+                    search_title = paper_titles[0] if paper_titles else target_entity
+                    
+                    log_event("WorkflowAgent", "paper_search_direct", {"search_title": search_title, "paper_titles": paper_titles}, level=logging.DEBUG, request_id=request_id)
+                    
+                    # Use graphDB to find papers by title
+                    title_result = self.tools[5].invoke({"title": search_title}) # get_papers_id_by_title
+                    collected_data["results"]["get_papers_id_by_title"] = title_result
             
-            elif query_type == "author_search" and entity_type == "author":
-                # Use author names from extracted entities
-                search_author = author_names[0] if author_names else target_entity
+            elif query_type == "concept_search" and entity_type == "concept":
+                # Use concepts from extracted entities
+                concepts = query_intent.get("concepts", [])
                 
-                log_event("WorkflowAgent", "author_search", {"search_author": search_author, "author_names": author_names}, level=logging.DEBUG, request_id=request_id)
+                log_event("WorkflowAgent", "concept_search", {"search_query": query_intent.get("target_entity"), "concepts": concepts}, level=logging.DEBUG, request_id=request_id)
                 
-                # Handle author search (papers by author)
-                author_result = self.tools[4].invoke({"author_name": search_author})  # get_papers_id_by_author
-                collected_data["results"]["get_papers_id_by_author"] = author_result
+                search_query = query_intent.get("target_entity")
                 
-                # Search for specific content in author's papers using concepts
-                content_query = " ".join(concepts) if concepts else question
-                author_content_result = self.tools[12].invoke({"author_name": search_author, "content_query": content_query})  # query_pdf_by_author_and_content
-                collected_data["results"]["query_pdf_by_author_and_content"] = author_content_result
+                # Search for related concepts
+                search_results = self.tools[6].invoke({"query": search_query, "limit_per_collection": 10})  # search_all_collections
+                collected_data["results"]["search_all_collections"] = search_results
+                
+                # Also try semantic search for sentences
+                if hasattr(self.query_agent, 'search_relevant_sentences'):
+                    sentence_result = self.query_agent.search_relevant_sentences(search_query, top_n=5)
+                    collected_data["results"][f"additional_sentences_{search_query[:20]}"] = sentence_result
+                
+                if paper_titles:
+                    # Search for specific papers by title
+                    for title in paper_titles:
+                        title_content_result = self.tools[13].invoke({"title_query": title, "content_query": search_query})  # query_pdf_by_title_and_content
+                        collected_data["results"][f"query_pdf_by_title_and_content_{title[:20]}"] = title_content_result
             
             else:
                 # For other query types, use semantic search with intelligent query construction
@@ -3778,39 +3791,87 @@ Please respond with: CONTINUE or EXPAND
         # Run the complete workflow with user confirmation
         return self.research_question(question, confirmation)
     
-    def interactive_research_chat(self, user_input: str, history: Optional[list] = None) -> dict:
+    def interactive_research_chat(self, user_input: str, history: Optional[list] = None, menu_choice: Optional[str] = None, collected_data: Optional[Dict] = None) -> dict:
         """
         Stateless, non-interactive chat function for CLI integration.
-        - Accepts user input and conversation history.
+        - Accepts user input, conversation history, and previously collected data.
+        - If menu_choice is provided, acts on the menu selection.
+        - If menu_choice is None, treats user_input as a new question and returns summary + menu.
         - Returns a dict with:
             - 'text': the AI's message
+            - 'collected_data': the updated data
             - 'needs_user_choice': bool
             - 'menu': list of options (if a menu is needed)
+            - 'needs_user_input': bool (if further user input is needed for info requests)
         - Never calls input() or print().
         - All user interaction is handled by the CLI.
         """
-        self.logger.info(f"Starting stateless chat for: {user_input}")
+        self.logger.info(f"Starting stateless chat for: {user_input}, menu_choice={menu_choice}")
         request_id = str(uuid.uuid4())
         conversation_history = history or []
-        collected_data = {"results": {}}
+        # Use provided collected_data or initialize a new one
+        current_collected_data = collected_data or {"results": {}}
         current_question = user_input
         try:
+            if menu_choice is not None:
+                if menu_choice == "1":
+                    # Generate final answer using the passed-in collected_data
+                    final_response = self._generate_final_answer(current_question, current_collected_data, conversation_history, request_id)
+                    return {
+                        "text": final_response,
+                        "collected_data": current_collected_data,
+                        "needs_user_choice": False
+                    }
+                elif menu_choice == "2":
+                    # Ask for additional info
+                    return {
+                        "text": "What additional information would you like me to gather?",
+                        "collected_data": current_collected_data,
+                        "needs_user_choice": False,
+                        "needs_user_input": True
+                    }
+                elif menu_choice == "3":
+                    # Ask for specific info
+                    return {
+                        "text": "What specific information would you like me to gather?",
+                        "collected_data": current_collected_data,
+                        "needs_user_choice": False,
+                        "needs_user_input": True
+                    }
+                elif menu_choice == "4":
+                    # Exit
+                    return {
+                        "text": "Exiting interactive research. Goodbye!",
+                        "collected_data": current_collected_data,
+                        "needs_user_choice": False
+                    }
+                else:
+                    return {
+                        "text": "Invalid choice. Please enter 1, 2, 3, or 4.",
+                        "collected_data": current_collected_data,
+                        "needs_user_choice": True,
+                        "menu": [
+                            "Yes, generate final answer",
+                            "No, gather more information",
+                            "Tell me what specific information you want",
+                            "Exit"
+                        ]
+                    }
+            # Default: treat as new question
             research_result = self._execute_research_directly(current_question, request_id)
             if research_result and "collected_data" in research_result:
                 new_data = research_result["collected_data"]
                 if new_data and "results" in new_data:
-                    collected_data["results"].update(new_data["results"])
+                    current_collected_data["results"].update(new_data["results"])
             information_summary = self.information_summary_agent.summarize_information(
-                current_question, collected_data, research_result.get("query_intent", {}), request_id
+                current_question, current_collected_data, research_result.get("query_intent", {}), request_id
             )
-            # Compose the main response text
             text = (
                 f"Information Gathered:\n"
                 f"Confidence Level: {information_summary.get('confidence_level', 'medium').upper()}\n\n"
                 f"{information_summary.get('summary_text', 'Information has been gathered.')}\n\n"
                 f"Data Overview:\n{information_summary.get('data_overview', 'No data available')}\n"
             )
-            # Always offer the menu after a summary
             menu = [
                 "Yes, generate final answer",
                 "No, gather more information",
@@ -3819,6 +3880,7 @@ Please respond with: CONTINUE or EXPAND
             ]
             return {
                 "text": text + "\nIs this information sufficient for your question?",
+                "collected_data": current_collected_data,
                 "needs_user_choice": True,
                 "menu": menu
             }
@@ -3826,6 +3888,7 @@ Please respond with: CONTINUE or EXPAND
             log_event("InteractiveChat", "error", {"error": str(e)}, level=logging.ERROR, request_id=request_id)
             return {
                 "text": f"❌ Error during interactive research: {str(e)}",
+                "collected_data": current_collected_data,
                 "needs_user_choice": False
             }
     
@@ -3854,40 +3917,86 @@ Please respond with: CONTINUE or EXPAND
         
         return additional_data
     
+    def _truncate_text_to_token_limit(self, text: str, model_name: str = "gpt-3.5-turbo", max_tokens: int = 15000) -> str:
+        """Truncate text to a specified token limit to avoid context length errors."""
+        try:
+            import tiktoken
+            encoding = tiktoken.encoding_for_model(model_name)
+        except ImportError:
+            # Fallback if tiktoken is not installed
+            return text[:max_tokens * 3]  # Rough approximation
+            
+        tokens = encoding.encode(text)
+        if len(tokens) > max_tokens:
+            truncated_tokens = tokens[:max_tokens]
+            return encoding.decode(truncated_tokens)
+        return text
+
     def _generate_final_answer(self, original_question: str, collected_data: Dict[str, Any], conversation_history: List[Dict], request_id: str) -> str:
         """Generate final answer based on all collected data and conversation history"""
         log_event("InteractiveChat", "generate_final_answer", {"data_keys": list(collected_data.get("results", {}).keys())}, level=logging.INFO, request_id=request_id)
         try:
-            response_generator_model = self._get_agent_model("response_generator")
+            agent_config = self.model_config_manager.get_agent_config("response_generator")
+            response_generator_model = self.model_config_manager.get_model_instance("response_generator")
+            
             if not response_generator_model:
                 return self._generate_simple_final_answer(original_question, collected_data, conversation_history)
             conversation_context = self._create_conversation_context(conversation_history)
-            # --- Patch: Only pass a sample of results to the LLM ---
-            max_items_per_collection = 5
-            summary_lines = []
-            for key, result in collected_data.get("results", {}).items():
-                data = result.get("data", result) if isinstance(result, dict) else result
-                if isinstance(data, dict):
-                    for collection, items in data.items():
-                        if isinstance(items, list):
-                            for item in items[:max_items_per_collection]:
-                                if isinstance(item, dict):
-                                    title = item.get("title", item.get("name", "Unknown"))
-                                    authors = item.get("authors", [])
-                                    snippet = item.get("text") or item.get("content") or ""
-                                    summary_lines.append(f"[{collection}] {title} by {', '.join(authors)}{' - ' + snippet[:100] if snippet else ''}")
-                elif isinstance(data, list):
-                    for item in data[:max_items_per_collection]:
-                        if isinstance(item, dict):
-                            title = item.get("title", item.get("name", "Unknown"))
-                            authors = item.get("authors", [])
-                            snippet = item.get("text") or item.get("content") or ""
-                            summary_lines.append(f"{title} by {', '.join(authors)}{' - ' + snippet[:100] if snippet else ''}")
-            # Compose a trimmed prompt for the LLM
-            data_summary = "\n".join(summary_lines)
+            # Check if we have PDF content and prioritize it for content queries
+            pdf_content_result = collected_data.get("results", {}).get("get_full_pdf_content", {})
+            has_pdf_content = pdf_content_result.get("found") and pdf_content_result.get("full_text")
+            
+            if has_pdf_content and any(word in original_question.lower() for word in ['summarize', 'findings', 'content', 'main points', 'arguments']):
+                # For content queries with PDF available, use the full PDF text directly
+                pdf_text = pdf_content_result.get("full_text", "")
+                pdf_title = pdf_content_result.get("metadata", {}).get("title", "Unknown Paper")
+                pdf_authors = pdf_content_result.get("metadata", {}).get("authors", [])
+                author_str = ", ".join(pdf_authors) if pdf_authors else "Unknown Authors"
+                
+                data_summary = f"FULL PAPER CONTENT:\n\nTitle: {pdf_title}\nAuthors: {author_str}\n\nContent:\n{pdf_text}"
+            else:
+                # Fallback to sampling approach for non-content queries
+                max_items_per_collection = 5
+                summary_lines = []
+                for key, result in collected_data.get("results", {}).items():
+                    if key == "get_full_pdf_content" and result.get("found"):
+                        # For PDF content, include a summary instead of sections
+                        pdf_title = result.get("metadata", {}).get("title", "PDF Content")
+                        pdf_authors = result.get("metadata", {}).get("authors", [])
+                        author_str = ", ".join(pdf_authors[:2]) if pdf_authors else "Unknown"
+                        sections_count = result.get("sections_count", 0)
+                        word_count = result.get("total_word_count", 0)
+                        summary_lines.append(f"[PDF] {pdf_title} by {author_str} ({sections_count} sections, {word_count} words)")
+                        continue
+                        
+                    data = result.get("data", result) if isinstance(result, dict) else result
+                    if isinstance(data, dict):
+                        for collection, items in data.items():
+                            if isinstance(items, list):
+                                for item in items[:max_items_per_collection]:
+                                    if isinstance(item, dict):
+                                        title = item.get("title", item.get("name", "Unknown"))
+                                        authors = item.get("authors", [])
+                                        snippet = item.get("text") or item.get("content") or ""
+                                        summary_lines.append(f"[{collection}] {title} by {', '.join(authors)}{' - ' + snippet[:100] if snippet else ''}")
+                    elif isinstance(data, list):
+                        for item in data[:max_items_per_collection]:
+                            if isinstance(item, dict):
+                                title = item.get("title", item.get("name", "Unknown"))
+                                authors = item.get("authors", [])
+                                snippet = item.get("text") or item.get("content") or ""
+                                summary_lines.append(f"{title} by {', '.join(authors)}{' - ' + snippet[:100] if snippet else ''}")
+                # Compose a trimmed prompt for the LLM
+                data_summary = "\n".join(summary_lines)
+            
+            # Truncate data_summary to fit within the model's context window
+            model_name = agent_config.get("model", "gpt-3.5-turbo")
+            max_model_tokens = agent_config.get("max_tokens", 16385) - 1000  # Leave 1000 for prompt and response
+            truncated_summary = self._truncate_text_to_token_limit(data_summary, model_name, max_model_tokens)
+            
             messages = [
                 SystemMessage(content="You are an expert academic research assistant. Generate a comprehensive final answer based on all the information gathered through the interactive research process. Consider the conversation history and user's specific requests when crafting your response. Organize the information logically and provide specific details and citations."),
-                HumanMessage(content=f"""Original Question: {original_question}\n\nConversation History:\n{conversation_context}\n\nSampled Results (max 5 per collection):\n{data_summary}\n""")
+                HumanMessage(content=f"""Original Question: {original_question}\n\nConversation History:\n{conversation_context}\n\nSampled Results (max 5 per collection):\n{truncated_summary}\n""")
             ]
             response = response_generator_model.invoke(messages)
             final_response = response.content
@@ -3898,19 +4007,26 @@ Please respond with: CONTINUE or EXPAND
             return self._generate_simple_final_answer(original_question, collected_data, conversation_history)
     
     def _create_conversation_context(self, conversation_history: List[Dict]) -> str:
-        """Create context from conversation history"""
+        """Create context from conversation history, robust to both old and new formats."""
         if not conversation_history:
             return "No conversation history."
-        
         context_parts = []
         for entry in conversation_history:
-            if entry["type"] == "user_request":
-                context_parts.append(f"User requested: {entry['request']}")
-            elif entry["type"] == "user_specific_request":
-                context_parts.append(f"User specifically requested: {entry['request']}")
-            elif entry["type"] == "system_summary":
-                context_parts.append(f"System gathered information for: {entry['question']}")
-        
+            if "type" in entry:
+                if entry["type"] == "user_request":
+                    context_parts.append(f"User requested: {entry['request']}")
+                elif entry["type"] == "user_specific_request":
+                    context_parts.append(f"User specifically requested: {entry['request']}")
+                elif entry["type"] == "system_summary":
+                    context_parts.append(f"System gathered information for: {entry['question']}")
+            else:
+                # New format: just user/ai
+                user = entry.get("user", "")
+                ai = entry.get("ai", "")
+                if user:
+                    context_parts.append(f"User: {user}")
+                if ai:
+                    context_parts.append(f"AI: {ai}")
         return "\n".join(context_parts)
     
     def _execute_research_directly(self, question: str, request_id: str) -> Dict[str, Any]:
@@ -3989,49 +4105,46 @@ Return ONLY a JSON object with: query_type, target_entity, entity_type, reasonin
                     "reasoning": "No LLM available, using entity extraction"
                 }
             
-            # Step 3: Find target entity using fuzzy matching
+            # Step 3: Fuzzy Matching and Entity Disambiguation
             entity_type = EntityType(query_intent.get("entity_type", "concept"))
             matches, confidence = self.fuzzy_matcher.find_matching_entities(
                 query_intent.get("target_entity", "unknown"), 
                 entity_type, 
                 request_id,
-                query_intent.get("query_type", "concept_search")  # Pass query_type for citation query handling
+                query_intent.get("query_type", "concept_search")
             )
             
             if not matches:  # No matches found
-                return {
-                    "collected_data": {"results": {}},
-                    "query_intent": query_intent,
+                target_entity = {
                     "error": f"No {entity_type.value} found for '{query_intent.get('target_entity', 'unknown')}'"
                 }
+            else:
+                # Select the best target entity
+                target_entity = self._select_best_target_entity(
+                    matches, 
+                    query_intent.get("query_type", "concept_search"),
+                    entity_type,
+                    request_id
+                )
             
-            # Step 3.5: Intelligently select the best target entity
-            target_entity = self._select_best_target_entity(
-                matches, 
-                query_intent.get("query_type", "concept_search"),
-                entity_type,
-                request_id
-            )
+            # Log the result of fuzzy matching for debugging
+            log_event("InteractiveChat", "fuzzy_match_result", {"matched_entity": target_entity, "matches_count": len(matches) if matches else 0}, level=logging.DEBUG, request_id=request_id)
+
+            # Step 4: Create a consolidated state to pass to the workflow
+            # The 'matched_entity' is the crucial piece of information that was being lost.
+            state = {
+                "question": question,
+                "request_id": request_id,
+                "matched_entity": target_entity,
+                "query_intent": query_intent
+            }
             
-            # Step 4: Create query plan
-            query_plan = self.query_planner.create_query_plan(
-                QueryIntent(
-                    query_type=QueryType(query_intent.get("query_type", "concept_search")),
-                    target_entity=query_intent.get("target_entity", "unknown"),
-                    entity_type=entity_type,
-                    required_info=["relevant_content"],
-                    complexity="medium",
-                    original_question=question
-                ), 
-                target_entity, 
-                request_id
-            )
-            
-            # Step 5: Execute query plan
-            collected_data = self.data_retrieval_coordinator.execute_query_plan(query_plan, request_id)
+            # Step 5: Execute the workflow using the tool-based execution
+            # We pass the matched entity to the workflow execution
+            workflow_result = self._execute_tools_based_on_intent(state, query_intent, target_entity)
             
             return {
-                "collected_data": collected_data,
+                "collected_data": workflow_result.get("collected_data", {}),
                 "query_intent": query_intent,
                 "target_entity": target_entity
             }
@@ -4044,7 +4157,7 @@ Return ONLY a JSON object with: query_type, target_entity, entity_type, reasonin
             }
     
     def _generate_simple_final_answer(self, original_question: str, collected_data: Dict[str, Any], conversation_history: List[Dict]) -> str:
-        """Generate a simple structured final answer"""
+        """Generate a simple structured final answer, robust to history format."""
         response_parts = []
         response_parts.append(f"# Research Results\n")
         response_parts.append(f"**Original Question**: {original_question}\n")
@@ -4053,8 +4166,11 @@ Return ONLY a JSON object with: query_type, target_entity, entity_type, reasonin
         if conversation_history:
             response_parts.append("## Research Process:")
             for entry in conversation_history:
-                if entry["type"] in ["user_request", "user_specific_request"]:
-                    response_parts.append(f"- User requested: {entry['request']}")
+                # Handle both old and new history formats
+                if "type" in entry and entry["type"] in ["user_request", "user_specific_request"]:
+                    response_parts.append(f"- User requested: {entry.get('request', 'N/A')}")
+                elif "user" in entry:
+                    response_parts.append(f"- User asked: {entry['user']}")
             response_parts.append("")
         
         # Add findings
@@ -4067,15 +4183,21 @@ Return ONLY a JSON object with: query_type, target_entity, entity_type, reasonin
                     data = result.get("data", [])
                     if data:
                         response_parts.append(f"### {tool_name.replace('_', ' ').title()}")
-                        response_parts.append(f"Found {len(data)} items:\n")
                         
-                        for i, item in enumerate(data[:5], 1):
-                            if isinstance(item, dict):
-                                title = item.get("title", item.get("text", "Unknown"))
-                                response_parts.append(f"{i}. {title[:100]}...")
-                        
-                        if len(data) > 5:
-                            response_parts.append(f"... and {len(data) - 5} more items\n")
+                        # Special handling for PDF content
+                        if tool_name == "get_full_pdf_content":
+                            title = result.get("metadata", {}).get("title", "Unknown Title")
+                            authors = result.get("metadata", {}).get("authors", [])
+                            author_str = ", ".join(authors) if authors else "Unknown"
+                            response_parts.append(f"Retrieved full text for: \"{title}\" by {author_str}")
+                        else:
+                            response_parts.append(f"Found {len(data)} items:\n")
+                            for i, item in enumerate(data[:5], 1):
+                                if isinstance(item, dict):
+                                    title = item.get("title", item.get("text", "Unknown"))
+                                    response_parts.append(f"{i}. {title[:100]}...")
+                            if len(data) > 5:
+                                response_parts.append(f"... and {len(data) - 5} more items\n")
                     else:
                         response_parts.append(f"### {tool_name.replace('_', ' ').title()}")
                         response_parts.append("No specific data found\n")

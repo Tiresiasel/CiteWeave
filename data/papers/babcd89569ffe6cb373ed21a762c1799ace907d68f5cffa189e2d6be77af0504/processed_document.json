@@ -52,6 +52,21 @@
           "paper_id": "dcfea96fdb97c5f2c9bafed2103f5c6078a716b043d612fbd54a34a2b5753323"
         },
         {
+          "intext": "(Porter, 1980)",
+          "reference": {
+            "authors": [
+              "M Porter"
+            ],
+            "title": "What is strategy?",
+            "year": "1980",
+            "journal": "Competitive Strategy",
+            "publisher": "Free Press",
+            "pub_place": "",
+            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
+          },
+          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
+        },
+        {
           "intext": "(Nelson and Winter, 1982)",
           "reference": {
             "authors": [
@@ -66,21 +81,6 @@
             "raw_text": "R Nelson; S Winter (1982). An Evolutionary Theory of Economic Change. An Evolutionary Theory of Economic Change. , Belknap, Cambridge, MA"
           },
           "paper_id": "62db22156b34ac94234efe08e17ec653e23354133913700d5b773e56827d217c"
-        },
-        {
-          "intext": "(Porter, 1980)",
-          "reference": {
-            "authors": [
-              "M Porter"
-            ],
-            "title": "What is strategy?",
-            "year": "1980",
-            "journal": "Competitive Strategy",
-            "publisher": "Free Press",
-            "pub_place": "",
-            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
-          },
-          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
         },
         {
           "intext": "(Mueller, 1986)",
@@ -113,22 +113,6 @@
           "paper_id": "9ea864bf22219f35f3923d4baf6b97289df7778b8ba1c421196aa220a75c831b"
         },
         {
-          "intext": "(Dierickx and Cool, 1989)",
-          "reference": {
-            "authors": [
-              "I Dierickx",
-              "K Cool"
-            ],
-            "title": "Asset stock accumulation and sustainability of competitive advantage",
-            "year": "1989",
-            "journal": "Management Sci",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "I Dierickx; K Cool (1989). Asset stock accumulation and sustainability of competitive advantage. Management Sci"
-          },
-          "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
-        },
-        {
           "intext": "(Lippman and Rumelt, 1982)",
           "reference": {
             "authors": [
@@ -143,6 +127,22 @@
             "raw_text": "S Lippman; R Rumelt (1982). Uncertain imitability: An analysis of interfirm differences in efficiency under competition. Bell J. Econom"
           },
           "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
+        },
+        {
+          "intext": "(Dierickx and Cool, 1989)",
+          "reference": {
+            "authors": [
+              "I Dierickx",
+              "K Cool"
+            ],
+            "title": "Asset stock accumulation and sustainability of competitive advantage",
+            "year": "1989",
+            "journal": "Management Sci",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "I Dierickx; K Cool (1989). Asset stock accumulation and sustainability of competitive advantage. Management Sci"
+          },
+          "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
         },
         {
           "intext": "(Barney, 1991)",
@@ -206,21 +206,6 @@
           "paper_id": "d06b337cd4a040d32033fd3eb3620613b596e4292b20c19c776280900b1c932d"
         },
         {
-          "intext": "(Weick, 1976)",
-          "reference": {
-            "authors": [
-              "K Weick"
-            ],
-            "title": "Educational organizations as loosely coupled systems",
-            "year": "1976",
-            "journal": "Admin. Sci. Quart",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "K Weick (1976). Educational organizations as loosely coupled systems. Admin. Sci. Quart"
-          },
-          "paper_id": "428309cd10117e1a6a378a2f79fc3a2e2fd514e5ab147a5fef05efa387c54516"
-        },
-        {
           "intext": "(Glassman, 1973)",
           "reference": {
             "authors": [
@@ -234,6 +219,21 @@
             "raw_text": "R Glassman (1973). Persistence and loose coupling in living systems. Behavioral Sci"
           },
           "paper_id": "73ae4f1defce998434a6de6ab2e7df5ee792a2aa6c9af3e366e1b88ecd1743aa"
+        },
+        {
+          "intext": "(Weick, 1976)",
+          "reference": {
+            "authors": [
+              "K Weick"
+            ],
+            "title": "Educational organizations as loosely coupled systems",
+            "year": "1976",
+            "journal": "Admin. Sci. Quart",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "K Weick (1976). Educational organizations as loosely coupled systems. Admin. Sci. Quart"
+          },
+          "paper_id": "428309cd10117e1a6a378a2f79fc3a2e2fd514e5ab147a5fef05efa387c54516"
         },
         {
           "intext": "(Ichniowski et al., 1997)",
@@ -455,21 +455,6 @@
           "paper_id": "76bacdb944a90aac446248c8e8db3455d2647dfc2c154aacbacbdc4c2076b98a"
         },
         {
-          "intext": "(Topkis, 1998)",
-          "reference": {
-            "authors": [
-              "D Topkis"
-            ],
-            "title": "Supermodularity and Complementarity",
-            "year": "1998",
-            "journal": "Supermodularity and Complementarity",
-            "publisher": "Princeton University Press",
-            "pub_place": "",
-            "raw_text": "D Topkis (1998). Supermodularity and Complementarity. Supermodularity and Complementarity. Princeton University Press"
-          },
-          "paper_id": "f25850e1df3efd29f411cc4c335c7eac6cda93a8e82c75a111751911c32d84fc"
-        },
-        {
           "intext": "(Milgrom and Roberts 1990, 1995)",
           "reference": {
             "authors": [
@@ -484,6 +469,21 @@
             "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
           },
           "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
+        },
+        {
+          "intext": "(Topkis, 1998)",
+          "reference": {
+            "authors": [
+              "D Topkis"
+            ],
+            "title": "Supermodularity and Complementarity",
+            "year": "1998",
+            "journal": "Supermodularity and Complementarity",
+            "publisher": "Princeton University Press",
+            "pub_place": "",
+            "raw_text": "D Topkis (1998). Supermodularity and Complementarity. Supermodularity and Complementarity. Princeton University Press"
+          },
+          "paper_id": "f25850e1df3efd29f411cc4c335c7eac6cda93a8e82c75a111751911c32d84fc"
         },
         {
           "intext": "(Garey and Johnson, 1979)",
@@ -614,6 +614,22 @@
       "section_type": "results",
       "citations": [
         {
+          "intext": "(Milgrom and Roberts, 1990)",
+          "reference": {
+            "authors": [
+              "P Milgrom",
+              "J Roberts"
+            ],
+            "title": "Complementarities and fit: Strategy, structure, and organizational change in manufacturing",
+            "year": "1990",
+            "journal": "J. Accounting Econom",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
+          },
+          "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
+        },
+        {
           "intext": "(Ichniowski et al., 1997)",
           "reference": {
             "authors": [
@@ -629,22 +645,6 @@
             "raw_text": "C Ichniowski; K Shaw; G Prennushi (1997). The effects of human resource management practices on productivity: A study of steel finishing lines. The effects of human resource management practices on productivity: A study of steel finishing lines"
           },
           "paper_id": "d9e87b93a0db7cc1123455c417b460e36265001d8bcd8f553de9f179e7e451ee"
-        },
-        {
-          "intext": "(Milgrom and Roberts, 1990)",
-          "reference": {
-            "authors": [
-              "P Milgrom",
-              "J Roberts"
-            ],
-            "title": "Complementarities and fit: Strategy, structure, and organizational change in manufacturing",
-            "year": "1990",
-            "journal": "J. Accounting Econom",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
-          },
-          "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
         },
         {
           "intext": "(Hwang and Weil, 1997)",
@@ -982,6 +982,21 @@
           "paper_id": "dcfea96fdb97c5f2c9bafed2103f5c6078a716b043d612fbd54a34a2b5753323"
         },
         {
+          "intext": "(Porter, 1980)",
+          "reference": {
+            "authors": [
+              "M Porter"
+            ],
+            "title": "What is strategy?",
+            "year": "1980",
+            "journal": "Competitive Strategy",
+            "publisher": "Free Press",
+            "pub_place": "",
+            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
+          },
+          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
+        },
+        {
           "intext": "(Nelson and Winter, 1982)",
           "reference": {
             "authors": [
@@ -996,21 +1011,6 @@
             "raw_text": "R Nelson; S Winter (1982). An Evolutionary Theory of Economic Change. An Evolutionary Theory of Economic Change. , Belknap, Cambridge, MA"
           },
           "paper_id": "62db22156b34ac94234efe08e17ec653e23354133913700d5b773e56827d217c"
-        },
-        {
-          "intext": "(Porter, 1980)",
-          "reference": {
-            "authors": [
-              "M Porter"
-            ],
-            "title": "What is strategy?",
-            "year": "1980",
-            "journal": "Competitive Strategy",
-            "publisher": "Free Press",
-            "pub_place": "",
-            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
-          },
-          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
         }
       ],
       "word_count": 110,
@@ -1093,22 +1093,6 @@
       "section": "Imitation of Complex Strategies",
       "citations": [
         {
-          "intext": "(Dierickx and Cool, 1989)",
-          "reference": {
-            "authors": [
-              "I Dierickx",
-              "K Cool"
-            ],
-            "title": "Asset stock accumulation and sustainability of competitive advantage",
-            "year": "1989",
-            "journal": "Management Sci",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "I Dierickx; K Cool (1989). Asset stock accumulation and sustainability of competitive advantage. Management Sci"
-          },
-          "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
-        },
-        {
           "intext": "(Lippman and Rumelt, 1982)",
           "reference": {
             "authors": [
@@ -1123,6 +1107,22 @@
             "raw_text": "S Lippman; R Rumelt (1982). Uncertain imitability: An analysis of interfirm differences in efficiency under competition. Bell J. Econom"
           },
           "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
+        },
+        {
+          "intext": "(Dierickx and Cool, 1989)",
+          "reference": {
+            "authors": [
+              "I Dierickx",
+              "K Cool"
+            ],
+            "title": "Asset stock accumulation and sustainability of competitive advantage",
+            "year": "1989",
+            "journal": "Management Sci",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "I Dierickx; K Cool (1989). Asset stock accumulation and sustainability of competitive advantage. Management Sci"
+          },
+          "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
         },
         {
           "intext": "(Barney, 1991)",
@@ -1245,21 +1245,6 @@
           "paper_id": "1bfa4fb23bfde71e50e44701b432e76a64e1c2887a88310f2896d4134882070e"
         },
         {
-          "intext": "(Weick, 1976)",
-          "reference": {
-            "authors": [
-              "K Weick"
-            ],
-            "title": "Educational organizations as loosely coupled systems",
-            "year": "1976",
-            "journal": "Admin. Sci. Quart",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "K Weick (1976). Educational organizations as loosely coupled systems. Admin. Sci. Quart"
-          },
-          "paper_id": "428309cd10117e1a6a378a2f79fc3a2e2fd514e5ab147a5fef05efa387c54516"
-        },
-        {
           "intext": "(Glassman, 1973)",
           "reference": {
             "authors": [
@@ -1273,6 +1258,21 @@
             "raw_text": "R Glassman (1973). Persistence and loose coupling in living systems. Behavioral Sci"
           },
           "paper_id": "73ae4f1defce998434a6de6ab2e7df5ee792a2aa6c9af3e366e1b88ecd1743aa"
+        },
+        {
+          "intext": "(Weick, 1976)",
+          "reference": {
+            "authors": [
+              "K Weick"
+            ],
+            "title": "Educational organizations as loosely coupled systems",
+            "year": "1976",
+            "journal": "Admin. Sci. Quart",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "K Weick (1976). Educational organizations as loosely coupled systems. Admin. Sci. Quart"
+          },
+          "paper_id": "428309cd10117e1a6a378a2f79fc3a2e2fd514e5ab147a5fef05efa387c54516"
         }
       ],
       "word_count": 355,
@@ -2045,21 +2045,6 @@
       "section": "2.1. Formal Model",
       "citations": [
         {
-          "intext": "(Topkis, 1998)",
-          "reference": {
-            "authors": [
-              "D Topkis"
-            ],
-            "title": "Supermodularity and Complementarity",
-            "year": "1998",
-            "journal": "Supermodularity and Complementarity",
-            "publisher": "Princeton University Press",
-            "pub_place": "",
-            "raw_text": "D Topkis (1998). Supermodularity and Complementarity. Supermodularity and Complementarity. Princeton University Press"
-          },
-          "paper_id": "f25850e1df3efd29f411cc4c335c7eac6cda93a8e82c75a111751911c32d84fc"
-        },
-        {
           "intext": "(Milgrom and Roberts 1990, 1995)",
           "reference": {
             "authors": [
@@ -2074,6 +2059,21 @@
             "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
           },
           "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
+        },
+        {
+          "intext": "(Topkis, 1998)",
+          "reference": {
+            "authors": [
+              "D Topkis"
+            ],
+            "title": "Supermodularity and Complementarity",
+            "year": "1998",
+            "journal": "Supermodularity and Complementarity",
+            "publisher": "Princeton University Press",
+            "pub_place": "",
+            "raw_text": "D Topkis (1998). Supermodularity and Complementarity. Supermodularity and Complementarity. Princeton University Press"
+          },
+          "paper_id": "f25850e1df3efd29f411cc4c335c7eac6cda93a8e82c75a111751911c32d84fc"
         }
       ],
       "word_count": 67,
@@ -2369,22 +2369,6 @@
           "paper_id": "a0378d3e2b41af27cb74c81d1e34e4ae49b1ecd0b081f62e3e366adc03b74c6c"
         },
         {
-          "intext": "(Nelson and Winter, 1982)",
-          "reference": {
-            "authors": [
-              "R Nelson",
-              "S Winter"
-            ],
-            "title": "An Evolutionary Theory of Economic Change",
-            "year": "1982",
-            "journal": "An Evolutionary Theory of Economic Change",
-            "publisher": "",
-            "pub_place": "Belknap, Cambridge, MA",
-            "raw_text": "R Nelson; S Winter (1982). An Evolutionary Theory of Economic Change. An Evolutionary Theory of Economic Change. , Belknap, Cambridge, MA"
-          },
-          "paper_id": "62db22156b34ac94234efe08e17ec653e23354133913700d5b773e56827d217c"
-        },
-        {
           "intext": "(March and Simon, 1958)",
           "reference": {
             "authors": [
@@ -2399,6 +2383,22 @@
             "raw_text": "J March; H Simon (1958). . Organizations. Wiley, New York"
           },
           "paper_id": "a0378d3e2b41af27cb74c81d1e34e4ae49b1ecd0b081f62e3e366adc03b74c6c"
+        },
+        {
+          "intext": "(Nelson and Winter, 1982)",
+          "reference": {
+            "authors": [
+              "R Nelson",
+              "S Winter"
+            ],
+            "title": "An Evolutionary Theory of Economic Change",
+            "year": "1982",
+            "journal": "An Evolutionary Theory of Economic Change",
+            "publisher": "",
+            "pub_place": "Belknap, Cambridge, MA",
+            "raw_text": "R Nelson; S Winter (1982). An Evolutionary Theory of Economic Change. An Evolutionary Theory of Economic Change. , Belknap, Cambridge, MA"
+          },
+          "paper_id": "62db22156b34ac94234efe08e17ec653e23354133913700d5b773e56827d217c"
         }
       ],
       "word_count": 250,
@@ -2510,21 +2510,6 @@
       "section": "2.1. Formal Model",
       "citations": [
         {
-          "intext": "(Topkis, 1998)",
-          "reference": {
-            "authors": [
-              "D Topkis"
-            ],
-            "title": "Supermodularity and Complementarity",
-            "year": "1998",
-            "journal": "Supermodularity and Complementarity",
-            "publisher": "Princeton University Press",
-            "pub_place": "",
-            "raw_text": "D Topkis (1998). Supermodularity and Complementarity. Supermodularity and Complementarity. Princeton University Press"
-          },
-          "paper_id": "f25850e1df3efd29f411cc4c335c7eac6cda93a8e82c75a111751911c32d84fc"
-        },
-        {
           "intext": "(Milgrom and Roberts 1990, 1995)",
           "reference": {
             "authors": [
@@ -2539,6 +2524,21 @@
             "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
           },
           "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
+        },
+        {
+          "intext": "(Topkis, 1998)",
+          "reference": {
+            "authors": [
+              "D Topkis"
+            ],
+            "title": "Supermodularity and Complementarity",
+            "year": "1998",
+            "journal": "Supermodularity and Complementarity",
+            "publisher": "Princeton University Press",
+            "pub_place": "",
+            "raw_text": "D Topkis (1998). Supermodularity and Complementarity. Supermodularity and Complementarity. Princeton University Press"
+          },
+          "paper_id": "f25850e1df3efd29f411cc4c335c7eac6cda93a8e82c75a111751911c32d84fc"
         }
       ],
       "word_count": 352,
@@ -3838,6 +3838,22 @@
       "section": "Table 6\nResults of Follow-the-Leader Imitation Efforts",
       "citations": [
         {
+          "intext": "(Milgrom and Roberts, 1990)",
+          "reference": {
+            "authors": [
+              "P Milgrom",
+              "J Roberts"
+            ],
+            "title": "Complementarities and fit: Strategy, structure, and organizational change in manufacturing",
+            "year": "1990",
+            "journal": "J. Accounting Econom",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
+          },
+          "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
+        },
+        {
           "intext": "(Ichniowski et al., 1997)",
           "reference": {
             "authors": [
@@ -3853,22 +3869,6 @@
             "raw_text": "C Ichniowski; K Shaw; G Prennushi (1997). The effects of human resource management practices on productivity: A study of steel finishing lines. The effects of human resource management practices on productivity: A study of steel finishing lines"
           },
           "paper_id": "d9e87b93a0db7cc1123455c417b460e36265001d8bcd8f553de9f179e7e451ee"
-        },
-        {
-          "intext": "(Milgrom and Roberts, 1990)",
-          "reference": {
-            "authors": [
-              "P Milgrom",
-              "J Roberts"
-            ],
-            "title": "Complementarities and fit: Strategy, structure, and organizational change in manufacturing",
-            "year": "1990",
-            "journal": "J. Accounting Econom",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
-          },
-          "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
         },
         {
           "intext": "(Hwang and Weil, 1997)",
@@ -3987,22 +3987,6 @@
       "section": "Table 6\nResults of Follow-the-Leader Imitation Efforts",
       "citations": [
         {
-          "intext": "(Dierickx and Cool, 1989)",
-          "reference": {
-            "authors": [
-              "I Dierickx",
-              "K Cool"
-            ],
-            "title": "Asset stock accumulation and sustainability of competitive advantage",
-            "year": "1989",
-            "journal": "Management Sci",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "I Dierickx; K Cool (1989). Asset stock accumulation and sustainability of competitive advantage. Management Sci"
-          },
-          "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
-        },
-        {
           "intext": "(Lippman and Rumelt, 1982)",
           "reference": {
             "authors": [
@@ -4017,6 +4001,22 @@
             "raw_text": "S Lippman; R Rumelt (1982). Uncertain imitability: An analysis of interfirm differences in efficiency under competition. Bell J. Econom"
           },
           "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
+        },
+        {
+          "intext": "(Dierickx and Cool, 1989)",
+          "reference": {
+            "authors": [
+              "I Dierickx",
+              "K Cool"
+            ],
+            "title": "Asset stock accumulation and sustainability of competitive advantage",
+            "year": "1989",
+            "journal": "Management Sci",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "I Dierickx; K Cool (1989). Asset stock accumulation and sustainability of competitive advantage. Management Sci"
+          },
+          "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
         },
         {
           "intext": "(Barney, 1991)",
@@ -4534,6 +4534,21 @@
       "sentence_text": "Rapid imitation, it has been argued, reduces the proﬁtability of an industry, the degree to which production is concentrated in a few hands, and the ability of successful ﬁrms to maintain productivity advantages (Nelson and Winter 1982, Porter 1980).",
       "citations": [
         {
+          "intext": "(Porter, 1980)",
+          "reference": {
+            "authors": [
+              "M Porter"
+            ],
+            "title": "What is strategy?",
+            "year": "1980",
+            "journal": "Competitive Strategy",
+            "publisher": "Free Press",
+            "pub_place": "",
+            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
+          },
+          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
+        },
+        {
           "intext": "(Nelson and Winter, 1982)",
           "reference": {
             "authors": [
@@ -4548,21 +4563,6 @@
             "raw_text": "R Nelson; S Winter (1982). An Evolutionary Theory of Economic Change. An Evolutionary Theory of Economic Change. , Belknap, Cambridge, MA"
           },
           "paper_id": "62db22156b34ac94234efe08e17ec653e23354133913700d5b773e56827d217c"
-        },
-        {
-          "intext": "(Porter, 1980)",
-          "reference": {
-            "authors": [
-              "M Porter"
-            ],
-            "title": "What is strategy?",
-            "year": "1980",
-            "journal": "Competitive Strategy",
-            "publisher": "Free Press",
-            "pub_place": "",
-            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
-          },
-          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
         }
       ],
       "word_count": 39,
@@ -4653,22 +4653,6 @@
       "sentence_text": "Proponents of the resource-based view of the ﬁrm highlight factors that make imitation difﬁcult: impediments to factor accumulation, social complexity, causal ambiguity, tacit knowledge, economies of scale and scope, adjustment costs, and ﬁrst-mover advantages (e.g., Barney 1991, Dierickx and Cool 1989, Lippman and Rumelt 1982).",
       "citations": [
         {
-          "intext": "(Dierickx and Cool, 1989)",
-          "reference": {
-            "authors": [
-              "I Dierickx",
-              "K Cool"
-            ],
-            "title": "Asset stock accumulation and sustainability of competitive advantage",
-            "year": "1989",
-            "journal": "Management Sci",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "I Dierickx; K Cool (1989). Asset stock accumulation and sustainability of competitive advantage. Management Sci"
-          },
-          "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
-        },
-        {
           "intext": "(Lippman and Rumelt, 1982)",
           "reference": {
             "authors": [
@@ -4683,6 +4667,22 @@
             "raw_text": "S Lippman; R Rumelt (1982). Uncertain imitability: An analysis of interfirm differences in efficiency under competition. Bell J. Econom"
           },
           "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
+        },
+        {
+          "intext": "(Dierickx and Cool, 1989)",
+          "reference": {
+            "authors": [
+              "I Dierickx",
+              "K Cool"
+            ],
+            "title": "Asset stock accumulation and sustainability of competitive advantage",
+            "year": "1989",
+            "journal": "Management Sci",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "I Dierickx; K Cool (1989). Asset stock accumulation and sustainability of competitive advantage. Management Sci"
+          },
+          "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
         },
         {
           "intext": "(Barney, 1991)",
@@ -4883,21 +4883,6 @@
       "sentence_text": "Students of both biological systems (e.g., Glassman 1973) and organizations (e.g., Weick 1976) have noted that systems whose elements are tightly coupled to one another ﬁnd it difﬁcult to learn and adapt to environmental change.",
       "citations": [
         {
-          "intext": "(Weick, 1976)",
-          "reference": {
-            "authors": [
-              "K Weick"
-            ],
-            "title": "Educational organizations as loosely coupled systems",
-            "year": "1976",
-            "journal": "Admin. Sci. Quart",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "K Weick (1976). Educational organizations as loosely coupled systems. Admin. Sci. Quart"
-          },
-          "paper_id": "428309cd10117e1a6a378a2f79fc3a2e2fd514e5ab147a5fef05efa387c54516"
-        },
-        {
           "intext": "(Glassman, 1973)",
           "reference": {
             "authors": [
@@ -4911,6 +4896,21 @@
             "raw_text": "R Glassman (1973). Persistence and loose coupling in living systems. Behavioral Sci"
           },
           "paper_id": "73ae4f1defce998434a6de6ab2e7df5ee792a2aa6c9af3e366e1b88ecd1743aa"
+        },
+        {
+          "intext": "(Weick, 1976)",
+          "reference": {
+            "authors": [
+              "K Weick"
+            ],
+            "title": "Educational organizations as loosely coupled systems",
+            "year": "1976",
+            "journal": "Admin. Sci. Quart",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "K Weick (1976). Educational organizations as loosely coupled systems. Admin. Sci. Quart"
+          },
+          "paper_id": "428309cd10117e1a6a378a2f79fc3a2e2fd514e5ab147a5fef05efa387c54516"
         }
       ],
       "word_count": 35,
@@ -6964,22 +6964,6 @@
       "sentence_text": "First, it is commonly posited that managers satisﬁce rather than optimize (e.g., March and Simon 1958, Nelson and Winter 1982).",
       "citations": [
         {
-          "intext": "(Nelson and Winter, 1982)",
-          "reference": {
-            "authors": [
-              "R Nelson",
-              "S Winter"
-            ],
-            "title": "An Evolutionary Theory of Economic Change",
-            "year": "1982",
-            "journal": "An Evolutionary Theory of Economic Change",
-            "publisher": "",
-            "pub_place": "Belknap, Cambridge, MA",
-            "raw_text": "R Nelson; S Winter (1982). An Evolutionary Theory of Economic Change. An Evolutionary Theory of Economic Change. , Belknap, Cambridge, MA"
-          },
-          "paper_id": "62db22156b34ac94234efe08e17ec653e23354133913700d5b773e56827d217c"
-        },
-        {
           "intext": "(March and Simon, 1958)",
           "reference": {
             "authors": [
@@ -6994,6 +6978,22 @@
             "raw_text": "J March; H Simon (1958). . Organizations. Wiley, New York"
           },
           "paper_id": "a0378d3e2b41af27cb74c81d1e34e4ae49b1ecd0b081f62e3e366adc03b74c6c"
+        },
+        {
+          "intext": "(Nelson and Winter, 1982)",
+          "reference": {
+            "authors": [
+              "R Nelson",
+              "S Winter"
+            ],
+            "title": "An Evolutionary Theory of Economic Change",
+            "year": "1982",
+            "journal": "An Evolutionary Theory of Economic Change",
+            "publisher": "",
+            "pub_place": "Belknap, Cambridge, MA",
+            "raw_text": "R Nelson; S Winter (1982). An Evolutionary Theory of Economic Change. An Evolutionary Theory of Economic Change. , Belknap, Cambridge, MA"
+          },
+          "paper_id": "62db22156b34ac94234efe08e17ec653e23354133913700d5b773e56827d217c"
         }
       ],
       "word_count": 20,
@@ -7060,21 +7060,6 @@
       "sentence_text": "Finally, the NP-completeness of the strategy formulation problem poses a question for the recent, important stream of research on complementarities (e.g., Milgrom and Roberts 1990, 1995; Topkis 1998 and references therein).",
       "citations": [
         {
-          "intext": "(Topkis, 1998)",
-          "reference": {
-            "authors": [
-              "D Topkis"
-            ],
-            "title": "Supermodularity and Complementarity",
-            "year": "1998",
-            "journal": "Supermodularity and Complementarity",
-            "publisher": "Princeton University Press",
-            "pub_place": "",
-            "raw_text": "D Topkis (1998). Supermodularity and Complementarity. Supermodularity and Complementarity. Princeton University Press"
-          },
-          "paper_id": "f25850e1df3efd29f411cc4c335c7eac6cda93a8e82c75a111751911c32d84fc"
-        },
-        {
           "intext": "(Milgrom and Roberts 1990, 1995)",
           "reference": {
             "authors": [
@@ -7089,6 +7074,21 @@
             "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
           },
           "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
+        },
+        {
+          "intext": "(Topkis, 1998)",
+          "reference": {
+            "authors": [
+              "D Topkis"
+            ],
+            "title": "Supermodularity and Complementarity",
+            "year": "1998",
+            "journal": "Supermodularity and Complementarity",
+            "publisher": "Princeton University Press",
+            "pub_place": "",
+            "raw_text": "D Topkis (1998). Supermodularity and Complementarity. Supermodularity and Complementarity. Princeton University Press"
+          },
+          "paper_id": "f25850e1df3efd29f411cc4c335c7eac6cda93a8e82c75a111751911c32d84fc"
         }
       ],
       "word_count": 31,
@@ -8764,6 +8764,22 @@
       "sentence_text": "bundles of practices whose superior performance is well documented: e.g., modern manufacturing techniques (Milgrom and Roberts 1990), ﬂexible production systems in the auto industry (MacDufﬁe 1995), bundles of high-performance work practices in the steel ﬁnishing industry (Ichniowski et al. 1997), modern logistical practices in the textile business (Hwang and Weil 1997), and science-driven research in pharmaceuticals (Cockburn and Henderson 1996).",
       "citations": [
         {
+          "intext": "(Milgrom and Roberts, 1990)",
+          "reference": {
+            "authors": [
+              "P Milgrom",
+              "J Roberts"
+            ],
+            "title": "Complementarities and fit: Strategy, structure, and organizational change in manufacturing",
+            "year": "1990",
+            "journal": "J. Accounting Econom",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
+          },
+          "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
+        },
+        {
           "intext": "(Ichniowski et al., 1997)",
           "reference": {
             "authors": [
@@ -8779,22 +8795,6 @@
             "raw_text": "C Ichniowski; K Shaw; G Prennushi (1997). The effects of human resource management practices on productivity: A study of steel finishing lines. The effects of human resource management practices on productivity: A study of steel finishing lines"
           },
           "paper_id": "d9e87b93a0db7cc1123455c417b460e36265001d8bcd8f553de9f179e7e451ee"
-        },
-        {
-          "intext": "(Milgrom and Roberts, 1990)",
-          "reference": {
-            "authors": [
-              "P Milgrom",
-              "J Roberts"
-            ],
-            "title": "Complementarities and fit: Strategy, structure, and organizational change in manufacturing",
-            "year": "1990",
-            "journal": "J. Accounting Econom",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
-          },
-          "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
         },
         {
           "intext": "(Hwang and Weil, 1997)",
@@ -9438,7 +9438,7 @@
     "paragraphs_with_citations": 25,
     "total_citations": 47,
     "total_references": 38,
-    "processing_timestamp": "2025-07-22T14:51:56.496109",
+    "processing_timestamp": "2025-07-22T18:23:23.357909",
     "graph_db_stats": {
       "sections_created": 6,
       "paragraphs_created": 209,
