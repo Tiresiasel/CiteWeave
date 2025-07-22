@@ -1,6 +1,5 @@
 """
 Enhanced PDF Processor with MinerU Integration
-集成MinerU的增强PDF处理器
 """
 
 import os
@@ -20,8 +19,8 @@ logging.basicConfig(level=logging.INFO)
 
 class MinerUPDFProcessor(PDFProcessor):
     """
-    集成MinerU的PDF处理器
-    优先使用MinerU进行高质量PDF转Markdown，然后处理Markdown内容
+    PDF processor with MinerU integration.
+    Prioritizes using MinerU for high-quality PDF to Markdown conversion, then processes the Markdown content.
     """
     
     def __init__(self, storage_root: str = "./data/papers/", 
@@ -29,13 +28,13 @@ class MinerUPDFProcessor(PDFProcessor):
                  mineru_fallback: bool = True,
                  preferred_engine: str = "auto"):
         """
-        初始化MinerU集成的PDF处理器
+        Initialize the MinerU-integrated PDF processor.
         
         Args:
-            storage_root: 存储根目录
-            mineru_enabled: 是否启用MinerU
-            mineru_fallback: MinerU失败时是否回退到传统方法
-            preferred_engine: 传统方法的首选引擎
+            storage_root: Storage root directory
+            mineru_enabled: Whether to enable MinerU
+            mineru_fallback: Whether to fall back to traditional methods if MinerU fails
+            preferred_engine: Preferred engine for traditional methods
         """
         super().__init__(storage_root, preferred_engine)
         
@@ -49,7 +48,9 @@ class MinerUPDFProcessor(PDFProcessor):
         logging.info(f"MinerU PDF Processor initialized. MinerU available: {self.mineru_available}")
     
     def _check_mineru_availability(self) -> bool:
-        """检查MinerU是否可用"""
+        """
+        Check if MinerU is available.
+        """
         try:
             result = subprocess.run(['mineru', '--version'], 
                                   capture_output=True, text=True, timeout=10)
@@ -65,10 +66,10 @@ class MinerUPDFProcessor(PDFProcessor):
     
     def extract_text_with_best_engine(self, pdf_path: str) -> Tuple[str, Dict]:
         """
-        使用最佳引擎提取文本，优先使用MinerU
+        Extract text using the best available engine, prioritizing MinerU.
         
         Args:
-            pdf_path: PDF文件路径
+            pdf_path: PDF file path
             
         Returns:
             Tuple[text, extraction_info]
@@ -82,20 +83,20 @@ class MinerUPDFProcessor(PDFProcessor):
                     raise
                 logging.info("Falling back to traditional PDF extraction methods")
         
-        # 回退到传统方法
+        # Fallback to traditional methods
         return super().extract_text_with_best_engine(pdf_path)
     
     def _extract_with_mineru(self, pdf_path: str) -> Tuple[str, Dict]:
         """
-        使用MinerU提取PDF内容
+        Extract PDF content using MinerU.
         
         Args:
-            pdf_path: PDF文件路径
+            pdf_path: PDF file path
             
         Returns:
             Tuple[extracted_text, extraction_info]
         """
-        # 转换为绝对路径
+        # Convert to absolute path
         pdf_path = os.path.abspath(pdf_path)
         
         if not os.path.exists(pdf_path):
@@ -167,26 +168,26 @@ class MinerUPDFProcessor(PDFProcessor):
                 raise RuntimeError(f"MinerU extraction error: {e}")
     
     def _count_pages_from_markdown(self, markdown_content: str) -> int:
-        """从Markdown内容估算页数"""
-        # 简单估算：基于内容长度和常见页面标记
+        """Estimate pages from Markdown content."""
+        # Simple estimation: based on content length and common page markers
         lines = markdown_content.split('\n')
         
-        # 查找页面分隔符或页码标记
+        # Find page separators or page number markers
         page_markers = 0
         for line in lines:
             if re.search(r'page\s*\d+', line.lower()) or line.strip() in ['---', '***']:
                 page_markers += 1
         
-        # 如果找到页面标记，使用它们；否则基于内容长度估算
+        # If page markers are found, use them; otherwise estimate based on content length
         if page_markers > 0:
             return max(1, page_markers)
         else:
-            # 粗略估算：每2000字符约等于1页
+            # Rough estimation: approximately 1 page per 2000 characters
             return max(1, len(markdown_content) // 2000)
     
     def extract_document_structure(self, pdf_path: str) -> Dict:
         """
-        提取文档结构，优先使用MinerU解析的Markdown
+        Extract document structure, prioritizing MinerU's parsed Markdown.
         
         Returns:
             Dict containing:
@@ -203,16 +204,16 @@ class MinerUPDFProcessor(PDFProcessor):
                     raise
                 logging.info("Falling back to traditional structure extraction")
         
-        # 回退到传统方法
+        # Fallback to traditional methods
         return super().extract_document_structure(pdf_path)
     
     def _extract_structure_from_mineru(self, pdf_path: str) -> Dict:
         """
-        从MinerU生成的Markdown中提取文档结构
+        Extract document structure from MinerU's generated Markdown.
         """
         markdown_content, extraction_info = self._extract_with_mineru(pdf_path)
         
-        # 解析Markdown内容为结构化数据
+        # Parse Markdown content into structured data
         sections = self._parse_markdown_sections(markdown_content)
         paragraphs = self._parse_markdown_paragraphs(markdown_content)
         
@@ -224,7 +225,7 @@ class MinerUPDFProcessor(PDFProcessor):
         }
     
     def _parse_markdown_sections(self, markdown_content: str) -> List[Dict]:
-        """解析Markdown中的章节"""
+        """Parse Markdown sections."""
         sections = []
         lines = markdown_content.split('\n')
         current_section = None
@@ -233,10 +234,10 @@ class MinerUPDFProcessor(PDFProcessor):
         for i, line in enumerate(lines):
             line = line.strip()
             
-            # 检测标题（# ## ### 等）
+            # Detect headings (# ## ### etc.)
             heading_match = re.match(r'^(#{1,6})\s+(.+)$', line)
             if heading_match:
-                # 保存上一个章节
+                # Save previous section
                 if current_section:
                     sections.append(current_section)
                 
@@ -255,14 +256,14 @@ class MinerUPDFProcessor(PDFProcessor):
                 }
                 section_index += 1
             elif current_section and line:
-                # 添加内容到当前章节
+                # Add content to current section
                 current_section["text"] += line + "\n"
         
-        # 添加最后一个章节
+        # Add the last section
         if current_section:
             sections.append(current_section)
         
-        # 完善章节信息
+        # Refine section information
         for section in sections:
             section["text"] = section["text"].strip()
             section["paragraph_count"] = len(self._extract_paragraphs_from_text(section["text"]))
@@ -270,10 +271,10 @@ class MinerUPDFProcessor(PDFProcessor):
         return sections
     
     def _parse_markdown_paragraphs(self, markdown_content: str) -> List[Dict]:
-        """解析Markdown中的段落"""
+        """Parse Markdown paragraphs."""
         paragraphs = []
         
-        # 按双换行符分割段落
+        # Split paragraphs by double newlines
         raw_paragraphs = re.split(r'\n\s*\n', markdown_content)
         
         paragraph_index = 0
@@ -284,15 +285,15 @@ class MinerUPDFProcessor(PDFProcessor):
             if not para_text:
                 continue
             
-            # 检查是否是标题
+            # Check if it's a heading
             if re.match(r'^#{1,6}\s+', para_text):
-                # 更新当前章节
+                # Update current section
                 heading_match = re.match(r'^#{1,6}\s+(.+)$', para_text.split('\n')[0])
                 if heading_match:
                     current_section = heading_match.group(1).strip()
                 continue
             
-            # 创建段落对象
+            # Create paragraph object
             paragraph = {
                 "id": f"para_{paragraph_index}",
                 "text": para_text,
@@ -301,7 +302,7 @@ class MinerUPDFProcessor(PDFProcessor):
                 "word_count": len(para_text.split()),
                 "char_count": len(para_text),
                 "sentence_count": len(self._split_into_sentences(para_text)),
-                "citation_count": 0,  # 将在后续步骤中计算
+                "citation_count": 0,  # Will be calculated in subsequent steps
                 "has_citations": False
             }
             
@@ -311,24 +312,24 @@ class MinerUPDFProcessor(PDFProcessor):
         return paragraphs
     
     def _extract_paragraphs_from_text(self, text: str) -> List[str]:
-        """从文本中提取段落"""
+        """Extract paragraphs from text."""
         return [p.strip() for p in re.split(r'\n\s*\n', text) if p.strip()]
     
     def _split_into_sentences(self, text: str) -> List[str]:
-        """将文本分割为句子"""
-        # 简单的句子分割（可以后续使用更复杂的方法）
+        """Split text into sentences."""
+        # Simple sentence splitting (can use more complex methods later)
         sentences = re.split(r'[.!?]+', text)
         return [s.strip() for s in sentences if s.strip()]
     
     def parse_sentences(self, pdf_path: str) -> List[str]:
         """
-        解析句子，优先使用MinerU的Markdown输出
+        Parse sentences, prioritizing MinerU's Markdown output.
         """
         if self.mineru_enabled and self.mineru_available:
             try:
                 markdown_content, _ = self._extract_with_mineru(pdf_path)
                 
-                # 从Markdown中提取句子
+                # Extract sentences from Markdown
                 sentences = self._extract_sentences_from_markdown(markdown_content)
                 
                 logging.info(f"Extracted {len(sentences)} sentences from MinerU markdown")
@@ -340,23 +341,23 @@ class MinerUPDFProcessor(PDFProcessor):
                     raise
                 logging.info("Falling back to traditional sentence extraction")
         
-        # 回退到传统方法
+        # Fallback to traditional methods
         return super().parse_sentences(pdf_path)
     
     def _extract_sentences_from_markdown(self, markdown_content: str) -> List[str]:
         """
-        从Markdown内容中提取句子
+        Extract sentences from Markdown content.
         """
-        # 清理Markdown标记
+        # Clean Markdown markup
         clean_text = self._clean_markdown_text(markdown_content)
         
-        # 分离主要内容和引用部分
+        # Separate main content and reference parts
         main_content, _ = self._separate_main_content_and_references(clean_text)
         
-        # 使用改进的学术句子分割
+        # Use improved academic sentence splitting
         sentences = self._split_sentences_academic_aware(main_content)
         
-        # 过滤和清理句子
+        # Filter and clean sentences
         filtered_sentences = self._filter_invalid_sentences(sentences)
         cleaned_sentences = [self._clean_sentence_text(sent) for sent in filtered_sentences]
         
@@ -364,31 +365,31 @@ class MinerUPDFProcessor(PDFProcessor):
     
     def _clean_markdown_text(self, markdown_text: str) -> str:
         """
-        清理Markdown文本，移除格式标记但保留内容结构
+        Clean Markdown text, removing formatting but preserving content structure.
         """
         text = markdown_text
         
-        # 移除代码块
+        # Remove code blocks
         text = re.sub(r'```.*?```', '', text, flags=re.DOTALL)
         text = re.sub(r'`[^`]+`', '', text)
         
-        # 移除标题标记但保留文本
+        # Remove heading markers but keep text
         text = re.sub(r'^#{1,6}\s*', '', text, flags=re.MULTILINE)
         
-        # 移除链接但保留文本
+        # Remove links but keep text
         text = re.sub(r'\[([^\]]+)\]\([^)]+\)', r'\1', text)
         
-        # 移除粗体和斜体标记
+        # Remove bold and italic markers
         text = re.sub(r'\*\*([^*]+)\*\*', r'\1', text)
         text = re.sub(r'\*([^*]+)\*', r'\1', text)
         text = re.sub(r'__([^_]+)__', r'\1', text)
         text = re.sub(r'_([^_]+)_', r'\1', text)
         
-        # 移除表格标记
+        # Remove table markers
         text = re.sub(r'\|[^|\n]*\|', '', text)
         text = re.sub(r'^[-|: ]+$', '', text, flags=re.MULTILINE)
         
-        # 清理多余的空白
+        # Clean up extra whitespace
         text = re.sub(r'\n\s*\n', '\n\n', text)
         text = re.sub(r'[ \t]+', ' ', text)
         
@@ -396,11 +397,11 @@ class MinerUPDFProcessor(PDFProcessor):
     
     def diagnose_pdf_quality(self, pdf_path: str) -> Dict:
         """
-        诊断PDF质量，包括MinerU处理能力
+        Diagnose PDF quality, including MinerU processing capabilities.
         """
         diagnosis = super().diagnose_pdf_quality(pdf_path)
         
-        # 添加MinerU可用性信息
+        # Add MinerU availability information
         diagnosis["mineru_available"] = self.mineru_available
         diagnosis["mineru_enabled"] = self.mineru_enabled
         
@@ -410,17 +411,17 @@ class MinerUPDFProcessor(PDFProcessor):
         
         return diagnosis
 
-# 便利函数：创建MinerU集成的PDF处理器实例
+# Convenience function: Create an instance of the MinerU-integrated PDF processor
 def create_mineru_pdf_processor(storage_root: str = "./data/papers/", 
                                mineru_enabled: bool = True) -> MinerUPDFProcessor:
     """
-    创建集成MinerU的PDF处理器实例
+    Create an instance of the MinerU-integrated PDF processor.
     
     Args:
-        storage_root: 存储根目录
-        mineru_enabled: 是否启用MinerU
+        storage_root: Storage root directory
+        mineru_enabled: Whether to enable MinerU
         
     Returns:
-        MinerUPDFProcessor实例
+        MinerUPDFProcessor instance
     """
     return MinerUPDFProcessor(storage_root=storage_root, mineru_enabled=mineru_enabled) 

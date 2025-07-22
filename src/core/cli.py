@@ -6,6 +6,32 @@ Command-line interface for the argument graph project.
 import argparse
 import sys
 import logging
+import os
+import glob
+import threading
+import time
+# Load environment variables from .env if present
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # If python-dotenv is not installed, skip
+
+# Set up logging based on environment variable (before importing other modules)
+env = os.environ.get("CITEWEAVE_ENV", "production").lower()
+import logging
+if env in ("test", "development", "dev"):
+    logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.getLogger().setLevel(logging.DEBUG)
+else:
+    logging.basicConfig(level=logging.WARNING, format='%(asctime)s - %(levelname)s - %(message)s')
+    logging.getLogger().setLevel(logging.WARNING)
+    # Silence common noisy loggers in production
+    for noisy_logger in [
+        "CiteWeave", "httpx", "sentence_transformers", "root", "ModelConfigManager", "LangGraphResearchSystem"
+    ]:
+        logging.getLogger(noisy_logger).setLevel(logging.WARNING)
+
 from src.processing.pdf.document_processor import DocumentProcessor
 from src.agents.multi_agent_research_system import LangGraphResearchSystem
 
@@ -36,9 +62,6 @@ def main():
     batch_upload_parser.add_argument("directory", type=str, help="Path to the directory containing PDF files.")
 
     args = parser.parse_args()
-
-    # Set up logging
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
     if args.command == "upload":
         handle_upload_command(args)
@@ -166,8 +189,26 @@ def handle_chat_command(args):
                 break
             if not question:
                 continue
-            result = system.interactive_research_chat(question)
-            print(f"\nAI: {result}\n")
+            # --- Spinner logic ---
+            spinner_running = True
+            def spinner():
+                symbols = ['|', '/', '-', '\\']
+                idx = 0
+                print("AI: ", end="", flush=True)
+                while spinner_running:
+                    print(f"\b{symbols[idx % 4]}", end="", flush=True)
+                    idx += 1
+                    time.sleep(0.1)
+                print("\b", end="", flush=True)  # Clean up spinner
+            spinner_thread = threading.Thread(target=spinner)
+            spinner_thread.start()
+            # --- Run AI ---
+            try:
+                result = system.interactive_research_chat(question)
+            finally:
+                spinner_running = False
+                spinner_thread.join()
+            print(f"{result}\n")
     except Exception as e:
         print(f"Error during chat: {e}")
         logging.exception("Chat command failed")
@@ -175,8 +216,6 @@ def handle_chat_command(args):
 
 def handle_batch_upload_command(args):
     """Handle the batch-upload command to process all PDFs in a directory."""
-    import os
-    import glob
     directory = args.directory
     if not os.path.isdir(directory):
         print(f"Error: {directory} is not a valid directory.")

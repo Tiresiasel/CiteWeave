@@ -223,3 +223,6 @@ scheduler.pt
 rng_state.pth
 trainer_state.json
 training_args.bin
+
+# test files
+test_files/

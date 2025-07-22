@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 """
-Start CiteWeave services (Qdrant + GROBID) using docker-compose.
+Start all CiteWeave core services (Qdrant, GROBID, and Neo4j) using docker-compose.
+
+- This script will launch Qdrant (vector DB), GROBID (PDF parsing), and Neo4j (citation graph DB) in Docker containers.
+- If this is your first time setting up CiteWeave, run this script to start all required services.
+- After running, you can access:
+    - Qdrant at http://localhost:6333
+    - GROBID at http://localhost:8070
+    - Neo4j at http://localhost:7474 (browser UI) or bolt://localhost:7687 (for drivers)
 """
 
 import subprocess
@@ -90,7 +97,7 @@ def check_services():
     logging.info("Checking service status...")
     
     # Check Qdrant
-    qdrant_ready = wait_for_service("http://localhost:6333/health", "Qdrant", max_retries=15)
+    qdrant_ready = wait_for_service("http://localhost:6333/collections", "Qdrant", max_retries=15)
     
     # Check GROBID
     grobid_ready = wait_for_service("http://localhost:8070/api/isalive", "GROBID", max_retries=30)
@@ -151,6 +158,8 @@ def main():
     print("\n🎯 Services are ready!")
     print("📊 Qdrant: http://localhost:6333")
     print("📚 GROBID: http://localhost:8070")
+    print("🕸️  Neo4j: http://localhost:7474 (browser UI), bolt://localhost:7687 (driver)")
+    print("\nIf this is your first time setting up CiteWeave, you should run this script to start all required services before using the system.")
     print("\nTo stop services, run: docker-compose down")
 
 if __name__ == "__main__":

@@ -1,97 +1,97 @@
 > **This project is licensed under the Apache License 2.0. See the LICENSE file for details.**
 
-# CiteWeave 产品规划文档中心
+# CiteWeave Product Planning Document Center
 
-## 📁 文档结构
+## 📁 Document Structure
 
-本文件夹包含 CiteWeave 项目的所有产品设计、开发计划和进度追踪文档。
+This folder contains all product design, development plans, and progress tracking documents for the CiteWeave project.
 
-### 📋 核心文档
+### 📋 Core Documents
 
-| 文档 | 描述 | 状态 |
+| Document | Description | Status |
 |------|------|------|
-| [`PRODUCT_SPEC.md`](./PRODUCT_SPEC.md) | **产品需求文档 (PRD)** - 项目总体设计、功能需求、技术架构 | ✅ 最新 |
-| [`Development_Logs.md`](./Development_Logs.md) | **开发日志** - 各模块开发进度、测试结果、里程碑记录 | 🔄 持续更新 |
+| [`PRODUCT_SPEC.md`](./PRODUCT_SPEC.md) | **Product Requirements Document (PRD)** - Overall project design, feature requirements, technical architecture | ✅ Latest |
+| [`Development_Logs.md`](./Development_Logs.md) | **Development Logs** - Module progress, test results, milestone records | 🔄 Ongoing |
 
-### 🚀 RAG系统演进规划
+### 🚀 RAG System Evolution Plan
 
-| 文档 | 描述 | 时间范围 |
+| Document | Description | Timeframe |
 |------|------|----------|
-| [`RAG_OPTIMIZATION_PLAN.md`](./RAG_OPTIMIZATION_PLAN.md) | **RAG优化总体计划** - 三阶段演进路线图、技术架构设计 | 长期规划 |
-| [`PHASE1_IMPLEMENTATION_PLAN.md`](./PHASE1_IMPLEMENTATION_PLAN.md) | **Phase 1详细实施计划** - 上下文粒度增强 (v0.7) | 3周实施 |
+| [`RAG_OPTIMIZATION_PLAN.md`](./RAG_OPTIMIZATION_PLAN.md) | **RAG Optimization Plan** - Three-phase roadmap, technical architecture | Long-term |
+| [`PHASE1_IMPLEMENTATION_PLAN.md`](./PHASE1_IMPLEMENTATION_PLAN.md) | **Phase 1 Implementation Plan** - Context granularity enhancement (v0.7) | 3 weeks |
 
-## 🎯 项目版本规划
+## 🎯 Project Version Planning
 
-### 当前版本：v0.6.1
-- ✅ DocumentProcessor 统一架构
-- ✅ 句子级引用分析 (v2.0)
-- ✅ 引用级论证关系嵌入
-- ✅ JSON/JSONL 标准化输出
+### Current Version: v0.6.1
+- ✅ Unified DocumentProcessor architecture
+- ✅ Sentence-level citation analysis (v2.0)
+- ✅ Argument-level citation relationship embedding
+- ✅ JSON/JSONL standardized output
 
-### 规划版本路线图
+### Planned Version Roadmap
 
-#### 🔥 v0.7 (Phase 1) - 上下文粒度增强
-**预计时间**: 3周  
-**核心功能**:
-- 段落级上下文识别
-- 章节自动分类 
-- 话语角色分析
-- 语义位置标注
+#### 🔥 v0.7 (Phase 1) - Context Granularity Enhancement
+**Estimated Time**: 3 weeks  
+**Core Features**:
+- Paragraph-level context recognition
+- Automatic section classification
+- Discourse role analysis
+- Semantic position annotation
 
-#### 🚀 v0.8 (Phase 2) - 语义关系深化
-**预计时间**: 3-4周  
-**核心功能**:
-- 作者-概念网络构建
-- 引用立场分类
-- 概念提取器
-- 语义丰富的关系元数据
+#### 🚀 v0.8 (Phase 2) - Semantic Relationship Deepening
+**Estimated Time**: 3-4 weeks  
+**Core Features**:
+- Author-concept network construction
+- Citation stance classification
+- Concept extractor
+- Semantically rich relationship metadata
 
-#### 🌟 v0.9 (Phase 3) - 知识图谱与智能查询
-**预计时间**: 4-5周  
-**核心功能**:
-- Neo4j完整图谱架构
-- 自然语言查询引擎
-- 时间演化追踪
-- 多层次向量检索
+#### 🌟 v0.9 (Phase 3) - Knowledge Graph & Intelligent Query
+**Estimated Time**: 4-5 weeks  
+**Core Features**:
+- Complete Neo4j graph architecture
+- Natural language query engine
+- Temporal evolution tracking
+- Multi-level vector retrieval
 
-## 📊 开发进度概览
+## 📊 Development Progress Overview
 
-### 已完成模块
-- [x] **PDFProcessor** - PDF文本提取、元数据处理
-- [x] **CitationParser** - 引用检测与解析 (100%测试覆盖)
-- [x] **DocumentProcessor** - 统一文档处理协调器
-- [x] **GraphBuilder** - 引用网络构建
-- [x] **VectorIndexer** - 语义搜索和嵌入
+### Completed Modules
+- [x] **PDFProcessor** - PDF text extraction, metadata processing
+- [x] **CitationParser** - Citation detection and parsing (100% test coverage)
+- [x] **DocumentProcessor** - Unified document processing coordinator
+- [x] **GraphBuilder** - Citation network construction
+- [x] **VectorIndexer** - Semantic search and embeddings
 
-### 开发中模块
-- [ ] **ArgumentClassifier** - 论证关系分类 (部分完成)
-- [ ] **QueryAgent** - 智能查询引擎 (规划中)
-- [ ] **StubResolver** - 引用补全机制 (规划中)
-- [ ] **CLIInterface** - 命令行接口优化 (规划中)
+### Modules in Development
+- [ ] **ArgumentClassifier** - Argument relationship classification (partially complete)
+- [ ] **QueryAgent** - Intelligent query engine (planned)
+- [ ] **StubResolver** - Citation completion mechanism (planned)
+- [ ] **CLIInterface** - Command-line interface optimization (planned)
 
-## 🎯 查询能力演进目标
+## 🎯 Query Capability Evolution Goals
 
-| 版本 | 查询能力水平 | 示例查询 |
-|------|-------------|----------|
-| **v0.6** (当前) | 基础引用检索 | "找到引用Porter (1980)的句子" |
-| **v0.7** (Phase 1) | 上下文感知检索 | "在文献综述部分引用Porter的句子" |
-| **v0.8** (Phase 2) | 语义立场查询 | "支持Porter竞争定位理论的管理学论文" |
-| **v0.9** (Phase 3) | 复杂学术查询 | "追踪RBV理论1990年至今的演化路径和主要批评观点" |
+| Version | Query Capability Level | Example Query |
+|------|----------------------|--------------|
+| **v0.6** (Current) | Basic citation retrieval | "Find sentences citing Porter (1980)" |
+| **v0.7** (Phase 1) | Context-aware retrieval | "Find sentences citing Porter in the literature review section" |
+| **v0.8** (Phase 2) | Semantic stance query | "Management papers supporting Porter's competitive positioning theory" |
+| **v0.9** (Phase 3) | Complex academic query | "Trace the evolution and main criticisms of RBV theory from 1990 to present" |
 
-## 📝 文档维护说明
+## 📝 Documentation Maintenance Notes
 
-### 更新频率
-- **PRODUCT_SPEC.md**: 重大版本发布时更新
-- **Development_Logs.md**: 每个模块完成时更新
-- **Phase计划文档**: 对应阶段开始前确定，实施过程中微调
+### Update Frequency
+- **PRODUCT_SPEC.md**: Updated on major releases
+- **Development_Logs.md**: Updated when each module is completed
+- **Phase plan documents**: Finalized before each phase, adjusted during implementation
 
-### 版本控制
-- 所有文档使用Git版本控制
-- 重要变更记录在各自的版本历史中
-- 交叉引用保持同步更新
+### Version Control
+- All documents use Git version control
+- Important changes are recorded in each document's version history
+- Cross-references are kept in sync
 
 ---
 
-**最后更新**: 2025-01-15  
-**维护人**: Project Team  
-**下次审查**: Phase 1 开始前 
+**Last updated**: 2025-01-15  
+**Maintainer**: Project Team  
+**Next review**: Before Phase 1 starts 

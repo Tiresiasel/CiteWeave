@@ -1,87 +1,92 @@
 # CiteWeave - Advanced Citation Analysis System
 
+[🇨🇳 点击查看中文文档 (README.zh.md)](README.zh.md)
+
 > **This project is licensed under the Apache License 2.0. See the LICENSE file for details.**
+
+---
+
+## Who is CiteWeave for?
+
+- **Social science researchers** seeking advanced tools for literature review, citation network analysis, and argument mapping. (e.g. Political Science, Sociology, Economics, etc.). Since the system is designed to work with social science papers, the whole workflow might not be suitable for other fields. However, if you are in other fields and find it useful, please let us know!
+- **Academic researchers** in any field who want to build a semantic, searchable database of papers and citations.
+- **Anyone** needing argument-level (sentence-level) citation relationships between papers for deep research, knowledge graph construction, or retrieval-augmented generation (RAG) applications.
 
 ---
 
 ## 🚀 Project Overview
 
-CiteWeave is a comprehensive pipeline for extracting, analyzing, and structuring citations and their relationships from academic PDF documents. It features:
-- Multi-agent research chat system (ask research questions, get structured answers)
-- Dual-layer citation networks (Neo4j graph database)
-- Multi-level vector embeddings for semantic search and citation analysis
-- High-quality PDF processing (with optional MinerU integration)
-- All user interaction is via a powerful command-line interface (CLI)
+CiteWeave helps you truly understand your research papers by:
+- Showing you not just which papers cite each other, but exactly **which arguments or sentences are being cited**—so you can trace the flow of ideas.
+- Letting you **chat with your PDF library**: ask complex research questions and get clear, structured answers with aggregated information.
+- Building a unique, argument-level citation network—perfect for deep literature reviews and discovering new connections.
+- Making it easy for social science researchers (and beyond) to organize, search, and map out the debates in their field.
+- All through a simple command-line interface (with a GUI coming soon).
 
 ---
 
-## ⚡ Quick Start
+## ⭐ Key Features & Architecture
 
-### 1. Environment Setup
+- **Multi-Agent System**: CiteWeave uses a modular, multi-agent architecture for research question analysis, query planning, fuzzy matching, user clarification, data retrieval, reflection, and response generation.
+- **Argument-Level Citation Graph**: CiteWeave is the **first open-source project** to build argument-level (sentence-level) citation relationships between papers. This means you can analyze not just which papers cite each other, but exactly **which arguments, claims, or sentences** are cited and how they connect across the literature.
+- **Other Features**:
+  - Enables advanced literature review, argument mapping, and citation network analysis at a much deeper level than traditional tools.
+  - Ideal for social science and interdisciplinary research where understanding the flow of arguments and evidence is critical.
+  - Supports semantic search, RAG, and knowledge graph applications for academic PDFs.
 
-- **Python**: Requires Python 3.8+
-- **Recommended**: Use a virtual environment
+### Multi-Agent System Architecture
 
-```bash
-python3 -m venv venv
-source venv/bin/activate
+```mermaid
+graph TD
+    A[User Question] --> B[Question Analysis Agent]
+    B --> C[Query Planning Agent]
+    C --> D[Fuzzy Matching Agent]
+    D --> E{Ambiguity Detection}
+    E -->|Ambiguous| F[User Clarification Agent]
+    E -->|Clear| G[Data Retrieval Coordinator]
+    F --> H[User Input]
+    H --> G
+    G --> I[Graph Database Agent]
+    G --> J[Vector Database Agent]
+    G --> K[PDF Content Agent]
+    I --> L[Reflection Agent]
+    J --> L
+    K --> L
+    L --> M{Sufficient Information?}
+    M -->|No| N[Additional Query Generation]
+    N --> G
+    M -->|Yes| O[Response Generation Agent]
+    O --> P[Final Answer]
 ```
 
-- **Install dependencies**:
+---
 
-```bash
-pip install -r requirements.txt
-```
+## ⚡ Quick Start: Set Up All Services
 
-**System dependencies:**
-- [Docker](https://www.docker.com/) (required for Qdrant and GROBID services)
-- [Docker Compose](https://docs.docker.com/compose/) (for service orchestration)
+1. **Set Up Your Python Environment**
+   - Install dependencies: `pip install -r requirements.txt` (or use `poetry install` if you prefer Poetry).
 
-**Start core services (Qdrant + GROBID):**
-1. Make sure Docker and Docker Compose are installed and running.
-2. From your project root, start the services:
-   ```bash
-   python scripts/start_services.py
-   # or manually:
-   docker-compose up -d
-   ```
-3. Wait for both Qdrant (vector DB) and GROBID (PDF metadata extraction) to be ready.
-   - Qdrant: http://localhost:6333
-   - GROBID: http://localhost:8070
+2. **Configure Environment Variables**
+   - Copy the template: `cp .env_template .env`
+   - Edit `.env` and fill in your OpenAI API key, Neo4j password, etc.
 
-> **You must have Qdrant and GROBID running before using the CLI to upload PDFs or start a chat.**
+3. **Start All Core Services (Qdrant, GROBID, Neo4j)**
+   - Download docker desktop if you don't have it already. (https://www.docker.com/products/docker-desktop/)
+   - Download docker compose if you don't have it already. (https://docs.docker.com/compose/install/)
+   - Run:
+     ```bash
+     docker-compose up -d
+     ```
 
-For full details and troubleshooting, see [docs/QDRANT_SERVER_SETUP.md](docs/setup/QDRANT_SERVER_SETUP.md).
+     To check if the services are running, run:
+     ```bash
+     python scripts/start_services.py
+     ```
 
-### 2. Initial Configuration
+4. **Wait for Services to Be Ready**
+   - Once you see the service URLs, you're ready to use CiteWeave!
 
-- All config files are in the `config/` directory.
-- **Check/edit**:
-  - `config/model_config.json` (model and PDF processing settings)
-  - `config/neo4j_config.json` (graph DB connection)
-  - `config/paths.json` (default data storage path)
-  - `config/qdrant_config.json` (vector DB)
-
-### 3. Configure Your AI API Key (Required for Chat/Research)
-
-To use the chat and research features, you must provide an API key for OpenAI (ChatGPT) as your LLM/AI provider.
-
-- **OpenAI Example:**
-  - Get your API key from https://platform.openai.com/account/api-keys
-  - Set it as an environment variable:
-    ```bash
-    export OPENAI_API_KEY=sk-...yourkey...
-    ```
-  - Or, add it to a `.env` file in your project root:
-    ```env
-    OPENAI_API_KEY=sk-...yourkey...
-    ```
-
-**Note:**
-- Only OpenAI (ChatGPT) API keys are supported and tested at this time. (In the future, we will support more LLMs)
-- The system will not be able to answer research questions or chat unless a valid OpenAI API key is set.
-- You may need to restart your terminal or IDE after setting the environment variable.
-- For more details, see the comments in `config/model_config.json` and the OpenAI documentation.
+> **Note:** These services must be running before using the CLI to upload PDFs or ask research questions.
 
 ---
 
@@ -163,40 +168,36 @@ Exiting chat.
 - **Supported queries**: Citation relationships, author papers, paper content, concept explanations, etc.
 - **System response**: The AI will analyze your question, search the database, and return structured answers.
 
+### Example Questions You Can Ask
+
+You can ask a wide range of research questions, such as:
+
+**Citation Queries:**
+- "Which papers cite Porter's work on strategy?"
+- "Who cited Porter's Competitive Strategy?"
+- "Show me all papers that reference Rivkin's 2000 article."
+
+**Author Queries:**
+- "List all papers written by Michael Porter."
+- "What are the main works of Rivkin?"
+- "Which authors have collaborated with Porter?"
+
+**Paper Content & Summaries:** (The paper should be uploaded first)
+- "What is the main idea of Porter's 1980 book?"
+- "Summarize the findings of Rivkin's 2000 article."
+- "What are the key arguments in paper: Imitation of Complex Strategies?" 
+
+**Concept & Topic Queries:**
+- "Explain the concept of business model innovation."
+- "What is the definition of competitive advantage?"
+- "Which papers discuss imitation in strategy?"
+
+
+Feel free to experiment—if your question is related to the content of your uploaded PDFs, citation relationships, or academic concepts, the system will try to answer it! 
+
 ---
 
 ## 🛠️ Advanced Features
-
-### MinerU Integration (Optional)
-- **Install MinerU**:
-  ```bash
-  pip install magic-pdf[full]
-  ```
-- **Enable in config**: Edit `config/model_config.json`:
-  ```json
-  {
-    "pdf_processing": {
-      "enable_mineru": true,
-      "mineru_fallback": true
-    }
-  }
-  ```
-- MinerU is disabled by default. Use it for best PDF parsing quality.
-
-### Grobid Deployment (Optional, for PDF Metadata Extraction)
-- **Pull Grobid Docker image**:
-  ```bash
-  docker pull lfoppiano/grobid:0.8.0
-  ```
-- **Run Grobid**:
-  ```bash
-  docker run -d --name grobid -p 8070:8070 lfoppiano/grobid:0.8.0
-  ```
-- **Stop Grobid**:
-  ```bash
-  docker stop grobid
-  docker rm grobid
-  ```
 
 ---
 
@@ -205,7 +206,7 @@ Exiting chat.
 - **Missing dependencies?**
   - Make sure you’ve run `pip install -r requirements.txt` in your virtual environment.
 - **PDF not processing well?**
-  - Try `--diagnose` to see recommendations. Enable MinerU for best results (But it is computationally expensive)
+  - Try `--diagnose` to see recommendations.
 - **Database connection errors?**
   - Check your config files in `config/` for correct paths and credentials.
 - **Chat/Research not working or AI errors?**
@@ -221,3 +222,11 @@ Exiting chat.
 ## 📜 License
 
 This project is licensed under the Apache License 2.0. See the LICENSE file for details.
+
+---
+
+## 🚧 Project Status & Feedback
+
+CiteWeave is in an early stage of development and may have bugs or missing features. If you encounter any issues, please feel free to [open an issue](https://github.com/Tiresiasel/CiteWeave/issues) or submit a pull request. Your feedback and contributions are very welcome!
+
+If you find this project interesting or want to collaborate, you can contact me directly.

@@ -920,97 +920,97 @@ if __name__ == "__main__":
         "test_files/Business Model Innovation Research 2016.pdf"
     ]
     
-    print("=== 开始完整数据库导入测试 ===\n")
+    print("=== Starting full database import test ===\n")
     
     for pdf_path in test_files:
         try:
-            print(f"📄 处理文档: {pdf_path}")
+            print(f"📄 Processing document: {pdf_path}")
             print("-" * 50)
             
-            # 完整处理：结构解析 + 图数据库 + 向量数据库
+            # Complete processing: structure parsing + graph DB + vector DB
             results = doc_processor.process_document(
                 pdf_path=pdf_path, 
-                create_graph=True,      # 创建图数据库条目
-                create_embeddings=True, # 创建向量嵌入
-                save_results=True       # 保存处理结果
+                create_graph=True,      # Create graph DB entries
+                create_embeddings=True, # Create vector embeddings
+                save_results=True       # Save processing results
             )
             
-            # 打印处理统计
+            # Print processing stats
             stats = results["processing_stats"]
-            print(f"✅ 文档结构:")
-            print(f"   📚 章节数: {stats['total_sections']}")
-            print(f"   📝 段落数: {stats['total_paragraphs']}")
-            print(f"   📄 句子数: {stats['total_sentences']}")
-            print(f"   🔗 引用数: {stats['total_citations']}")
-            print(f"   📖 参考文献数: {stats['total_references']}")
+            print(f"✅ Document structure:")
+            print(f"   📚 Number of sections: {stats['total_sections']}")
+            print(f"   📝 Number of paragraphs: {stats['total_paragraphs']}")
+            print(f"   📄 Number of sentences: {stats['total_sentences']}")
+            print(f"   🔗 Number of citations: {stats['total_citations']}")
+            print(f"   📖 Number of references: {stats['total_references']}")
             
-            # 图数据库统计
+            # Graph DB stats
             if 'graph_db_stats' in stats and stats['graph_db_stats']:
                 graph_stats = stats['graph_db_stats']
-                print(f"\n✅ 图数据库创建:")
-                print(f"   📊 章节节点: {graph_stats.get('sections_created', 0)}")
-                print(f"   📝 段落节点: {graph_stats.get('paragraphs_created', 0)}")
-                print(f"   📄 句子节点: {graph_stats.get('sentences_created', 0)}")
-                print(f"   🔗 引用关系: {graph_stats.get('citation_relations_created', 0)}")
+                print(f"\n✅ Graph DB creation:")
+                print(f"   📊 Section nodes: {graph_stats.get('sections_created', 0)}")
+                print(f"   📝 Paragraph nodes: {graph_stats.get('paragraphs_created', 0)}")
+                print(f"   📄 Sentence nodes: {graph_stats.get('sentences_created', 0)}")
+                print(f"   🔗 Citation relations: {graph_stats.get('citation_relations_created', 0)}")
             
-            # 向量数据库统计
+            # Vector DB stats
             if 'embedding_stats' in stats and stats['embedding_stats']:
                 embedding_stats = stats['embedding_stats']
-                print(f"\n✅ 向量数据库索引:")
-                print(f"   📄 句子向量: {embedding_stats.get('sentences_indexed', 0)}")
-                print(f"   📝 段落向量: {embedding_stats.get('paragraphs_indexed', 0)}")
-                print(f"   📚 章节向量: {embedding_stats.get('sections_indexed', 0)}")
-                print(f"   🔗 引用向量: {embedding_stats.get('citations_indexed', 0)}")
+                print(f"\n✅ Vector DB indexing:")
+                print(f"   📄 Sentence vectors: {embedding_stats.get('sentences_indexed', 0)}")
+                print(f"   📝 Paragraph vectors: {embedding_stats.get('paragraphs_indexed', 0)}")
+                print(f"   📚 Section vectors: {embedding_stats.get('sections_indexed', 0)}")
+                print(f"   🔗 Citation vectors: {embedding_stats.get('citations_indexed', 0)}")
             
-            print(f"\n📋 论文ID: {results['paper_id']}")
-            print(f"📋 论文标题: {results['metadata']['title']}")
+            print(f"\n📋 Paper ID: {results['paper_id']}")
+            print(f"📋 Paper title: {results['metadata']['title']}")
             
         except Exception as e:
-            print(f"❌ 处理失败: {e}")
+            print(f"❌ Processing failed: {e}")
         
         print("\n" + "="*70 + "\n")
     
-    print("🎯 测试向量数据库搜索功能:")
+    print("🏆 Testing vector DB search functionality:")
     print("-" * 40)
     
-    # 测试向量搜索
+    # Test vector search
     if doc_processor.vector_indexer:
         try:
-            # 跨collection搜索
+            # Cross-collection search
             search_results = doc_processor.vector_indexer.search_all_collections(
                 "strategic competitive advantage", 
                 limit_per_collection=2
             )
             
             for collection, results in search_results.items():
-                print(f"\n📚 {collection.upper()} 搜索结果:")
+                print(f"\n📚 {collection.upper()} search results:")
                 if results:
                     for result in results:
-                        print(f"   相似度: {result['score']:.3f}")
-                        print(f"   文本: {result['text'][:100]}...")
-                        print(f"   论文: {result.get('title', 'Unknown')}")
+                        print(f"   Similarity: {result['score']:.3f}")
+                        print(f"   Text: {result['text'][:100]}...")
+                        print(f"   Paper: {result.get('title', 'Unknown')}")
                         print("   ---")
                 else:
-                    print("   无结果")
+                    print("   No results")
         except Exception as e:
-            print(f"❌ 向量搜索测试失败: {e}")
+            print(f"❌ Vector search test failed: {e}")
     
-    print("\n🎯 测试图数据库查询功能:")
+    print("\n🏆 Testing graph DB query functionality:")
     print("-" * 40)
     
-    # 测试图数据库查询
+    # Test graph DB query
     if doc_processor.graph_db:
         try:
-            # 测试引用网络查询
+            # Test citation network query
             citation_context = doc_processor.get_citation_analysis_context("competitive strategy")
             if citation_context:
-                print(f"📖 找到引用上下文: {len(citation_context.get('citing_sentences', []))} 个句子")
+                print(f"📖 Found citation context: {len(citation_context.get('citing_sentences', []))} sentences")
                 for sentence in citation_context.get('citing_sentences', [])[:3]:
                     print(f"   - {sentence['text'][:100]}...")
             else:
-                print("📖 暂无引用上下文数据")
+                print("📖 No citation context data available")
         except Exception as e:
-            print(f"❌ 图数据库查询测试失败: {e}")
+            print(f"❌ Graph DB query test failed: {e}")
     
-    print("\n🏁 完整数据库导入测试完成!")
-    print("所有测试文档已导入到图数据库和向量数据库中") 
+    print("\n🏁 Full database import test completed!")
+    print("All test documents have been imported into the graph DB and vector DB") 

@@ -6,7 +6,7 @@ This document tracks the development progress of all major modules in the projec
 
 - [x] PDFProcessor (Enhanced with MinerU integration)
 - [x] GraphBuilder
-- [ ] ArgumentClassifier
+- [ ] ArgumentClassifier (Aborted)
 - [x] CitationParser (Enhanced with page number support)
 - [x] VectorIndexer (Multi-level indexing)
 - [x] QueryAgent (Basic functions implemented)
@@ -20,7 +20,18 @@ This document tracks the development progress of all major modules in the projec
 
 ## **CLI Interface Development (2025-07-22)**
 
-- **Enhanced CLI Interface**: Added a new CLI interface for the multi-agent research system.
+- **Enhanced CLI Interface**:
+  - Interactive multi-turn chat with spinner/progress indicator for AI thinking
+  - Environment-based logging (CITEWEAVE_ENV: production/development/test)
+  - .env file support for environment variables
+  - Batch upload of PDFs via CLI
+  - Robust error handling and user feedback in CLI
+  - Dynamic debug/info log control for developers
+  - Automatic loading of environment variables before CLI runs
+  - Improved vector search result aggregation and LLM prompt sampling for LLM context
+  - Stricter answer generation for content-based queries (no hallucination if content missing)
+  - Cleaner, user-friendly CLI output in production (minimal logs)
+  - Modular, extensible CLI command structure for future features
 - **Improved Documentation**: Added a new CLI interface for the folder batch upload.
 
 ## **MAJOR ARCHITECTURAL OVERHAUL (2025-07-16)**
