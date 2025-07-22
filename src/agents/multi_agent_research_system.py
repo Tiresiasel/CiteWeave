@@ -164,6 +164,12 @@ EXTRACTION RULES:
 5. Handle multiple entities of the same type
 6. Distinguish between citing and cited entities
 
+ENTITY TYPE VALUES:
+- primary_entity_type must be one of: "author", "paper", "concept" (NOT "paper_title", "author_name", etc.)
+- Use "paper" for any paper-related entity (titles, publications)
+- Use "author" for any author-related entity (names, researchers)
+- Use "concept" for any concept-related entity (theories, topics)
+
 EXAMPLES:
 
 Question: "The paper cite Rivkin, what is the citation context?"
@@ -195,6 +201,19 @@ Extract: {
   "primary_entity": "Innovation paper by Johnson",
   "primary_entity_type": "paper",
   "query_focus": "paper_search"
+}
+
+Question: "Summarize this paper: A bird in the hand is worth two in the bush"
+Extract: {
+  "author_names": [],
+  "paper_titles": ["A bird in the hand is worth two in the bush"],
+  "concepts": [],
+  "institutions": [],
+  "years": [],
+  "journals": [],
+  "primary_entity": "A bird in the hand is worth two in the bush",
+  "primary_entity_type": "paper",
+  "query_focus": "paper_summary"
 }
 
 Return ONLY a JSON object with the extracted entities."""
@@ -377,6 +396,40 @@ class EntityType(Enum):
     PAPER = "paper"
     CONCEPT = "concept"
 
+def safe_entity_type_conversion(entity_type_str: str) -> EntityType:
+    """
+    Safely convert entity type string to EntityType enum with proper mapping.
+    This function serves as a safety net for LLM output variations.
+    
+    Args:
+        entity_type_str: String representation of entity type
+        
+    Returns:
+        EntityType: Valid EntityType enum value
+    """
+    if not entity_type_str:
+        return EntityType.CONCEPT
+    
+    # Normalize the string
+    normalized = entity_type_str.lower().strip()
+    
+    # Direct mapping (should be the most common cases after prompt fixes)
+    if normalized in ["author", "authors"]:
+        return EntityType.AUTHOR
+    elif normalized == "paper":
+        return EntityType.PAPER
+    elif normalized in ["concept", "topic", "subject", "theme"]:
+        return EntityType.CONCEPT
+    # Legacy/fallback mappings (these should be rare now)
+    elif normalized in ["paper_title", "title", "publication"]:
+        import logging
+        logging.warning(f"LLM returned legacy entity type '{entity_type_str}', mapped to 'paper'. Consider checking prompt consistency.")
+        return EntityType.PAPER
+    else:
+        import logging
+        logging.warning(f"Unknown entity type '{entity_type_str}', defaulting to 'concept'. Consider updating the mapping.")
+        return EntityType.CONCEPT
+
 # LangGraph State Definition
 class ResearchState(TypedDict):
     """State for the research workflow"""
@@ -456,9 +509,14 @@ QUERY TYPES:
 
 ENTITY EXTRACTION:
 - For citation queries: Extract the AUTHOR NAME being cited (e.g., "Rivkin", "Porter", "Smith")
-- For paper queries: Extract the PAPER TITLE or keywords
+- For paper queries: Extract the PAPER or keywords
 - For author queries: Extract the AUTHOR NAME
 - For concept queries: Extract the CONCEPT term
+
+ENTITY TYPE MAPPING:
+- Use "author" for any author-related entity
+- Use "paper" for any paper-related entity (NOT "paper_title")
+- Use "concept" for any concept-related entity
 
 REQUIRED INFORMATION MAPPING:
 - reverse_citation_analysis: ["citing_papers", "citation_contexts", "cited_viewpoints"]
@@ -1110,9 +1168,14 @@ class QueryPlanningAgent:
 
         ENTITY EXTRACTION:
         - For citation queries: Extract the AUTHOR NAME being cited (e.g., "Rivkin", "Porter", "Smith")
-        - For paper queries: Extract the PAPER TITLE or keywords
+        - For paper queries: Extract the PAPER or keywords
         - For author queries: Extract the AUTHOR NAME
         - For concept queries: Extract the CONCEPT term
+
+        ENTITY TYPE MAPPING:
+        - Use "author" for any author-related entity
+        - Use "paper" for any paper-related entity (NOT "paper_title")
+        - Use "concept" for any concept-related entity
 
         EXAMPLES:
 
@@ -3185,9 +3248,14 @@ QUERY TYPES:
 
 ENTITY EXTRACTION:
 - For citation queries: Extract the AUTHOR NAME being cited (e.g., "Rivkin", "Porter", "Smith")
-- For paper queries: Extract the PAPER TITLE or keywords
+- For paper queries: Extract the PAPER or keywords
 - For author queries: Extract the AUTHOR NAME
 - For concept queries: Extract the CONCEPT term
+
+ENTITY TYPE MAPPING:
+- Use "author" for any author-related entity
+- Use "paper" for any paper-related entity (NOT "paper_title")
+- Use "concept" for any concept-related entity
 
 EXAMPLES:
 
@@ -4053,9 +4121,14 @@ QUERY TYPES:
 
 ENTITY EXTRACTION:
 - For citation queries: Extract the AUTHOR NAME being cited (e.g., "Rivkin", "Porter", "Smith")
-- For paper queries: Extract the PAPER TITLE or keywords
+- For paper queries: Extract the PAPER or keywords
 - For author queries: Extract the AUTHOR NAME
 - For concept queries: Extract the CONCEPT term
+
+ENTITY TYPE MAPPING:
+- Use "author" for any author-related entity
+- Use "paper" for any paper-related entity (NOT "paper_title")
+- Use "concept" for any concept-related entity
 
 Return ONLY a JSON object with: query_type, target_entity, entity_type, reasoning"""
                 
@@ -4106,7 +4179,7 @@ Return ONLY a JSON object with: query_type, target_entity, entity_type, reasonin
                 }
             
             # Step 3: Fuzzy Matching and Entity Disambiguation
-            entity_type = EntityType(query_intent.get("entity_type", "concept"))
+            entity_type = safe_entity_type_conversion(query_intent.get("entity_type", "concept"))
             matches, confidence = self.fuzzy_matcher.find_matching_entities(
                 query_intent.get("target_entity", "unknown"), 
                 entity_type, 

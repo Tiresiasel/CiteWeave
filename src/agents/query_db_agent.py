@@ -13,8 +13,32 @@ from src.utils.config_manager import ConfigManager
 import os
 import json
 from typing import Any
+import warnings
+import atexit
+import sys
+
+# Suppress Neo4j driver warnings and errors
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="neo4j")
+warnings.filterwarnings("ignore", category=UserWarning, module="neo4j")
 
 logging.basicConfig(level=logging.INFO)
+
+# Global driver reference for cleanup
+_neo4j_driver = None
+
+def _cleanup_neo4j_driver():
+    """Cleanup function to properly close Neo4j driver on exit"""
+    global _neo4j_driver
+    if _neo4j_driver:
+        try:
+            _neo4j_driver.close()
+        except Exception:
+            pass  # Ignore any cleanup errors
+        finally:
+            _neo4j_driver = None
+
+# Register cleanup function
+atexit.register(_cleanup_neo4j_driver)
 
 class QueryDBAgent:
     """Agent for querying Neo4j graph database, Qdrant vector database, and PDF documents"""
@@ -442,16 +466,20 @@ class QueryDBAgent:
                     "message": f"No papers found with the given criteria"
                 }
             
-            # 计算标题相似度
+            # 计算标题相似度和子串匹配
             candidates = []
             for paper in all_papers:
-                paper_title = paper.get("title", "").lower().strip()
-                input_title = title.lower().strip()
+                paper_title = paper.get("title", "")
+                input_title = title
                 
-                # 计算相似度
-                similarity = SequenceMatcher(None, input_title, paper_title).ratio()
+                # 检查子串匹配（高优先级）
+                is_substring_match = self._is_title_substring_match(input_title, paper_title)
                 
-                if similarity >= similarity_threshold:
+                # 计算传统相似度
+                similarity = SequenceMatcher(None, input_title.lower().strip(), paper_title.lower().strip()).ratio()
+                
+                # 如果满足任一条件，添加到候选列表
+                if is_substring_match or similarity >= similarity_threshold:
                     candidate = {
                         "paper_id": paper["paper_id"],
                         "title": paper["title"],
@@ -459,8 +487,18 @@ class QueryDBAgent:
                         "year": paper["year"],
                         "journal": paper["journal"],
                         "doi": paper["doi"],
-                        "similarity_score": round(similarity, 3)
+                        "similarity_score": round(similarity, 3),
+                        "is_substring_match": is_substring_match
                     }
+                    
+                    # 如果是子串匹配，计算子串匹配置信度
+                    if is_substring_match:
+                        substring_confidence = self._calculate_substring_match_confidence(input_title, paper_title)
+                        candidate["substring_confidence"] = round(substring_confidence, 3)
+                        # 子串匹配时，使用更高的综合分数
+                        candidate["combined_score"] = max(similarity, substring_confidence)
+                    else:
+                        candidate["combined_score"] = similarity
                     
                     # 如果有作者筛选条件，计算作者匹配度
                     if authors:
@@ -469,34 +507,52 @@ class QueryDBAgent:
                     
                     candidates.append(candidate)
             
-            # 按相似度排序
-            candidates.sort(key=lambda x: x["similarity_score"], reverse=True)
+            # 按综合分数排序（优先考虑子串匹配）
+            candidates.sort(key=lambda x: (x["is_substring_match"], x["combined_score"]), reverse=True)
             
             # 判断搜索结果
             if not candidates:
                 return {
                     "status": "no_match",
-                    "message": f"No papers found with title similarity >= {similarity_threshold}"
+                    "message": f"No papers found with title similarity >= {similarity_threshold} or substring match"
                 }
             elif len(candidates) == 1:
+                match_type = "substring" if candidates[0]["is_substring_match"] else "similarity"
+                score = candidates[0].get("substring_confidence", candidates[0]["similarity_score"])
                 return {
                     "status": "single_match",
                     "paper_id": candidates[0]["paper_id"],
                     "paper_info": candidates[0],
-                    "message": f"Found exact match with similarity {candidates[0]['similarity_score']}"
+                    "message": f"Found {match_type} match with score {score}"
                 }
             else:
-                # 检查是否有明显的最佳匹配（相似度显著高于其他）
-                best_score = candidates[0]["similarity_score"]
-                second_best_score = candidates[1]["similarity_score"] if len(candidates) > 1 else 0
+                # 检查是否有明显的最佳匹配
+                best_candidate = candidates[0]
+                second_best_candidate = candidates[1] if len(candidates) > 1 else None
+                
+                # 子串匹配优先
+                if best_candidate["is_substring_match"]:
+                    # 如果最佳匹配是子串匹配，且没有其他子串匹配，认为是确定匹配
+                    other_substring_matches = [c for c in candidates[1:] if c["is_substring_match"]]
+                    if not other_substring_matches:
+                        return {
+                            "status": "single_match",
+                            "paper_id": best_candidate["paper_id"],
+                            "paper_info": best_candidate,
+                            "message": f"Found confident substring match with confidence {best_candidate.get('substring_confidence', 0.0)}"
+                        }
+                
+                # 传统相似度判断
+                best_score = best_candidate["similarity_score"]
+                second_best_score = second_best_candidate["similarity_score"] if second_best_candidate else 0
                 
                 # 如果最佳匹配的相似度比第二名高出0.2以上，认为是确定匹配
                 if best_score - second_best_score >= 0.2 and best_score >= 0.9:
                     return {
                         "status": "single_match",
-                        "paper_id": candidates[0]["paper_id"],
-                        "paper_info": candidates[0],
-                        "message": f"Found confident match with similarity {best_score}"
+                        "paper_id": best_candidate["paper_id"],
+                        "paper_info": best_candidate,
+                        "message": f"Found confident similarity match with score {best_score}"
                     }
                 else:
                     return {
@@ -762,6 +818,65 @@ class QueryDBAgent:
         coverage_bonus = min(matched_count / len(input_authors), 1.0) * 0.2
         
         return min(average_similarity + coverage_bonus, 1.0)
+
+    def _is_title_substring_match(self, input_title: str, paper_title: str, min_length: int = 5) -> bool:
+        """
+        检查输入标题是否为论文标题的子串匹配
+        
+        Args:
+            input_title: 输入的标题
+            paper_title: 论文的完整标题
+            min_length: 最小匹配长度阈值
+            
+        Returns:
+            bool: 如果输入标题是论文标题的子串且长度满足要求，返回True
+        """
+        if not input_title or not paper_title:
+            return False
+        
+        # 标准化处理：转换为小写并清理
+        input_clean = input_title.lower().strip()
+        paper_clean = paper_title.lower().strip()
+        
+        # 检查长度阈值
+        if len(input_clean) < min_length:
+            return False
+        
+        # 检查是否为子串
+        return input_clean in paper_clean
+
+    def _calculate_substring_match_confidence(self, input_title: str, paper_title: str) -> float:
+        """
+        计算子串匹配的置信度分数
+        
+        Args:
+            input_title: 输入的标题
+            paper_title: 论文的完整标题
+            
+        Returns:
+            float: 置信度分数（0.0-1.0）
+        """
+        if not input_title or not paper_title:
+            return 0.0
+        
+        input_clean = input_title.lower().strip()
+        paper_clean = paper_title.lower().strip()
+        
+        # 基础分数：子串长度占完整标题的比例
+        length_ratio = len(input_clean) / len(paper_clean)
+        
+        # 位置奖励：如果子串在标题开头，给予额外奖励
+        position_bonus = 0.0
+        if paper_clean.startswith(input_clean):
+            position_bonus = 0.1
+        
+        # 长度奖励：较长的子串获得更高分数
+        length_bonus = min(length_ratio * 0.2, 0.2)
+        
+        # 计算最终置信度
+        confidence = length_ratio + position_bonus + length_bonus
+        
+        return min(confidence, 1.0)
 
     def search_relevant_sentences(self, text: str, top_n: int = 50, 
                                  paper_ids: Optional[List[str]] = None,
@@ -1561,9 +1676,14 @@ class QueryDBAgent:
             }
 
     def close(self):
-        """关闭数据库连接"""
+        """Safely close Neo4j driver"""
         if self.graph_db:
-            self.graph_db.close()
+            try:
+                self.graph_db.close()
+            except Exception as e:
+                logging.debug(f"Error closing Neo4j driver: {e}")
+            finally:
+                self.graph_db = None
 
 
 # 测试用例
@@ -1581,7 +1701,7 @@ if __name__ == "__main__":
     
     # 测试1: 按标题搜索（完全匹配）
     print("\n1. 测试标题精确搜索:")
-    title_result = agent.get_papers_id_by_title("Competitive Strategy")
+    title_result = agent.get_papers_id_by_title("Technology search strategies and competition due to import penetration")
     print(f"   搜索结果: {title_result['status']}")
     print(f"   消息: {title_result['message']}")
     if title_result['status'] == 'single_match':
@@ -1592,230 +1712,230 @@ if __name__ == "__main__":
         for i, candidate in enumerate(title_result['candidates'][:3]):
             print(f"     {i+1}. {candidate['title']} ({candidate['year']}) - 相似度: {candidate['similarity_score']}")
     
-    # 测试2: 按标题搜索（部分匹配）
-    print("\n2. 测试标题模糊搜索:")
-    fuzzy_title_result = agent.get_papers_id_by_title("imitation complex")
-    print(f"   搜索结果: {fuzzy_title_result['status']}")
-    print(f"   消息: {fuzzy_title_result['message']}")
-    if fuzzy_title_result['status'] == 'multiple_matches':
-        print(f"   找到 {fuzzy_title_result['count']} 个候选:")
-        for i, candidate in enumerate(fuzzy_title_result['candidates'][:3]):
-            print(f"     {i+1}. {candidate['title']} ({candidate['year']}) - 相似度: {candidate['similarity_score']}")
-    else:
-        print(f"   搜索结果: {fuzzy_title_result['status']}")
-        print(f"   消息: {fuzzy_title_result['message']}")
+    # # 测试2: 按标题搜索（部分匹配）
+    # print("\n2. 测试标题模糊搜索:")
+    # fuzzy_title_result = agent.get_papers_id_by_title("imitation complex")
+    # print(f"   搜索结果: {fuzzy_title_result['status']}")
+    # print(f"   消息: {fuzzy_title_result['message']}")
+    # if fuzzy_title_result['status'] == 'multiple_matches':
+    #     print(f"   找到 {fuzzy_title_result['count']} 个候选:")
+    #     for i, candidate in enumerate(fuzzy_title_result['candidates'][:3]):
+    #         print(f"     {i+1}. {candidate['title']} ({candidate['year']}) - 相似度: {candidate['similarity_score']}")
+    # else:
+    #     print(f"   搜索结果: {fuzzy_title_result['status']}")
+    #     print(f"   消息: {fuzzy_title_result['message']}")
     
-    # 测试3: 按作者搜索 (Token子集匹配)
-    print("\n3. 测试作者Token搜索:")
-    author_result = agent.get_papers_id_by_author("Porter")
-    print(f"   搜索结果: {author_result['status']}")
-    print(f"   消息: {author_result['message']}")
-    if author_result['status'] == 'multiple_matches':
-        print(f"   找到 {author_result['count']} 个候选:")
-        for i, candidate in enumerate(author_result['candidates'][:3]):
-            print(f"     {i+1}. {candidate['title']} - 匹配作者: {candidate['matched_author']} - 匹配率: {candidate['match_ratio']}")
-            if len(candidate['all_matched_authors']) > 1:
-                print(f"         所有匹配作者: {candidate['all_matched_authors']}")
-    else:
-        print(f"   搜索结果: {author_result['status']}")
-        print(f"   消息: {author_result['message']}")
+    # # 测试3: 按作者搜索 (Token子集匹配)
+    # print("\n3. 测试作者Token搜索:")
+    # author_result = agent.get_papers_id_by_author("Porter")
+    # print(f"   搜索结果: {author_result['status']}")
+    # print(f"   消息: {author_result['message']}")
+    # if author_result['status'] == 'multiple_matches':
+    #     print(f"   找到 {author_result['count']} 个候选:")
+    #     for i, candidate in enumerate(author_result['candidates'][:3]):
+    #         print(f"     {i+1}. {candidate['title']} - 匹配作者: {candidate['matched_author']} - 匹配率: {candidate['match_ratio']}")
+    #         if len(candidate['all_matched_authors']) > 1:
+    #             print(f"         所有匹配作者: {candidate['all_matched_authors']}")
+    # else:
+    #     print(f"   搜索结果: {author_result['status']}")
+    #     print(f"   消息: {author_result['message']}")
     
-    # 测试4: 部分名字搜索
-    print("\n4. 测试部分作者名搜索:")
-    partial_result = agent.get_papers_id_by_author("michael")
-    print(f"   搜索结果: {partial_result['status']}")
-    print(f"   消息: {partial_result['message']}")
-    if partial_result['status'] == 'multiple_matches':
-        print(f"   找到 {partial_result['count']} 个候选:")
-        for i, candidate in enumerate(partial_result['candidates'][:3]):
-            print(f"     {i+1}. {candidate['title']} - 匹配作者: {candidate['matched_author']} - 匹配率: {candidate['match_ratio']}")
-    else:
-        print(f"   搜索结果: {partial_result['status']}")
-        print(f"   消息: {partial_result['message']}")
+    # # 测试4: 部分名字搜索
+    # print("\n4. 测试部分作者名搜索:")
+    # partial_result = agent.get_papers_id_by_author("michael")
+    # print(f"   搜索结果: {partial_result['status']}")
+    # print(f"   消息: {partial_result['message']}")
+    # if partial_result['status'] == 'multiple_matches':
+    #     print(f"   找到 {partial_result['count']} 个候选:")
+    #     for i, candidate in enumerate(partial_result['candidates'][:3]):
+    #         print(f"     {i+1}. {candidate['title']} - 匹配作者: {candidate['matched_author']} - 匹配率: {candidate['match_ratio']}")
+    # else:
+    #     print(f"   搜索结果: {partial_result['status']}")
+    #     print(f"   消息: {partial_result['message']}")
     
-    # 测试5: 组合搜索（作者+标题提示）
-    print("\n5. 测试组合搜索 (作者+标题提示):")
-    combo_result = agent.get_papers_id_by_author("Porter", title_hint="competitive", year="1980")
-    print(f"   搜索结果: {combo_result['status']}")
-    print(f"   消息: {combo_result['message']}")
-    if combo_result['status'] == 'single_match':
-        print(f"   论文ID: {combo_result['paper_id']}")
-        info = combo_result['paper_info']
-        print(f"   论文: {info['title']} ({info['year']})")
-        print(f"   匹配作者: {info['matched_author']} (匹配率: {info['match_ratio']})")
-        if info.get('title_similarity_score'):
-            print(f"   标题相似度: {info['title_similarity_score']}")
-    else:
-        print(f"   搜索结果: {combo_result['status']}")
-        print(f"   消息: {combo_result['message']}")
+    # # 测试5: 组合搜索（作者+标题提示）
+    # print("\n5. 测试组合搜索 (作者+标题提示):")
+    # combo_result = agent.get_papers_id_by_author("Porter", title_hint="competitive", year="1980")
+    # print(f"   搜索结果: {combo_result['status']}")
+    # print(f"   消息: {combo_result['message']}")
+    # if combo_result['status'] == 'single_match':
+    #     print(f"   论文ID: {combo_result['paper_id']}")
+    #     info = combo_result['paper_info']
+    #     print(f"   论文: {info['title']} ({info['year']})")
+    #     print(f"   匹配作者: {info['matched_author']} (匹配率: {info['match_ratio']})")
+    #     if info.get('title_similarity_score'):
+    #         print(f"   标题相似度: {info['title_similarity_score']}")
+    # else:
+    #     print(f"   搜索结果: {combo_result['status']}")
+    #     print(f"   消息: {combo_result['message']}")
     
-    # 测试6: 测试Token化功能
-    print("\n6. 测试Token化功能:")
-    test_names = ["Michael E. Porter", "J.R.R. Tolkien", "Mary O'Connor", "Van Der Berg"]
-    for name in test_names:
-        tokens = agent._tokenize_author_name(name)
-        print(f"   '{name}' -> tokens: {tokens}")
+    # # 测试6: 测试Token化功能
+    # print("\n6. 测试Token化功能:")
+    # test_names = ["Michael E. Porter", "J.R.R. Tolkien", "Mary O'Connor", "Van Der Berg"]
+    # for name in test_names:
+    #     tokens = agent._tokenize_author_name(name)
+    #     print(f"   '{name}' -> tokens: {tokens}")
     
-    # 测试7: 测试子集匹配
-    print("\n7. 测试子集匹配:")
-    test_cases = [
-        (["porter"], ["michael", "e", "porter"]),
-        (["michael", "porter"], ["michael", "e", "porter"]),
-        (["tolkien"], ["j", "r", "r", "tolkien"]),
-        (["john"], ["michael", "e", "porter"])
-    ]
-    for input_tokens, candidate_tokens in test_cases:
-        is_subset = agent._is_token_subset(input_tokens, candidate_tokens)
-        print(f"   {input_tokens} ⊆ {candidate_tokens} = {is_subset}")
+    # # 测试7: 测试子集匹配
+    # print("\n7. 测试子集匹配:")
+    # test_cases = [
+    #     (["porter"], ["michael", "e", "porter"]),
+    #     (["michael", "porter"], ["michael", "e", "porter"]),
+    #     (["tolkien"], ["j", "r", "r", "tolkien"]),
+    #     (["john"], ["michael", "e", "porter"])
+    # ]
+    # for input_tokens, candidate_tokens in test_cases:
+    #     is_subset = agent._is_token_subset(input_tokens, candidate_tokens)
+    #     print(f"   {input_tokens} ⊆ {candidate_tokens} = {is_subset}")
     
-    # ==================== 第二部分：使用找到的Paper ID进行详细查询 ====================
-    print("\n\n📖 第二部分：使用找到的Paper ID进行详细查询")
-    print("=" * 60)
+    # # ==================== 第二部分：使用找到的Paper ID进行详细查询 ====================
+    # print("\n\n📖 第二部分：使用找到的Paper ID进行详细查询")
+    # print("=" * 60)
     
-    # 获取一个实际的paper ID用于测试
-    test_paper_id = "babcd89569ffe6cb373ed21a762c1799ace907d68f5cffa189e2d6be77af0504"
-    # if title_result['status'] == 'single_match':
-    #     test_paper_id = title_result['paper_id']
-    # elif combo_result['status'] == 'single_match':
-    #     test_paper_id = combo_result['paper_id']
-    # elif title_result['status'] == 'multiple_matches' and title_result['candidates']:
-    #     test_paper_id = title_result['candidates'][0]['paper_id']
+    # # 获取一个实际的paper ID用于测试
+    # test_paper_id = "babcd89569ffe6cb373ed21a762c1799ace907d68f5cffa189e2d6be77af0504"
+    # # if title_result['status'] == 'single_match':
+    # #     test_paper_id = title_result['paper_id']
+    # # elif combo_result['status'] == 'single_match':
+    # #     test_paper_id = combo_result['paper_id']
+    # # elif title_result['status'] == 'multiple_matches' and title_result['candidates']:
+    # #     test_paper_id = title_result['candidates'][0]['paper_id']
     
-    if test_paper_id:
-        print(f"\n使用Paper ID进行测试: {test_paper_id}")
+    # if test_paper_id:
+    #     print(f"\n使用Paper ID进行测试: {test_paper_id}")
         
-        # 测试5: 获取论文元数据
-        print("\n5. 测试获取论文元数据:")
-        metadata = agent.get_metadata_by_paper_id(test_paper_id)
-        if metadata:
-            print(f"   标题: {metadata.get('title', 'N/A')}")
-            print(f"   作者: {metadata.get('authors', 'N/A')}")
-            print(f"   年份: {metadata.get('year', 'N/A')}")
-            print(f"   期刊: {metadata.get('journal', 'N/A')}")
-            print(f"   是否为存根: {metadata.get('is_stub', 'N/A')}")
+    #     # 测试5: 获取论文元数据
+    #     print("\n5. 测试获取论文元数据:")
+    #     metadata = agent.get_metadata_by_paper_id(test_paper_id)
+    #     if metadata:
+    #         print(f"   标题: {metadata.get('title', 'N/A')}")
+    #         print(f"   作者: {metadata.get('authors', 'N/A')}")
+    #         print(f"   年份: {metadata.get('year', 'N/A')}")
+    #         print(f"   期刊: {metadata.get('journal', 'N/A')}")
+    #         print(f"   是否为存根: {metadata.get('is_stub', 'N/A')}")
         
-        # 测试6: 获取引用该论文的所有论文
-        print("\n6. 测试获取引用该论文的论文:")
-        citing_papers = agent.get_papers_citing_paper(test_paper_id)
-        print(f"   找到 {len(citing_papers)} 篇论文引用了该论文")
-        for paper in citing_papers[:2]:  # 显示前2个
-            print(f"   - {paper['title']} ({paper['year']}): {paper['total_citations']} 引用")
+    #     # 测试6: 获取引用该论文的所有论文
+    #     print("\n6. 测试获取引用该论文的论文:")
+    #     citing_papers = agent.get_papers_citing_paper(test_paper_id)
+    #     print(f"   找到 {len(citing_papers)} 篇论文引用了该论文")
+    #     for paper in citing_papers[:2]:  # 显示前2个
+    #         print(f"   - {paper['title']} ({paper['year']}): {paper['total_citations']} 引用")
         
-        # 测试7: 获取该论文引用的所有论文
-        print("\n7. 测试获取该论文引用的论文:")
-        cited_papers = agent.get_papers_cited_by_paper(test_paper_id)
-        print(f"   该论文引用了 {len(cited_papers)} 篇论文")
-        for paper in cited_papers[:2]:  # 显示前2个
-            print(f"   - {paper['title']} ({paper['year']}): {paper['total_citations']} 次引用")
+    #     # 测试7: 获取该论文引用的所有论文
+    #     print("\n7. 测试获取该论文引用的论文:")
+    #     cited_papers = agent.get_papers_cited_by_paper(test_paper_id)
+    #     print(f"   该论文引用了 {len(cited_papers)} 篇论文")
+    #     for paper in cited_papers[:2]:  # 显示前2个
+    #         print(f"   - {paper['title']} ({paper['year']}): {paper['total_citations']} 次引用")
         
-        # 测试8: 获取引用该论文的句子（限制5个）
-        print("\n8. 测试获取引用句子:")
-        citing_sentences = agent.get_sentences_citing_paper(test_paper_id, count=5)
-        print(f"   找到 {len(citing_sentences)} 个引用句子")
-        for sent in citing_sentences[:2]:  # 显示前2个
-            print(f"   - 来自 {sent['citing_paper']['title']}: {sent['text'][:60]}...")
-            if sent['citation_text']:
-                print(f"     引用文本: {sent['citation_text']}")
-    else:
-        print("\n⚠️  没有找到可用的Paper ID进行详细查询测试")
+    #     # 测试8: 获取引用该论文的句子（限制5个）
+    #     print("\n8. 测试获取引用句子:")
+    #     citing_sentences = agent.get_sentences_citing_paper(test_paper_id, count=5)
+    #     print(f"   找到 {len(citing_sentences)} 个引用句子")
+    #     for sent in citing_sentences[:2]:  # 显示前2个
+    #         print(f"   - 来自 {sent['citing_paper']['title']}: {sent['text'][:60]}...")
+    #         if sent['citation_text']:
+    #             print(f"     引用文本: {sent['citation_text']}")
+    # else:
+    #     print("\n⚠️  没有找到可用的Paper ID进行详细查询测试")
     
-    print("\n🏁 完整测试完成!")
+    # print("\n🏁 完整测试完成!")
     
-    # ==================== 第三部分：向量搜索测试 ====================
-    print("\n\n🔍 第三部分：向量数据库语义搜索测试")
-    print("=" * 60)
+    # # ==================== 第三部分：向量搜索测试 ====================
+    # print("\n\n🔍 第三部分：向量数据库语义搜索测试")
+    # print("=" * 60)
     
-    # 测试9: 句子级语义搜索
-    print("\n9. 测试句子语义搜索:")
-    sentence_search = agent.search_relevant_sentences(
-        "competitive strategy and market positioning", 
-        top_n=5, 
-        min_score=0.3
-    )
-    print(f"   搜索结果: {sentence_search['status']}")
-    print(f"   消息: {sentence_search['message']}")
-    if sentence_search['status'] == 'success':
-        print(f"   最高分数: {sentence_search['max_score']}")
-        print(f"   结果预览:")
-        for i, result in enumerate(sentence_search['results'][:2]):
-            print(f"     {i+1}. 分数: {result['score']}")
-            print(f"        文本: {result['text'][:80]}...")
-            print(f"        来源: {result['paper_info']['title']}")
+    # # 测试9: 句子级语义搜索
+    # print("\n9. 测试句子语义搜索:")
+    # sentence_search = agent.search_relevant_sentences(
+    #     "competitive strategy and market positioning", 
+    #     top_n=5, 
+    #     min_score=0.3
+    # )
+    # print(f"   搜索结果: {sentence_search['status']}")
+    # print(f"   消息: {sentence_search['message']}")
+    # if sentence_search['status'] == 'success':
+    #     print(f"   最高分数: {sentence_search['max_score']}")
+    #     print(f"   结果预览:")
+    #     for i, result in enumerate(sentence_search['results'][:2]):
+    #         print(f"     {i+1}. 分数: {result['score']}")
+    #         print(f"        文本: {result['text'][:80]}...")
+    #         print(f"        来源: {result['paper_info']['title']}")
     
-    # 测试10: 段落级语义搜索 
-    print("\n10. 测试段落语义搜索:")
-    paragraph_search = agent.search_relevant_paragraphs(
-        "innovation and organizational change",
-        top_n=3,
-        has_citations=True,  # 只搜索包含引用的段落
-        min_score=0.2
-    )
-    print(f"   搜索结果: {paragraph_search['status']}")
-    print(f"   消息: {paragraph_search['message']}")
-    if paragraph_search['status'] == 'success':
-        print(f"   结果预览:")
-        for i, result in enumerate(paragraph_search['results'][:1]):
-            print(f"     {i+1}. 分数: {result['score']}")
-            print(f"        段落: {result['text']}")
-            print(f"        章节: {result['paragraph_metadata']['section']}")
-            print(f"        引用数: {result['paragraph_metadata']['citation_count']}")
+    # # 测试10: 段落级语义搜索 
+    # print("\n10. 测试段落语义搜索:")
+    # paragraph_search = agent.search_relevant_paragraphs(
+    #     "innovation and organizational change",
+    #     top_n=3,
+    #     has_citations=True,  # 只搜索包含引用的段落
+    #     min_score=0.2
+    # )
+    # print(f"   搜索结果: {paragraph_search['status']}")
+    # print(f"   消息: {paragraph_search['message']}")
+    # if paragraph_search['status'] == 'success':
+    #     print(f"   结果预览:")
+    #     for i, result in enumerate(paragraph_search['results'][:1]):
+    #         print(f"     {i+1}. 分数: {result['score']}")
+    #         print(f"        段落: {result['text']}")
+    #         print(f"        章节: {result['paragraph_metadata']['section']}")
+    #         print(f"        引用数: {result['paragraph_metadata']['citation_count']}")
     
-    # 测试11: 章节级语义搜索
-    print("\n11. 测试章节语义搜索:")
-    section_search = agent.search_relevant_sections(
-        "methodology research design",
-        top_n=3,
-        section_types=["methodology", "methods"],  # 只搜索方法论章节
-        min_score=0.25
-    )
-    print(f"   搜索结果: {section_search['status']}")
-    print(f"   消息: {section_search['message']}")
-    if section_search['status'] == 'success':
-        print(f"   结果预览:")
-        for i, result in enumerate(section_search['results'][:1]):
-            print(f"     {i+1}. 分数: {result['score']}")
-            print(f"        章节标题: {result['title']}")
-            print(f"        章节类型: {result['section_metadata']['section_type']}")
-            print(f"        内容预览: {result['text'][:100]}...")
+    # # 测试11: 章节级语义搜索
+    # print("\n11. 测试章节语义搜索:")
+    # section_search = agent.search_relevant_sections(
+    #     "methodology research design",
+    #     top_n=3,
+    #     section_types=["methodology", "methods"],  # 只搜索方法论章节
+    #     min_score=0.25
+    # )
+    # print(f"   搜索结果: {section_search['status']}")
+    # print(f"   消息: {section_search['message']}")
+    # if section_search['status'] == 'success':
+    #     print(f"   结果预览:")
+    #     for i, result in enumerate(section_search['results'][:1]):
+    #         print(f"     {i+1}. 分数: {result['score']}")
+    #         print(f"        章节标题: {result['title']}")
+    #         print(f"        章节类型: {result['section_metadata']['section_type']}")
+    #         print(f"        内容预览: {result['text'][:100]}...")
     
-    # 测试12: 综合搜索
-    print("\n12. 测试综合语义搜索:")
-    comprehensive_search = agent.search_all_content_types(
-        "strategic management competitive advantage",
-        top_n_per_type=3,
-        min_score=0.2
-    )
-    print(f"   搜索结果: {comprehensive_search['status']}")
-    print(f"   消息: {comprehensive_search['message']}")
-    if comprehensive_search['status'] == 'success':
-        stats = comprehensive_search['overall_stats']
-        print(f"   总体统计:")
-        print(f"     总结果数: {stats['total_results']}")
-        print(f"     最高分数: {stats['max_score']}")
-        print(f"     句子: {stats['sentences_count']} 个")
-        print(f"     段落: {stats['paragraphs_count']} 个") 
-        print(f"     章节: {stats['sections_count']} 个")
+    # # 测试12: 综合搜索
+    # print("\n12. 测试综合语义搜索:")
+    # comprehensive_search = agent.search_all_content_types(
+    #     "strategic management competitive advantage",
+    #     top_n_per_type=3,
+    #     min_score=0.2
+    # )
+    # print(f"   搜索结果: {comprehensive_search['status']}")
+    # print(f"   消息: {comprehensive_search['message']}")
+    # if comprehensive_search['status'] == 'success':
+    #     stats = comprehensive_search['overall_stats']
+    #     print(f"   总体统计:")
+    #     print(f"     总结果数: {stats['total_results']}")
+    #     print(f"     最高分数: {stats['max_score']}")
+    #     print(f"     句子: {stats['sentences_count']} 个")
+    #     print(f"     段落: {stats['paragraphs_count']} 个") 
+    #     print(f"     章节: {stats['sections_count']} 个")
         
-        # 显示每种类型的最佳结果
-        for content_type in ['sentences', 'paragraphs', 'sections']:
-            type_results = comprehensive_search[content_type]
-            if type_results['status'] == 'success' and type_results['results']:
-                best = type_results['results'][0]
-                print(f"     最佳{content_type[:-1]}: {best['score']} - {best['text'][:50]}...")
+    #     # 显示每种类型的最佳结果
+    #     for content_type in ['sentences', 'paragraphs', 'sections']:
+    #         type_results = comprehensive_search[content_type]
+    #         if type_results['status'] == 'success' and type_results['results']:
+    #             best = type_results['results'][0]
+    #             print(f"     最佳{content_type[:-1]}: {best['score']} - {best['text'][:50]}...")
     
-    # 测试13: 带过滤条件的搜索
-    if test_paper_id:
-        print("\n13. 测试带过滤条件的搜索:")
-        filtered_search = agent.search_relevant_sentences(
-            "strategy",
-            top_n=10,
-            paper_ids=[test_paper_id],  # 只在特定论文中搜索
-            min_score=0.1
-        )
-        print(f"   搜索结果: {filtered_search['status']}")
-        print(f"   消息: {filtered_search['message']}")
-        if filtered_search['status'] == 'success':
-            print(f"   在特定论文中找到 {filtered_search['total_results']} 个相关句子")
+    # # 测试13: 带过滤条件的搜索
+    # if test_paper_id:
+    #     print("\n13. 测试带过滤条件的搜索:")
+    #     filtered_search = agent.search_relevant_sentences(
+    #         "strategy",
+    #         top_n=10,
+    #         paper_ids=[test_paper_id],  # 只在特定论文中搜索
+    #         min_score=0.1
+    #     )
+    #     print(f"   搜索结果: {filtered_search['status']}")
+    #     print(f"   消息: {filtered_search['message']}")
+    #     if filtered_search['status'] == 'success':
+    #         print(f"   在特定论文中找到 {filtered_search['total_results']} 个相关句子")
     
-    print("\n🎉 向量搜索测试完成!")
-    agent.close() 
+    # print("\n🎉 向量搜索测试完成!")
+    # agent.close() 

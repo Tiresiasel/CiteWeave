@@ -9,7 +9,16 @@ class GraphDB:
         self.driver = GraphDatabase.driver(uri, auth=(user, password))
 
     def close(self):
-        self.driver.close()
+        """Safely close Neo4j driver with error handling"""
+        if self.driver:
+            try:
+                self.driver.close()
+            except Exception as e:
+                # Ignore cleanup errors, especially the known Python 3.12 issue
+                import logging
+                logging.debug(f"Neo4j driver cleanup error (ignored): {e}")
+            finally:
+                self.driver = None
 
     # ==================== 原有的论文和论证节点操作 ====================
 
