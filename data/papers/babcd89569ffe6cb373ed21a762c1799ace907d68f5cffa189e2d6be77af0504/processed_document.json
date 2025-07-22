@@ -52,21 +52,6 @@
           "paper_id": "dcfea96fdb97c5f2c9bafed2103f5c6078a716b043d612fbd54a34a2b5753323"
         },
         {
-          "intext": "(Porter, 1980)",
-          "reference": {
-            "authors": [
-              "M Porter"
-            ],
-            "title": "What is strategy?",
-            "year": "1980",
-            "journal": "Competitive Strategy",
-            "publisher": "Free Press",
-            "pub_place": "",
-            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
-          },
-          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
-        },
-        {
           "intext": "(Nelson and Winter, 1982)",
           "reference": {
             "authors": [
@@ -81,6 +66,21 @@
             "raw_text": "R Nelson; S Winter (1982). An Evolutionary Theory of Economic Change. An Evolutionary Theory of Economic Change. , Belknap, Cambridge, MA"
           },
           "paper_id": "62db22156b34ac94234efe08e17ec653e23354133913700d5b773e56827d217c"
+        },
+        {
+          "intext": "(Porter, 1980)",
+          "reference": {
+            "authors": [
+              "M Porter"
+            ],
+            "title": "What is strategy?",
+            "year": "1980",
+            "journal": "Competitive Strategy",
+            "publisher": "Free Press",
+            "pub_place": "",
+            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
+          },
+          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
         },
         {
           "intext": "(Mueller, 1986)",
@@ -113,20 +113,19 @@
           "paper_id": "9ea864bf22219f35f3923d4baf6b97289df7778b8ba1c421196aa220a75c831b"
         },
         {
-          "intext": "(Lippman and Rumelt, 1982)",
+          "intext": "(Barney, 1991)",
           "reference": {
             "authors": [
-              "S Lippman",
-              "R Rumelt"
+              "J Barney"
             ],
-            "title": "Uncertain imitability: An analysis of interfirm differences in efficiency under competition",
-            "year": "1982",
-            "journal": "Bell J. Econom",
+            "title": "Firm resources and sustained competitive advantage",
+            "year": "1991",
+            "journal": "J. Management",
             "publisher": "",
             "pub_place": "",
-            "raw_text": "S Lippman; R Rumelt (1982). Uncertain imitability: An analysis of interfirm differences in efficiency under competition. Bell J. Econom"
+            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
           },
-          "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
+          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
         },
         {
           "intext": "(Dierickx and Cool, 1989)",
@@ -145,19 +144,20 @@
           "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
         },
         {
-          "intext": "(Barney, 1991)",
+          "intext": "(Lippman and Rumelt, 1982)",
           "reference": {
             "authors": [
-              "J Barney"
+              "S Lippman",
+              "R Rumelt"
             ],
-            "title": "Firm resources and sustained competitive advantage",
-            "year": "1991",
-            "journal": "J. Management",
+            "title": "Uncertain imitability: An analysis of interfirm differences in efficiency under competition",
+            "year": "1982",
+            "journal": "Bell J. Econom",
             "publisher": "",
             "pub_place": "",
-            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
+            "raw_text": "S Lippman; R Rumelt (1982). Uncertain imitability: An analysis of interfirm differences in efficiency under competition. Bell J. Econom"
           },
-          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
+          "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
         },
         {
           "intext": "(Simon, 1962)",
@@ -206,21 +206,6 @@
           "paper_id": "d06b337cd4a040d32033fd3eb3620613b596e4292b20c19c776280900b1c932d"
         },
         {
-          "intext": "(Glassman, 1973)",
-          "reference": {
-            "authors": [
-              "R Glassman"
-            ],
-            "title": "Persistence and loose coupling in living systems",
-            "year": "1973",
-            "journal": "Behavioral Sci",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "R Glassman (1973). Persistence and loose coupling in living systems. Behavioral Sci"
-          },
-          "paper_id": "73ae4f1defce998434a6de6ab2e7df5ee792a2aa6c9af3e366e1b88ecd1743aa"
-        },
-        {
           "intext": "(Weick, 1976)",
           "reference": {
             "authors": [
@@ -234,6 +219,21 @@
             "raw_text": "K Weick (1976). Educational organizations as loosely coupled systems. Admin. Sci. Quart"
           },
           "paper_id": "428309cd10117e1a6a378a2f79fc3a2e2fd514e5ab147a5fef05efa387c54516"
+        },
+        {
+          "intext": "(Glassman, 1973)",
+          "reference": {
+            "authors": [
+              "R Glassman"
+            ],
+            "title": "Persistence and loose coupling in living systems",
+            "year": "1973",
+            "journal": "Behavioral Sci",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "R Glassman (1973). Persistence and loose coupling in living systems. Behavioral Sci"
+          },
+          "paper_id": "73ae4f1defce998434a6de6ab2e7df5ee792a2aa6c9af3e366e1b88ecd1743aa"
         },
         {
           "intext": "(Ichniowski et al., 1997)",
@@ -725,6 +725,21 @@
           "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
         },
         {
+          "intext": "(Barney, 1991)",
+          "reference": {
+            "authors": [
+              "J Barney"
+            ],
+            "title": "Firm resources and sustained competitive advantage",
+            "year": "1991",
+            "journal": "J. Management",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
+          },
+          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
+        },
+        {
           "intext": "(Dierickx and Cool, 1989)",
           "reference": {
             "authors": [
@@ -741,19 +756,20 @@
           "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
         },
         {
-          "intext": "(Barney, 1991)",
+          "intext": "(Miles and Snow, 1978)",
           "reference": {
             "authors": [
-              "J Barney"
+              "R Miles",
+              "C Snow"
             ],
-            "title": "Firm resources and sustained competitive advantage",
-            "year": "1991",
-            "journal": "J. Management",
-            "publisher": "",
+            "title": "Organizational Strategy, Structure, and Process",
+            "year": "1978",
+            "journal": "Organizational Strategy, Structure, and Process",
+            "publisher": "McGraw-Hill",
             "pub_place": "",
-            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
+            "raw_text": "R Miles; C Snow (1978). Organizational Strategy, Structure, and Process. Organizational Strategy, Structure, and Process. McGraw-Hill"
           },
-          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
+          "paper_id": "40d4dc87e16a0a521b82e37fad5781ae352165208ae08eab67dea38494d1e59d"
         },
         {
           "intext": "(Porter, 1980)",
@@ -769,22 +785,6 @@
             "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
           },
           "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
-        },
-        {
-          "intext": "(Miles and Snow, 1978)",
-          "reference": {
-            "authors": [
-              "R Miles",
-              "C Snow"
-            ],
-            "title": "Organizational Strategy, Structure, and Process",
-            "year": "1978",
-            "journal": "Organizational Strategy, Structure, and Process",
-            "publisher": "McGraw-Hill",
-            "pub_place": "",
-            "raw_text": "R Miles; C Snow (1978). Organizational Strategy, Structure, and Process. Organizational Strategy, Structure, and Process. McGraw-Hill"
-          },
-          "paper_id": "40d4dc87e16a0a521b82e37fad5781ae352165208ae08eab67dea38494d1e59d"
         },
         {
           "intext": "(Miller and Dess, 1993)",
@@ -982,21 +982,6 @@
           "paper_id": "dcfea96fdb97c5f2c9bafed2103f5c6078a716b043d612fbd54a34a2b5753323"
         },
         {
-          "intext": "(Porter, 1980)",
-          "reference": {
-            "authors": [
-              "M Porter"
-            ],
-            "title": "What is strategy?",
-            "year": "1980",
-            "journal": "Competitive Strategy",
-            "publisher": "Free Press",
-            "pub_place": "",
-            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
-          },
-          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
-        },
-        {
           "intext": "(Nelson and Winter, 1982)",
           "reference": {
             "authors": [
@@ -1011,6 +996,21 @@
             "raw_text": "R Nelson; S Winter (1982). An Evolutionary Theory of Economic Change. An Evolutionary Theory of Economic Change. , Belknap, Cambridge, MA"
           },
           "paper_id": "62db22156b34ac94234efe08e17ec653e23354133913700d5b773e56827d217c"
+        },
+        {
+          "intext": "(Porter, 1980)",
+          "reference": {
+            "authors": [
+              "M Porter"
+            ],
+            "title": "What is strategy?",
+            "year": "1980",
+            "journal": "Competitive Strategy",
+            "publisher": "Free Press",
+            "pub_place": "",
+            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
+          },
+          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
         }
       ],
       "word_count": 110,
@@ -1093,20 +1093,19 @@
       "section": "Imitation of Complex Strategies",
       "citations": [
         {
-          "intext": "(Lippman and Rumelt, 1982)",
+          "intext": "(Barney, 1991)",
           "reference": {
             "authors": [
-              "S Lippman",
-              "R Rumelt"
+              "J Barney"
             ],
-            "title": "Uncertain imitability: An analysis of interfirm differences in efficiency under competition",
-            "year": "1982",
-            "journal": "Bell J. Econom",
+            "title": "Firm resources and sustained competitive advantage",
+            "year": "1991",
+            "journal": "J. Management",
             "publisher": "",
             "pub_place": "",
-            "raw_text": "S Lippman; R Rumelt (1982). Uncertain imitability: An analysis of interfirm differences in efficiency under competition. Bell J. Econom"
+            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
           },
-          "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
+          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
         },
         {
           "intext": "(Dierickx and Cool, 1989)",
@@ -1125,19 +1124,20 @@
           "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
         },
         {
-          "intext": "(Barney, 1991)",
+          "intext": "(Lippman and Rumelt, 1982)",
           "reference": {
             "authors": [
-              "J Barney"
+              "S Lippman",
+              "R Rumelt"
             ],
-            "title": "Firm resources and sustained competitive advantage",
-            "year": "1991",
-            "journal": "J. Management",
+            "title": "Uncertain imitability: An analysis of interfirm differences in efficiency under competition",
+            "year": "1982",
+            "journal": "Bell J. Econom",
             "publisher": "",
             "pub_place": "",
-            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
+            "raw_text": "S Lippman; R Rumelt (1982). Uncertain imitability: An analysis of interfirm differences in efficiency under competition. Bell J. Econom"
           },
-          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
+          "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
         },
         {
           "intext": "(Simon, 1962)",
@@ -1245,21 +1245,6 @@
           "paper_id": "1bfa4fb23bfde71e50e44701b432e76a64e1c2887a88310f2896d4134882070e"
         },
         {
-          "intext": "(Glassman, 1973)",
-          "reference": {
-            "authors": [
-              "R Glassman"
-            ],
-            "title": "Persistence and loose coupling in living systems",
-            "year": "1973",
-            "journal": "Behavioral Sci",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "R Glassman (1973). Persistence and loose coupling in living systems. Behavioral Sci"
-          },
-          "paper_id": "73ae4f1defce998434a6de6ab2e7df5ee792a2aa6c9af3e366e1b88ecd1743aa"
-        },
-        {
           "intext": "(Weick, 1976)",
           "reference": {
             "authors": [
@@ -1273,6 +1258,21 @@
             "raw_text": "K Weick (1976). Educational organizations as loosely coupled systems. Admin. Sci. Quart"
           },
           "paper_id": "428309cd10117e1a6a378a2f79fc3a2e2fd514e5ab147a5fef05efa387c54516"
+        },
+        {
+          "intext": "(Glassman, 1973)",
+          "reference": {
+            "authors": [
+              "R Glassman"
+            ],
+            "title": "Persistence and loose coupling in living systems",
+            "year": "1973",
+            "journal": "Behavioral Sci",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "R Glassman (1973). Persistence and loose coupling in living systems. Behavioral Sci"
+          },
+          "paper_id": "73ae4f1defce998434a6de6ab2e7df5ee792a2aa6c9af3e366e1b88ecd1743aa"
         }
       ],
       "word_count": 355,
@@ -2369,22 +2369,6 @@
           "paper_id": "a0378d3e2b41af27cb74c81d1e34e4ae49b1ecd0b081f62e3e366adc03b74c6c"
         },
         {
-          "intext": "(March and Simon, 1958)",
-          "reference": {
-            "authors": [
-              "J March",
-              "H Simon"
-            ],
-            "title": "",
-            "year": "1958",
-            "journal": "",
-            "publisher": "Organizations. Wiley",
-            "pub_place": "New York",
-            "raw_text": "J March; H Simon (1958). . Organizations. Wiley, New York"
-          },
-          "paper_id": "a0378d3e2b41af27cb74c81d1e34e4ae49b1ecd0b081f62e3e366adc03b74c6c"
-        },
-        {
           "intext": "(Nelson and Winter, 1982)",
           "reference": {
             "authors": [
@@ -2399,6 +2383,22 @@
             "raw_text": "R Nelson; S Winter (1982). An Evolutionary Theory of Economic Change. An Evolutionary Theory of Economic Change. , Belknap, Cambridge, MA"
           },
           "paper_id": "62db22156b34ac94234efe08e17ec653e23354133913700d5b773e56827d217c"
+        },
+        {
+          "intext": "(March and Simon, 1958)",
+          "reference": {
+            "authors": [
+              "J March",
+              "H Simon"
+            ],
+            "title": "",
+            "year": "1958",
+            "journal": "",
+            "publisher": "Organizations. Wiley",
+            "pub_place": "New York",
+            "raw_text": "J March; H Simon (1958). . Organizations. Wiley, New York"
+          },
+          "paper_id": "a0378d3e2b41af27cb74c81d1e34e4ae49b1ecd0b081f62e3e366adc03b74c6c"
         }
       ],
       "word_count": 250,
@@ -3987,20 +3987,19 @@
       "section": "Table 6\nResults of Follow-the-Leader Imitation Efforts",
       "citations": [
         {
-          "intext": "(Lippman and Rumelt, 1982)",
+          "intext": "(Barney, 1991)",
           "reference": {
             "authors": [
-              "S Lippman",
-              "R Rumelt"
+              "J Barney"
             ],
-            "title": "Uncertain imitability: An analysis of interfirm differences in efficiency under competition",
-            "year": "1982",
-            "journal": "Bell J. Econom",
+            "title": "Firm resources and sustained competitive advantage",
+            "year": "1991",
+            "journal": "J. Management",
             "publisher": "",
             "pub_place": "",
-            "raw_text": "S Lippman; R Rumelt (1982). Uncertain imitability: An analysis of interfirm differences in efficiency under competition. Bell J. Econom"
+            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
           },
-          "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
+          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
         },
         {
           "intext": "(Dierickx and Cool, 1989)",
@@ -4019,19 +4018,20 @@
           "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
         },
         {
-          "intext": "(Barney, 1991)",
+          "intext": "(Lippman and Rumelt, 1982)",
           "reference": {
             "authors": [
-              "J Barney"
+              "S Lippman",
+              "R Rumelt"
             ],
-            "title": "Firm resources and sustained competitive advantage",
-            "year": "1991",
-            "journal": "J. Management",
+            "title": "Uncertain imitability: An analysis of interfirm differences in efficiency under competition",
+            "year": "1982",
+            "journal": "Bell J. Econom",
             "publisher": "",
             "pub_place": "",
-            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
+            "raw_text": "S Lippman; R Rumelt (1982). Uncertain imitability: An analysis of interfirm differences in efficiency under competition. Bell J. Econom"
           },
-          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
+          "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
         },
         {
           "intext": "(Lippman and Rumelt, 1982)",
@@ -4099,21 +4099,6 @@
       "section": "Table 6\nResults of Follow-the-Leader Imitation Efforts",
       "citations": [
         {
-          "intext": "(Porter, 1980)",
-          "reference": {
-            "authors": [
-              "M Porter"
-            ],
-            "title": "What is strategy?",
-            "year": "1980",
-            "journal": "Competitive Strategy",
-            "publisher": "Free Press",
-            "pub_place": "",
-            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
-          },
-          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
-        },
-        {
           "intext": "(Miles and Snow, 1978)",
           "reference": {
             "authors": [
@@ -4128,6 +4113,21 @@
             "raw_text": "R Miles; C Snow (1978). Organizational Strategy, Structure, and Process. Organizational Strategy, Structure, and Process. McGraw-Hill"
           },
           "paper_id": "40d4dc87e16a0a521b82e37fad5781ae352165208ae08eab67dea38494d1e59d"
+        },
+        {
+          "intext": "(Porter, 1980)",
+          "reference": {
+            "authors": [
+              "M Porter"
+            ],
+            "title": "What is strategy?",
+            "year": "1980",
+            "journal": "Competitive Strategy",
+            "publisher": "Free Press",
+            "pub_place": "",
+            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
+          },
+          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
         },
         {
           "intext": "(Miller and Dess, 1993)",
@@ -4534,21 +4534,6 @@
       "sentence_text": "Rapid imitation, it has been argued, reduces the proﬁtability of an industry, the degree to which production is concentrated in a few hands, and the ability of successful ﬁrms to maintain productivity advantages (Nelson and Winter 1982, Porter 1980).",
       "citations": [
         {
-          "intext": "(Porter, 1980)",
-          "reference": {
-            "authors": [
-              "M Porter"
-            ],
-            "title": "What is strategy?",
-            "year": "1980",
-            "journal": "Competitive Strategy",
-            "publisher": "Free Press",
-            "pub_place": "",
-            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
-          },
-          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
-        },
-        {
           "intext": "(Nelson and Winter, 1982)",
           "reference": {
             "authors": [
@@ -4563,6 +4548,21 @@
             "raw_text": "R Nelson; S Winter (1982). An Evolutionary Theory of Economic Change. An Evolutionary Theory of Economic Change. , Belknap, Cambridge, MA"
           },
           "paper_id": "62db22156b34ac94234efe08e17ec653e23354133913700d5b773e56827d217c"
+        },
+        {
+          "intext": "(Porter, 1980)",
+          "reference": {
+            "authors": [
+              "M Porter"
+            ],
+            "title": "What is strategy?",
+            "year": "1980",
+            "journal": "Competitive Strategy",
+            "publisher": "Free Press",
+            "pub_place": "",
+            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
+          },
+          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
         }
       ],
       "word_count": 39,
@@ -4653,20 +4653,19 @@
       "sentence_text": "Proponents of the resource-based view of the ﬁrm highlight factors that make imitation difﬁcult: impediments to factor accumulation, social complexity, causal ambiguity, tacit knowledge, economies of scale and scope, adjustment costs, and ﬁrst-mover advantages (e.g., Barney 1991, Dierickx and Cool 1989, Lippman and Rumelt 1982).",
       "citations": [
         {
-          "intext": "(Lippman and Rumelt, 1982)",
+          "intext": "(Barney, 1991)",
           "reference": {
             "authors": [
-              "S Lippman",
-              "R Rumelt"
+              "J Barney"
             ],
-            "title": "Uncertain imitability: An analysis of interfirm differences in efficiency under competition",
-            "year": "1982",
-            "journal": "Bell J. Econom",
+            "title": "Firm resources and sustained competitive advantage",
+            "year": "1991",
+            "journal": "J. Management",
             "publisher": "",
             "pub_place": "",
-            "raw_text": "S Lippman; R Rumelt (1982). Uncertain imitability: An analysis of interfirm differences in efficiency under competition. Bell J. Econom"
+            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
           },
-          "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
+          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
         },
         {
           "intext": "(Dierickx and Cool, 1989)",
@@ -4685,19 +4684,20 @@
           "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
         },
         {
-          "intext": "(Barney, 1991)",
+          "intext": "(Lippman and Rumelt, 1982)",
           "reference": {
             "authors": [
-              "J Barney"
+              "S Lippman",
+              "R Rumelt"
             ],
-            "title": "Firm resources and sustained competitive advantage",
-            "year": "1991",
-            "journal": "J. Management",
+            "title": "Uncertain imitability: An analysis of interfirm differences in efficiency under competition",
+            "year": "1982",
+            "journal": "Bell J. Econom",
             "publisher": "",
             "pub_place": "",
-            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
+            "raw_text": "S Lippman; R Rumelt (1982). Uncertain imitability: An analysis of interfirm differences in efficiency under competition. Bell J. Econom"
           },
-          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
+          "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
         }
       ],
       "word_count": 45,
@@ -4883,21 +4883,6 @@
       "sentence_text": "Students of both biological systems (e.g., Glassman 1973) and organizations (e.g., Weick 1976) have noted that systems whose elements are tightly coupled to one another ﬁnd it difﬁcult to learn and adapt to environmental change.",
       "citations": [
         {
-          "intext": "(Glassman, 1973)",
-          "reference": {
-            "authors": [
-              "R Glassman"
-            ],
-            "title": "Persistence and loose coupling in living systems",
-            "year": "1973",
-            "journal": "Behavioral Sci",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "R Glassman (1973). Persistence and loose coupling in living systems. Behavioral Sci"
-          },
-          "paper_id": "73ae4f1defce998434a6de6ab2e7df5ee792a2aa6c9af3e366e1b88ecd1743aa"
-        },
-        {
           "intext": "(Weick, 1976)",
           "reference": {
             "authors": [
@@ -4911,6 +4896,21 @@
             "raw_text": "K Weick (1976). Educational organizations as loosely coupled systems. Admin. Sci. Quart"
           },
           "paper_id": "428309cd10117e1a6a378a2f79fc3a2e2fd514e5ab147a5fef05efa387c54516"
+        },
+        {
+          "intext": "(Glassman, 1973)",
+          "reference": {
+            "authors": [
+              "R Glassman"
+            ],
+            "title": "Persistence and loose coupling in living systems",
+            "year": "1973",
+            "journal": "Behavioral Sci",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "R Glassman (1973). Persistence and loose coupling in living systems. Behavioral Sci"
+          },
+          "paper_id": "73ae4f1defce998434a6de6ab2e7df5ee792a2aa6c9af3e366e1b88ecd1743aa"
         }
       ],
       "word_count": 35,
@@ -6964,22 +6964,6 @@
       "sentence_text": "First, it is commonly posited that managers satisﬁce rather than optimize (e.g., March and Simon 1958, Nelson and Winter 1982).",
       "citations": [
         {
-          "intext": "(March and Simon, 1958)",
-          "reference": {
-            "authors": [
-              "J March",
-              "H Simon"
-            ],
-            "title": "",
-            "year": "1958",
-            "journal": "",
-            "publisher": "Organizations. Wiley",
-            "pub_place": "New York",
-            "raw_text": "J March; H Simon (1958). . Organizations. Wiley, New York"
-          },
-          "paper_id": "a0378d3e2b41af27cb74c81d1e34e4ae49b1ecd0b081f62e3e366adc03b74c6c"
-        },
-        {
           "intext": "(Nelson and Winter, 1982)",
           "reference": {
             "authors": [
@@ -6994,6 +6978,22 @@
             "raw_text": "R Nelson; S Winter (1982). An Evolutionary Theory of Economic Change. An Evolutionary Theory of Economic Change. , Belknap, Cambridge, MA"
           },
           "paper_id": "62db22156b34ac94234efe08e17ec653e23354133913700d5b773e56827d217c"
+        },
+        {
+          "intext": "(March and Simon, 1958)",
+          "reference": {
+            "authors": [
+              "J March",
+              "H Simon"
+            ],
+            "title": "",
+            "year": "1958",
+            "journal": "",
+            "publisher": "Organizations. Wiley",
+            "pub_place": "New York",
+            "raw_text": "J March; H Simon (1958). . Organizations. Wiley, New York"
+          },
+          "paper_id": "a0378d3e2b41af27cb74c81d1e34e4ae49b1ecd0b081f62e3e366adc03b74c6c"
         }
       ],
       "word_count": 20,
@@ -9194,21 +9194,6 @@
       "sentence_text": "This also helps to explain recurring efforts to classify strategies into a manageable number of generic types (e.g., Miles and Snow 1978, Porter 1980).",
       "citations": [
         {
-          "intext": "(Porter, 1980)",
-          "reference": {
-            "authors": [
-              "M Porter"
-            ],
-            "title": "What is strategy?",
-            "year": "1980",
-            "journal": "Competitive Strategy",
-            "publisher": "Free Press",
-            "pub_place": "",
-            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
-          },
-          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
-        },
-        {
           "intext": "(Miles and Snow, 1978)",
           "reference": {
             "authors": [
@@ -9223,6 +9208,21 @@
             "raw_text": "R Miles; C Snow (1978). Organizational Strategy, Structure, and Process. Organizational Strategy, Structure, and Process. McGraw-Hill"
           },
           "paper_id": "40d4dc87e16a0a521b82e37fad5781ae352165208ae08eab67dea38494d1e59d"
+        },
+        {
+          "intext": "(Porter, 1980)",
+          "reference": {
+            "authors": [
+              "M Porter"
+            ],
+            "title": "What is strategy?",
+            "year": "1980",
+            "journal": "Competitive Strategy",
+            "publisher": "Free Press",
+            "pub_place": "",
+            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
+          },
+          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
         }
       ],
       "word_count": 24,
@@ -9438,7 +9438,7 @@
     "paragraphs_with_citations": 25,
     "total_citations": 47,
     "total_references": 38,
-    "processing_timestamp": "2025-07-22T18:23:23.357909",
+    "processing_timestamp": "2025-07-22T23:55:31.014800",
     "graph_db_stats": {
       "sections_created": 6,
       "paragraphs_created": 209,

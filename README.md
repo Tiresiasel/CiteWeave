@@ -128,6 +128,43 @@ python -m src.core.cli batch-upload path/to/your/pdf_folder
 - This will recursively find and process all `.pdf` files in the specified directory and its subdirectories.
 - Progress and a summary of successes/failures will be printed.
 
+**Multiprocessing Batch Upload (Recommended for large batches):**
+```bash
+# Default multiprocessing (4 processors)
+python -m src.core.cli batch-upload path/to/your/pdf_folder
+
+# Custom number of processors
+python -m src.core.cli batch-upload path/to/your/pdf_folder --processors 8
+
+# Sequential processing (original behavior, useful for debugging)
+python -m src.core.cli batch-upload path/to/your/pdf_folder --sequential
+```
+
+**Resume Batch Upload (Handles interruptions):**
+```bash
+# Resume from previous progress (default behavior)
+python -m src.core.cli batch-upload path/to/your/pdf_folder
+
+# Explicit resume mode
+python -m src.core.cli batch-upload path/to/your/pdf_folder --resume
+
+# Force restart (ignore previous progress)
+python -m src.core.cli batch-upload path/to/your/pdf_folder --force-restart
+
+# Clear progress and start fresh
+python -m src.core.cli batch-upload path/to/your/pdf_folder --clear-progress
+
+# Check progress status
+python -m src.core.cli progress path/to/your/pdf_folder
+```
+
+**Performance Benefits:**
+- **3-4x faster** for typical batches (10 files, 2 min each)
+- **Parallel processing** - utilizes multiple CPU cores
+- **Real-time progress** - shows completion status as files finish
+- **Error isolation** - individual failures don't stop the batch
+- **Resume capability** - automatically continues from interruptions
+
 
 ### 2. Start an Interactive Research Chat (**After Uploading Files**)
 
@@ -204,6 +241,65 @@ Feel free to experiment—if your question is related to the content of your upl
 
 ## 🛠️ Advanced Features
 
+### Multiprocessing Batch Upload
+
+For processing large numbers of PDF files, CiteWeave supports multiprocessing to significantly speed up batch operations:
+
+**Key Features:**
+- **Configurable processor count** - default 4, customizable via `--processors`
+- **Automatic validation** - detects available CPU cores and adjusts accordingly
+- **Real-time progress tracking** - shows completion status with ✅/❌ indicators
+- **Comprehensive logging** - detailed START/FINISH messages for monitoring
+- **Error isolation** - individual file failures don't affect other files
+
+**Usage Examples:**
+```bash
+# Use all available CPU cores
+python -m src.core.cli batch-upload /papers/ --processors $(nproc)
+
+# Conservative processing (2 cores)
+python -m src.core.cli batch-upload /papers/ --processors 2
+
+# Debug mode with detailed error messages
+python -m src.core.cli batch-upload /papers/ --sequential
+```
+
+**Performance Comparison:**
+- **Sequential**: 10 files × 2 minutes = ~20 minutes
+- **Multiprocessing (4 cores)**: ~5-6 minutes (**3-4x faster**)
+
+### Resume Batch Upload
+
+Automatically resume interrupted batch uploads with progress tracking:
+
+**Key Features:**
+- **Automatic resume** - continues from where it left off by default
+- **Progress tracking** - stores status in `data/batch_upload_tracker.json`
+- **Flexible control** - explicit resume, force restart, or clear progress
+- **Progress monitoring** - view status with `progress` command
+- **Error recovery** - handles interruptions gracefully
+
+**Usage Examples:**
+```bash
+# Check current progress
+python -m src.core.cli progress /papers/
+
+# Resume interrupted upload
+python -m src.core.cli batch-upload /papers/ --resume
+
+# Force restart after fixing issues
+python -m src.core.cli batch-upload /papers/ --force-restart
+
+# Clear progress and start fresh
+python -m src.core.cli progress /papers/ --clear
+```
+
+**Resume Scenarios:**
+- **System shutdown** - automatically resumes on next run
+- **Processing errors** - skips completed files, retries failed ones
+- **Manual interruption** - continue from exact interruption point
+- **File changes** - reprocess modified files with `--force-restart`
+
 ---
 
 ## ❓ Troubleshooting & FAQ
@@ -221,6 +317,15 @@ Feel free to experiment—if your question is related to the content of your upl
 - **Other issues?**
   - Check logs printed in the terminal for error messages.
   - For advanced help, see the `docs/` folder or open an issue on GitHub.
+- **Batch upload issues?**
+  - If multiprocessing fails, try `--sequential` flag for detailed error messages.
+  - Reduce processor count if system becomes unresponsive: `--processors 2`
+  - Monitor system resources during large batch processing.
+- **Resume/interruption issues?**
+  - Use `--force-restart` to reprocess all files after fixing issues.
+  - Check progress with `python -m src.core.cli progress /your/directory/`
+  - Clear progress with `--clear-progress` if tracking gets corrupted.
+  - Progress is stored in `data/batch_upload_tracker.json` - delete to reset all progress.
 
 ---
 

@@ -11,8 +11,8 @@
     }
   },
   "embedding": {
-    "provider": "openai",
-    "model": "text-embedding-3-small"
+    "provider": "ollama",
+    "model": "nomic-embed-text"
   },
   "llm": {
     "agents": {
