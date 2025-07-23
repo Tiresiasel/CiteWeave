@@ -230,4 +230,4 @@ test_files/*
 # data
 data/*
 
-config/model_config.json
+config/model_config.jsonconfig/model_config.json

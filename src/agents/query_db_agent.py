@@ -95,6 +95,11 @@ class QueryDBAgent:
         Returns:
             Dict: 论文的完整元数据信息
         """
+        # Validate paper_id parameter
+        if not paper_id:
+            logging.error("paper_id cannot be None or empty")
+            return {}
+        
         if not self.graph_db:
             logging.error("Graph database not available")
             return {}
@@ -160,6 +165,11 @@ class QueryDBAgent:
         Returns:
             List[Dict]: 引用该论文的论文列表，包含paper信息和引用统计
         """
+        # Validate target_paper_id parameter
+        if not target_paper_id:
+            logging.error("target_paper_id cannot be None or empty")
+            return []
+        
         if not self.graph_db:
             logging.error("Graph database not available")
             return []
@@ -215,6 +225,11 @@ class QueryDBAgent:
         Returns:
             List[Dict]: 被该论文引用的论文列表，包含被引用论文信息和引用统计
         """
+        # Validate source_paper_id parameter
+        if not source_paper_id:
+            logging.error("source_paper_id cannot be None or empty")
+            return []
+        
         if not self.graph_db:
             logging.error("Graph database not available")
             return []
@@ -273,6 +288,11 @@ class QueryDBAgent:
         Returns:
             List[Dict]: 引用该论文的段落列表，包含段落内容和上下文信息
         """
+        # Validate target_paper_id parameter
+        if not target_paper_id:
+            logging.error("target_paper_id cannot be None or empty")
+            return []
+        
         if not self.graph_db:
             logging.error("Graph database not available")
             return []
@@ -334,6 +354,11 @@ class QueryDBAgent:
         Returns:
             List[Dict]: 引用该论文的句子列表，包含句子内容和引用上下文
         """
+        # Validate target_paper_id parameter
+        if not target_paper_id:
+            logging.error("target_paper_id cannot be None or empty")
+            return []
+        
         if not self.graph_db:
             logging.error("Graph database not available")
             return []
@@ -1328,6 +1353,14 @@ class QueryDBAgent:
         Returns:
             Dict containing relevant content from the PDF
         """
+        # Validate paper_id parameter
+        if not paper_id:
+            return {
+                "found": False,
+                "error": "paper_id cannot be None or empty",
+                "data": []
+            }
+        
         try:
             paper_path = os.path.join(self.papers_dir, paper_id)
             processed_doc_path = os.path.join(paper_path, "processed_document.json")
@@ -1514,6 +1547,14 @@ class QueryDBAgent:
         Returns:
             Dict containing the full paper content
         """
+        # Validate paper_id parameter
+        if not paper_id:
+            return {
+                "found": False,
+                "error": "paper_id cannot be None or empty",
+                "data": {}
+            }
+        
         try:
             paper_path = os.path.join(self.papers_dir, paper_id)
             processed_doc_path = os.path.join(paper_path, "processed_document.json")
@@ -1580,6 +1621,14 @@ class QueryDBAgent:
         Returns:
             Dict containing semantically similar content
         """
+        # Validate paper_id parameter
+        if not paper_id:
+            return {
+                "found": False,
+                "error": "paper_id cannot be None or empty",
+                "data": []
+            }
+        
         try:
             # Get the full PDF content first
             pdf_result = self.get_full_pdf_content(paper_id)

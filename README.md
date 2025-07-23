@@ -242,6 +242,12 @@ You can ask a wide range of research questions, such as:
 - "Explain the concept of business model innovation."
 - "What is the definition of competitive advantage?"
 - "Which papers discuss imitation in strategy?"
+- "How reputation is defined from different perspectives?"
+
+**Find Papers by Content:**
+- "Find the paper that organizations that suggest holding a high status may lead to feelings of insecurity."
+- "Identify the paper that utilizes the results of LDA probability to assess the similarity description of Airbnb."
+- "Find the paper that using IMDB dataset."
 
 
 Feel free to experiment—if your question is related to the content of your uploaded PDFs, citation relationships, or academic concepts, the system will try to answer it! 

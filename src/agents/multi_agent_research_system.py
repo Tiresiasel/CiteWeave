@@ -3671,8 +3671,15 @@ Please respond with: CONTINUE or EXPAND
                         matched_paper = matched_entity[0]
                     else:
                         matched_paper = matched_entity
-                    paper_id = matched_paper.get("paper_id")
+                    # Try to get paper_id from either "paper_id" or "id" key
+                    paper_id = matched_paper.get("paper_id") or matched_paper.get("id")
                     log_event("WorkflowAgent", "paper_analysis_from_fuzzy_match", {"paper_id": paper_id, "matched_title": matched_paper.get("title")}, level=logging.INFO, request_id=request_id)
+                    
+                    # Validate paper_id before proceeding
+                    if not paper_id:
+                        log_event("WorkflowAgent", "paper_id_validation_failed", {"matched_paper": matched_paper}, level=logging.ERROR, request_id=request_id)
+                        collected_data["results"]["error"] = "No valid paper_id found in matched paper"
+                        return state
                     
                     # Determine what type of analysis is needed based on the question
                     content_keywords = ["summarize", "findings", "content", "arguments", "main points"]
@@ -4432,9 +4439,9 @@ Answer strictly in the following JSON format:
             {"role": "user", "content": prompt}
         ]
         # Debug logging for prompt
-        print("[DEBUG] SufficiencyAgent Prompt:\n" + prompt)
+        logging.debug("SufficiencyAgent Prompt:\n" + prompt)
         response = self.llm_manager.generate_response(messages)
-        print("[DEBUG] SufficiencyAgent LLM Response:\n" + str(response))
+        logging.debug("SufficiencyAgent LLM Response:\n" + str(response))
         import json
         # Always return a tuple (bool, str) matching the next step's expectation
         try:
