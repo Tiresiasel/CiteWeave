@@ -25,6 +25,9 @@ except ImportError:
 import os
 import sys
 from prompt_toolkit import prompt
+import warnings
+warnings.filterwarnings("ignore", message=".*found in sys.modules after import of package.*", category=RuntimeWarning)
+
 
 def find_project_root():
     cur = os.path.abspath(os.getcwd())

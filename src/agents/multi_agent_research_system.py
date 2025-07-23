@@ -2475,7 +2475,7 @@ Please create a comprehensive summary that highlights these specific numbers and
 
     def _structure_collected_data(self, collected_data: Dict[str, Any]) -> str:
         """Structure collected data using pre-aggregated statistics for LLM processing
-        """
+        Patch: Add a section listing all unique relevant papers found in the collected data, and filter out 'Unknown' papers with no authors."""
         # First aggregate all data into clean statistics
         stats = self._aggregate_and_count_data(collected_data)
         
@@ -2518,7 +2518,50 @@ Please create a comprehensive summary that highlights these specific numbers and
                 method_display = method.replace("_", " ").title()
                 summary_parts.append(f"• {method_display}: {count} items")
         
-        # Patch: Remove SAMPLE RESULTS section
+        # New: List all unique relevant papers found in the results, filter out 'Unknown' with no authors
+        unique_papers = {}
+        results = collected_data.get("results", {})
+        for tool_name, result in results.items():
+            data = result.get("data", result) if isinstance(result, dict) else result
+            if tool_name == "get_full_pdf_content" and result.get("metadata"):
+                meta = result["metadata"]
+                paper_id = result.get("paper_id") or meta.get("id") or meta.get("title")
+                if paper_id:
+                    unique_papers[paper_id] = {
+                        "title": meta.get("title", "Unknown"),
+                        "authors": meta.get("authors", [])
+                    }
+            elif isinstance(data, list):
+                for item in data:
+                    if isinstance(item, dict):
+                        paper_id = item.get("paper_id") or item.get("id") or item.get("title")
+                        if paper_id:
+                            unique_papers[paper_id] = {
+                                "title": item.get("title", "Unknown"),
+                                "authors": item.get("authors", [])
+                            }
+            elif isinstance(data, dict):
+                for v in data.values():
+                    if isinstance(v, list):
+                        for item in v:
+                            if isinstance(item, dict):
+                                paper_id = item.get("paper_id") or item.get("id") or item.get("title")
+                                if paper_id:
+                                    unique_papers[paper_id] = {
+                                        "title": item.get("title", "Unknown"),
+                                        "authors": item.get("authors", [])
+                                    }
+        # Filter out papers with both title 'Unknown' and authors empty or 'Unknown'
+        filtered_papers = [
+            (pid, meta) for pid, meta in unique_papers.items()
+            if not (meta["title"] == "Unknown" and (not meta["authors"] or (len(meta["authors"]) == 1 and meta["authors"][0] == "Unknown")))
+        ]
+        if filtered_papers:
+            summary_parts.append("\n**RELEVANT PAPERS FOUND:**")
+            for i, (pid, meta) in enumerate(filtered_papers, 1):
+                author_str = ", ".join(meta["authors"][:3]) if meta["authors"] else "Unknown"
+                summary_parts.append(f"{i}. {meta['title']} (Authors: {author_str})")
+        
         return "\n".join(summary_parts)
     
     def _parse_summary_response(self, summary_content: str, collected_data: Dict[str, Any], query_intent: Dict[str, Any]) -> Dict[str, Any]:
@@ -3858,11 +3901,11 @@ Please respond with: CONTINUE or EXPAND
             # Only call sufficiency agent for new, open-ended user questions (not menu choices), and only if there is history
             if menu_choice is None:
                 if len(conversation_history) == 0:
-                    print("[DEBUG] First turn: skipping sufficiency agent, proceeding to retrieval.")
+                    pass  # Suppress debug print
                 else:
-                    print("[DEBUG] Calling sufficiency agent for new user question.")
+                    pass  # Suppress debug print
                     sufficient, explanation = self.information_sufficiency_agent.is_sufficient(conversation_history, current_question)
-                    print(f"[DEBUG] SufficiencyAgent result: sufficient={sufficient}, explanation={explanation}")
+                    pass  # Suppress debug print
                     if sufficient:
                         # Only use history to answer
                         history_str = ""
@@ -3888,7 +3931,7 @@ Given the following conversation history, answer the new user question as best a
                             "sufficiency_explanation": explanation
                         }
             elif menu_choice in ("2", "3"):
-                print("[DEBUG] Menu choice for more/specific info: skipping sufficiency agent, proceeding to retrieval/expansion.")
+                pass  # Suppress debug print
                 # The rest of the menu logic will handle info gathering, do not call sufficiency agent
                 pass
             # All other menu choices or default: proceed as before
@@ -3906,36 +3949,16 @@ Given the following conversation history, answer the new user question as best a
                     return {
                         "text": "What additional information would you like me to gather?",
                         "collected_data": current_collected_data,
-                        "needs_user_choice": False,
                         "needs_user_input": True
                     }
                 elif menu_choice == "3":
-                    # Ask for specific info
+                    # User wants to specify what to focus on
                     return {
-                        "text": "What specific information would you like me to gather?",
+                        "text": "Please specify what aspect or information you want to focus on.",
                         "collected_data": current_collected_data,
-                        "needs_user_choice": False,
                         "needs_user_input": True
                     }
-                elif menu_choice == "4":
-                    # Exit
-                    return {
-                        "text": "Exiting interactive research. Goodbye!",
-                        "collected_data": current_collected_data,
-                        "needs_user_choice": False
-                    }
-                else:
-                    return {
-                        "text": "Invalid choice. Please enter 1, 2, 3, or 4.",
-                        "collected_data": current_collected_data,
-                        "needs_user_choice": True,
-                        "menu": [
-                            "Yes, generate final answer",
-                            "No, gather more information",
-                            "Tell me what specific information you want",
-                            "Exit"
-                        ]
-                    }
+            # ... rest of the function ...
             # Default: treat as new question
             research_result = self._execute_research_directly(current_question, request_id)
             if research_result and "collected_data" in research_result:

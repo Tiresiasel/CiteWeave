@@ -12,6 +12,8 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from sentence_transformers import SentenceTransformer
 from src.utils.paper_id_utils import PaperIDGenerator
+import logging
+logging.basicConfig(level=logging.WARNING)
 
 
 class VectorIndexer:
@@ -51,7 +53,7 @@ class VectorIndexer:
             with open(self.config_path, 'r') as f:
                 return json.load(f)
         except FileNotFoundError:
-            print(f"Warning: Qdrant config file {self.config_path} not found, using defaults")
+            logging.warning(f"Warning: Qdrant config file {self.config_path} not found, using defaults")
             return {
                 "host": "localhost",
                 "port": 6333,
@@ -61,7 +63,7 @@ class VectorIndexer:
                 "timeout": 60.0
             }
         except json.JSONDecodeError as e:
-            print(f"Error parsing Qdrant config: {e}")
+            logging.error(f"Error parsing Qdrant config: {e}")
             return {
                 "host": "localhost", 
                 "port": 6333,
@@ -80,7 +82,7 @@ class VectorIndexer:
             try:
                 # Check if collection exists
                 self.client.get_collection(collection_name)
-                print(f"Collection '{collection_name}' already exists")
+                logging.debug(f"Collection '{collection_name}' already exists")
             except Exception as e:
                 # If collection doesn't exist, create it
                 collection_config = collections_config.get(collection_name, {})
@@ -96,7 +98,7 @@ class VectorIndexer:
                     collection_name=collection_name,
                     vectors_config=VectorParams(size=vector_size, distance=distance)
                 )
-                print(f"Created collection '{collection_name}' with vector_size={vector_size}, distance={distance}")
+                logging.info(f"Created collection '{collection_name}' with vector_size={vector_size}, distance={distance}")
 
     def index_sentences(self, paper_id: str, sentences: List[str], metadata: dict,
                         claim_types: Optional[List[str]] = None):
@@ -119,7 +121,7 @@ class VectorIndexer:
             points.append(PointStruct(id=str(uuid.uuid4()), vector=vector, payload=payload))
 
         self.client.upsert(collection_name="sentences", points=points)
-        print(f"✅ Indexed {len(points)} sentences for paper {paper_id}")
+        logging.info(f"✅ Indexed {len(points)} sentences for paper {paper_id}")
 
     def index_paragraphs(self, paper_id: str, paragraphs: List[Dict], metadata: dict):
         """索引段落级向量"""
@@ -149,7 +151,7 @@ class VectorIndexer:
             points.append(PointStruct(id=str(uuid.uuid4()), vector=vector, payload=payload))
 
         self.client.upsert(collection_name="paragraphs", points=points)
-        print(f"✅ Indexed {len(points)} paragraphs for paper {paper_id}")
+        logging.info(f"✅ Indexed {len(points)} paragraphs for paper {paper_id}")
 
     def index_sections(self, paper_id: str, sections: List[Dict], metadata: dict):
         """索引章节级向量"""
@@ -178,7 +180,7 @@ class VectorIndexer:
             points.append(PointStruct(id=str(uuid.uuid4()), vector=vector, payload=payload))
 
         self.client.upsert(collection_name="sections", points=points)
-        print(f"✅ Indexed {len(points)} sections for paper {paper_id}")
+        logging.info(f"✅ Indexed {len(points)} sections for paper {paper_id}")
 
     def index_citations(self, paper_id: str, citations: List[Dict], metadata: dict):
         """索引引用文本向量"""
@@ -207,7 +209,7 @@ class VectorIndexer:
             points.append(PointStruct(id=str(uuid.uuid4()), vector=vector, payload=payload))
 
         self.client.upsert(collection_name="citations", points=points)
-        print(f"✅ Indexed {len(points)} citations for paper {paper_id}")
+        logging.info(f"✅ Indexed {len(points)} citations for paper {paper_id}")
 
     def index_all_from_data(self):
         """从data/papers目录索引所有数据，使用PaperIDGenerator确保paper_id一致性"""
@@ -220,7 +222,7 @@ class VectorIndexer:
             metadata_path = os.path.join(paper_dir, "metadata.json")
 
             if not os.path.exists(sentences_path) or not os.path.exists(metadata_path):
-                print(f"[WARN] Missing files for {folder_name}, skipping...")
+                logging.warning(f"[WARN] Missing files for {folder_name}, skipping...")
                 continue
 
             # 读取metadata来生成正确的paper_id
@@ -234,7 +236,7 @@ class VectorIndexer:
                 authors=metadata.get("authors", [])
             )
             
-            print(f"Processing {folder_name} -> paper_id: {paper_id}")
+            logging.info(f"Processing {folder_name} -> paper_id: {paper_id}")
 
             with open(sentences_path, "r") as f:
                 sentence_objs = [json.loads(line.strip()) for line in f if line.strip()]
@@ -271,7 +273,7 @@ class VectorIndexer:
             try:
                 results[collection] = self.search(query, collection, limit_per_collection)
             except Exception as e:
-                print(f"Error searching in {collection}: {e}")
+                logging.error(f"Error searching in {collection}: {e}")
                 results[collection] = []
         
         return results
@@ -282,17 +284,17 @@ if __name__ == "__main__":
     indexer.index_all_from_data()
     
     # 测试跨collection搜索
-    print("\n=== 测试跨collection搜索 ===")
+    logging.info("\n=== 测试跨collection搜索 ===")
     results = indexer.search_all_collections("strategic behavior under uncertainty", limit_per_collection=2)
     for collection, coll_results in results.items():
-        print(f"\n{collection.upper()}:")
+        logging.info(f"\n{collection.upper()}:")
         if coll_results:
             for result in coll_results:
-                print(f"  Score: {result['score']} - {result['text'][:100]}...")
+                logging.info(f"  Score: {result['score']} - {result['text'][:100]}...")
         else:
-            print("  No results found")
+            logging.info("  No results found")
     
     # 测试单个collection搜索
-    print("\n=== 测试sentences collection搜索 ===")
+    logging.info("\n=== 测试sentences collection搜索 ===")
     sentence_results = indexer.search("strategic behavior under uncertainty", "sentences")
     print(json.dumps(sentence_results, indent=2))
