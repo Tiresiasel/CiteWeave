@@ -1,5 +1,7 @@
 # CiteWeave - Advanced Citation Analysis System
 
+![Demo](docs/images/demo.gif)
+
 [🇨🇳 点击查看中文文档 (README.zh.md)](README.zh.md)
 
 > **This project is licensed under the Apache License 2.0. See the LICENSE file for details.**

@@ -1,5 +1,7 @@
 # CiteWeave - 高级学术引用分析系统
 
+![演示](docs/images/demo.gif)
+
 [🇺🇸 Switch to English README](README.md)
 
 > **本项目遵循 Apache License 2.0 许可证。详情见 LICENSE 文件。**
