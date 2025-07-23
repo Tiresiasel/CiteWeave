@@ -64,7 +64,12 @@ graph TD
 ## ⚡ 快速开始：环境搭建
 
 1. **配置Python环境**
+   - 推荐 Python 3.12。
    - 安装依赖：`pip install -r requirements.txt`
+   - **首次使用**：下载 NLTK punkt 分词器（用于句子切分）：
+     ```bash
+     python -m nltk.downloader punkt
+     ```
 
 2. **配置环境变量**
    - 复制模板：`cp .env_template .env`
@@ -77,7 +82,8 @@ graph TD
      ```bash
      docker-compose up -d
      ```
-   - 检查服务状态：
+
+     检查服务状态：
      ```bash
      python scripts/start_services.py
      ```
@@ -96,6 +102,8 @@ graph TD
    - 单文件用 `upload`，批量用 `batch-upload`
 2. **（可选）诊断PDF质量**
 3. **与多智能体系统对话**，提出学术问题
+
+所有交互均通过CLI完成。请勿直接调用Python API或导入函数。
 
 ### 1. 上传与处理PDF（第一步，必需）
 
@@ -119,6 +127,49 @@ python -m src.core.cli batch-upload 路径/pdf文件夹
 ```
 - 会递归处理目录及子目录下所有 `.pdf` 文件。
 - 处理进度和结果会在终端显示。
+
+如果你使用 Zotero，可以用以下命令上传所有论文，便于后续提问：
+
+```bash
+python -m src.core.cli batch-upload /path/to/zotero/library --processors 8
+```
+
+**多进程批量上传（推荐大批量处理）：**
+```bash
+# 默认4进程
+python -m src.core.cli batch-upload 路径/pdf文件夹
+
+# 自定义进程数
+python -m src.core.cli batch-upload 路径/pdf文件夹 --processors 8
+
+# 顺序处理（调试用）
+python -m src.core.cli batch-upload 路径/pdf文件夹 --sequential
+```
+
+**断点续传（处理中断时使用）：**
+```bash
+# 默认自动续传
+python -m src.core.cli batch-upload 路径/pdf文件夹
+
+# 显式续传
+python -m src.core.cli batch-upload 路径/pdf文件夹 --resume
+
+# 强制重头处理
+python -m src.core.cli batch-upload 路径/pdf文件夹 --force-restart
+
+# 清除进度重新开始
+python -m src.core.cli batch-upload 路径/pdf文件夹 --clear-progress
+
+# 查看进度
+python -m src.core.cli progress 路径/pdf文件夹
+```
+
+**性能优势：**
+- **3-4倍加速**
+- **实时进度**
+- **错误隔离**
+- **断点续传**
+
 
 ### 2. 启动交互式学术对话（上传后）
 
@@ -144,6 +195,8 @@ You: exit
 Exiting chat.
 ```
 
+
+
 ## 📄 PDF处理与质量诊断
 
 - **处理**：`upload` 命令会提取句子、引用、参考文献，并将结果存储到数据目录。
@@ -156,7 +209,7 @@ Exiting chat.
 
 - **启动对话**：`python -m src.core.cli chat`
 - **可提问示例**：
-  - “哪些论文引用了Porter的战略著作？”
+  - “哪些论文引用了Rivkin的战略研究？”
   - “列出Michael Porter写的所有论文。”
   - “Porter 1980年著作的主要观点是什么？”
 - **支持查询**：引用关系、作者论文、论文内容、概念解释等。
@@ -164,10 +217,13 @@ Exiting chat.
 
 ### 可提问示例
 
+你可以提出各种学术问题，例如：
+
 **引用查询：**
 - “哪些论文引用了Porter的战略理论？”
 - “谁引用了Porter的《竞争战略》？”
 - “列出所有引用Rivkin 2000年文章的论文。”
+
 
 **作者查询：**
 - “列出Michael Porter写的所有论文。”
@@ -190,9 +246,68 @@ Exiting chat.
 
 ## 🛠️ 高级功能
 
+### 多进程批量上传
+
+处理大量PDF时，CiteWeave支持多进程批量处理，大幅提升效率：
+
+**主要特性：**
+- **可配置进程数**（默认4，可用 `--processors` 指定）
+- **自动检测CPU核心数**
+- **实时进度追踪**（✅/❌）
+- **详细日志**（START/FINISH）
+- **错误隔离**（单文件失败不影响整体）
+
+**用法示例：**
+```bash
+# 使用所有CPU核心
+python -m src.core.cli batch-upload /papers/ --processors $(nproc)
+
+# 保守处理（2核）
+python -m src.core.cli batch-upload /papers/ --processors 2
+
+# 调试模式（详细错误信息）
+python -m src.core.cli batch-upload /papers/ --sequential
+```
+
+**性能对比：**
+- **顺序处理**：10个文件 × 2分钟 ≈ 20分钟
+- **多进程（4核）**：约5-6分钟（**3-4倍加速**）
+
+### 断点续传
+
+批量上传中断时可自动续传：
+
+**主要特性：**
+- **自动续传**（默认）
+- **进度追踪**（`data/batch_upload_tracker.json`）
+- **灵活控制**（显式续传、强制重头、清除进度）
+- **进度监控**（`progress` 命令）
+- **错误恢复**（中断可恢复）
+
+**用法示例：**
+```bash
+# 查看进度
+python -m src.core.cli progress /papers/
+
+# 续传
+python -m src.core.cli batch-upload /papers/ --resume
+
+# 修复后强制重头
+python -m src.core.cli batch-upload /papers/ --force-restart
+
+# 清除进度重新开始
+python -m src.core.cli progress /papers/ --clear
+```
+
+**续传场景：**
+- **系统关机** - 下次自动续传
+- **处理错误** - 跳过已完成，重试失败
+- **手动中断** - 从中断点继续
+- **文件变更** - 用 `--force-restart` 重新处理
+
 ---
 
-## ❓ 常见问题与反馈
+## ❓ 常见问题与FAQ
 
 - **依赖缺失？**
   - 请确保已在虚拟环境中运行 `pip install -r requirements.txt`。
@@ -207,6 +322,15 @@ Exiting chat.
 - **其他问题？**
   - 查看终端日志。
   - 进阶帮助见 `docs/` 文件夹，或在 GitHub 提 issue。
+- **批量上传问题？**
+  - 多进程失败时可用 `--sequential` 查看详细错误。
+  - 系统卡顿可降低进程数：`--processors 2`
+  - 大批量处理时注意系统资源。
+- **续传/中断问题？**
+  - 修复后用 `--force-restart` 重新处理。
+  - 用 `python -m src.core.cli progress /your/directory/` 查看进度。
+  - 用 `--clear-progress` 清除进度。
+  - 进度存储在 `data/batch_upload_tracker.json`，可删除重置。
 
 ---
 

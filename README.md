@@ -128,6 +128,13 @@ python -m src.core.cli batch-upload path/to/your/pdf_folder
 - This will recursively find and process all `.pdf` files in the specified directory and its subdirectories.
 - Progress and a summary of successes/failures will be printed.
 
+If you are using Zotero, you can use the following command to upload all of your Paper Collection. This allow you to ask questions about all of your papers:
+
+```bash
+python -m src.core.cli batch-upload /path/to/zotero/library --processors 8
+```
+
+
 **Multiprocessing Batch Upload (Recommended for large batches):**
 ```bash
 # Default multiprocessing (4 processors)
@@ -159,7 +166,7 @@ python -m src.core.cli progress path/to/your/pdf_folder
 ```
 
 **Performance Benefits:**
-- **3-4x faster** for typical batches (10 files, 2 min each)
+- **3-4x faster** for typical batches
 - **Parallel processing** - utilizes multiple CPU cores
 - **Real-time progress** - shows completion status as files finish
 - **Error isolation** - individual failures don't stop the batch

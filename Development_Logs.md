@@ -18,6 +18,16 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2025-07-22**
+- **information-collection summary**: Fix the infomration collection summary issue.
+- **ai_evaluate_sufficiency-agent**: A new agent that is responsible for judging if the information gathered is sufficient to answer the user's question.
+
+
+
+
+
+
+
 ## **CLI Interface Development (2025-07-22)**
 - **Parallel Processing**: Added parallel processing support for batch upload.
 - **Sequential Processing**: Added sequential processing support for batch upload.

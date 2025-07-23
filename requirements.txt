@@ -27,6 +27,7 @@ cycler==0.12.1
 datasets==4.0.0
 debugpy==1.8.15
 decorator==5.2.1
+prompt-toolkit==3.0.51
 dill==0.3.8
 distro==1.9.0
 doclayout-yolo==0.0.4

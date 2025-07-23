@@ -24,6 +24,7 @@ except ImportError:
 
 import os
 import sys
+from prompt_toolkit import prompt
 
 def find_project_root():
     cur = os.path.abspath(os.getcwd())
@@ -383,13 +384,13 @@ def handle_chat_command(args):
         expecting_menu = False
         expecting_info_input = False
         last_question = None
-        user_input = input("You: ").strip()
+        user_input = prompt("You: ").strip()
         if user_input.lower() in ("exit", "quit"):
             print("Exiting chat.")
             return
         while True:
             if not user_input:
-                user_input = input("You: ").strip()
+                user_input = prompt("You: ").strip()
                 continue
             spinner_running = True
             def spinner():
@@ -424,14 +425,14 @@ def handle_chat_command(args):
             if response.get("needs_user_choice"):
                 for idx, option in enumerate(response["menu"], 1):
                     print(f"{idx}. {option}")
-                user_input = input("Enter your choice: ").strip()
+                user_input = prompt("Enter your choice: ").strip()
                 if user_input.lower() in ("exit", "quit"):
                     print("Exiting chat.")
                     break
                 expecting_menu = True
                 expecting_info_input = False
             elif response.get("needs_user_input"):
-                user_input = input("Your input: ").strip()
+                user_input = prompt("Your input: ").strip()
                 if user_input.lower() in ("exit", "quit"):
                     print("Exiting chat.")
                     break
@@ -440,7 +441,7 @@ def handle_chat_command(args):
             else:
                 # If a final answer is returned, reset collected_data for the new question
                 collected_data = None
-                user_input = input("You: ").strip()
+                user_input = prompt("You: ").strip()
                 if user_input.lower() in ("exit", "quit"):
                     print("Exiting chat.")
                     break

@@ -39,6 +39,12 @@
         "model": "gpt-4o-mini",
         "temperature": 0.2,
         "max_tokens": 3000
+      },
+      "sufficiency_judge": {
+        "provider": "openai",
+        "model": "gpt-3.5-turbo",
+        "temperature": 0,
+        "max_tokens": 512
       }
     },
     "default": {

@@ -2369,7 +2369,8 @@ Please create a comprehensive summary that highlights these specific numbers and
             return self._create_simple_summary(collected_data, query_intent)
     
     def _aggregate_and_count_data(self, collected_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Pre-process and aggregate collected data with specific counts and statistics"""
+        """Pre-process and aggregate collected data with specific counts and statistics
+        Patch: Ensure method breakdowns and content type totals are consistent and correct."""
         if not collected_data or "results" not in collected_data:
             return {
                 "total_items": 0,
@@ -2412,13 +2413,12 @@ Please create a comprehensive summary that highlights these specific numbers and
             # --- Patch: handle vector search results (dict of lists) ---
             data = result.get("data", result) if isinstance(result, dict) else result
             all_items = []
-            
+            count = 0
             # Special handling for PDF content results
             if tool_name == "get_full_pdf_content":
-                # PDF content should count as 1 paper, not individual sections
                 if result.get("found"):
                     count = 1
-                    # Create a proper example for PDF content
+                    stats["collection_stats"]["papers"] += 1
                     pdf_title = result.get("metadata", {}).get("title", "PDF Content")
                     pdf_authors = result.get("metadata", {}).get("authors", [])
                     author_str = ", ".join(pdf_authors[:2]) if pdf_authors else "Unknown"
@@ -2430,13 +2430,33 @@ Please create a comprehensive summary that highlights these specific numbers and
                 for collection, items in data.items():
                     if isinstance(items, list):
                         all_items.extend(items)
+                        # Patch: increment content type totals for known collections
+                        if collection in stats["collection_stats"]:
+                            stats["collection_stats"][collection] += len(items)
                 count = len(all_items)
             elif isinstance(data, list):
                 all_items = data
                 count = len(data)
+                # Patch: try to infer content type from tool_name
+                if "sentence" in tool_name:
+                    stats["collection_stats"]["sentences"] += count
+                elif "paragraph" in tool_name:
+                    stats["collection_stats"]["paragraphs"] += count
+                elif "section" in tool_name:
+                    stats["collection_stats"]["sections"] += count
+                elif "citation" in tool_name:
+                    stats["collection_stats"]["citations"] += count
+                elif "paper" in tool_name:
+                    stats["collection_stats"]["papers"] += count
             else:
                 count = 1 if data else 0
-            
+            # Patch: handle special method names for multi-type results
+            if tool_name == "search_all_collections" and isinstance(data, dict):
+                for k, v in data.items():
+                    if isinstance(v, list) and k in stats["collection_stats"]:
+                        stats["collection_stats"][k] += len(v)
+            if tool_name == "additional_sentences_legitimacy" and isinstance(data, list):
+                stats["collection_stats"]["sentences"] += len(data)
             stats["method_breakdown"][tool_name] = count
             stats["total_items"] += count
             # Store examples (skip if we already handled it in PDF special case)
@@ -2451,12 +2471,11 @@ Please create a comprehensive summary that highlights these specific numbers and
                     elif isinstance(item, str):
                         examples.append({"text": item[:100] + ("..." if len(item) > 100 else "")})
                 stats["examples"][tool_name] = examples
-            # ... existing code for database_stats, collection_stats ...
-            # (You may want to update collection_stats for each collection in data if needed)
         return stats
 
     def _structure_collected_data(self, collected_data: Dict[str, Any]) -> str:
-        """Structure collected data using pre-aggregated statistics for LLM processing"""
+        """Structure collected data using pre-aggregated statistics for LLM processing
+        """
         # First aggregate all data into clean statistics
         stats = self._aggregate_and_count_data(collected_data)
         
@@ -2474,8 +2493,6 @@ Please create a comprehensive summary that highlights these specific numbers and
             if db_stats["count"] > 0:
                 db_display = db_name.replace("_", " ").upper()
                 summary_parts.append(f"• {db_display}: {db_stats['count']} items")
-                
-                # Method/collection details with counts
                 if db_name == "graph_db" and db_stats["methods"]:
                     for method, count in db_stats["methods"].items():
                         method_display = method.replace("get_", "").replace("_", " ").title()
@@ -2501,21 +2518,7 @@ Please create a comprehensive summary that highlights these specific numbers and
                 method_display = method.replace("_", " ").title()
                 summary_parts.append(f"• {method_display}: {count} items")
         
-        # Sample results with examples
-        if stats["examples"]:
-            summary_parts.append(f"\n**SAMPLE RESULTS:**")
-            for method, examples in stats["examples"].items():
-                if examples:
-                    method_display = method.replace("_", " ").title()
-                    summary_parts.append(f"• {method_display} Examples:")
-                    for i, example in enumerate(examples[:2], 1):  # Show max 2 examples per method
-                        if "title" in example:
-                            summary_parts.append(f"  {i}. \"{example['title']}\" by {example.get('authors', 'Unknown')}")
-                        elif "text" in example:
-                            summary_parts.append(f"  {i}. \"{example['text']}\"")
-                        elif "paper_id" in example:
-                            summary_parts.append(f"  {i}. Paper {example['paper_id']}: \"{example['text']}\"")
-        
+        # Patch: Remove SAMPLE RESULTS section
         return "\n".join(summary_parts)
     
     def _parse_summary_response(self, summary_content: str, collected_data: Dict[str, Any], query_intent: Dict[str, Any]) -> Dict[str, Any]:
@@ -3014,26 +3017,12 @@ class LangGraphResearchSystem:
             self.logger.warning(f"Vector indexer not available: {e}")
             self.vector_indexer = None
         
-        # Initialize LLM with configuration (with graceful fallback)
-        self.llm = None
-        if LANGGRAPH_AVAILABLE:
-            try:
-                # Use query_analyzer as the main LLM model
-                self.llm = self.model_config_manager.get_model_instance("query_analyzer")
-                if not self.llm:
-                    # Fallback to default if agent-specific model fails
-                    default_config = self.model_config_manager.get_agent_config("default")
-                    self.llm = ChatOpenAI(
-                        model=default_config.get("model", "gpt-3.5-turbo"),
-                        temperature=default_config.get("temperature", 0.1),
-                        max_tokens=default_config.get("max_tokens", 2000)
-                    )
-                log_event("LangGraphResearchSystem", "llm_initialized", {"model": self.llm.model_name if self.llm else "None"}, level=logging.INFO)
-            except Exception as e:
-                self.logger.warning(f"Could not initialize LLM: {e}")
-                log_event("LangGraphResearchSystem", "llm_init_failed", {"error": str(e)}, level=logging.WARNING)
-        else:
-            self.logger.warning("LangGraph not available, using fallback mode")
+        # Initialize LLM manager for all LLM-based agents
+        from src.llm.enhanced_llm_manager import EnhancedLLMManager
+        self.llm_manager = EnhancedLLMManager(config_path=f"{config_path}/model_config.json")
+        
+        # Initialize the information sufficiency agent with the LLM manager (not ModelConfigManager)
+        self.information_sufficiency_agent = InformationSufficiencyAgent(self.llm_manager)
         
         # Create LangGraph tools
         self.tools = self._create_tools()
@@ -3041,16 +3030,16 @@ class LangGraphResearchSystem:
         # Build the workflow graph
         self.workflow = self._build_workflow()
         
-        log_event("LangGraphResearchSystem", "system_initialized", {"tools_count": len(self.tools), "llm_available": self.llm is not None, "entity_extractor_available": self.entity_extractor is not None}, level=logging.INFO)
+        log_event("LangGraphResearchSystem", "system_initialized", {"tools_count": len(self.tools), "llm_available": self.llm_manager is not None, "entity_extractor_available": self.entity_extractor is not None}, level=logging.INFO)
         self.logger.info("LangGraph Research System initialized")
     
     def _get_agent_model(self, agent_name: str):
         """Get a model instance for a specific agent"""
         model = self.model_config_manager.get_model_instance(agent_name)
-        if not model and self.llm:
+        if not model and self.llm_manager:
             # Fallback to main LLM if agent-specific model not available
             log_event("LangGraphResearchSystem", "agent_model_fallback", {"agent_name": agent_name, "fallback_to": "main_llm"}, level=logging.DEBUG)
-            return self.llm
+            return self.llm_manager
         return model
 
     def _create_tools(self) -> List:
@@ -3601,6 +3590,7 @@ Please respond with: CONTINUE or EXPAND
             entity_type = query_intent.get("entity_type", "unknown")
             author_names = query_intent.get("author_names", [])
             paper_titles = query_intent.get("paper_titles", [])
+            concepts = query_intent.get("concepts", [])  # Initialize concepts variable
 
             search_author = None # Initialize search_author
 
@@ -3674,8 +3664,7 @@ Please respond with: CONTINUE or EXPAND
                     collected_data["results"]["get_papers_id_by_title"] = title_result
             
             elif query_type == "concept_search" and entity_type == "concept":
-                # Use concepts from extracted entities
-                concepts = query_intent.get("concepts", [])
+                # Use concepts from extracted entities (already initialized above)
                 
                 log_event("WorkflowAgent", "concept_search", {"search_query": query_intent.get("target_entity"), "concepts": concepts}, level=logging.DEBUG, request_id=request_id)
                 
@@ -3860,27 +3849,49 @@ Please respond with: CONTINUE or EXPAND
         return self.research_question(question, confirmation)
     
     def interactive_research_chat(self, user_input: str, history: Optional[list] = None, menu_choice: Optional[str] = None, collected_data: Optional[Dict] = None) -> dict:
-        """
-        Stateless, non-interactive chat function for CLI integration.
-        - Accepts user input, conversation history, and previously collected data.
-        - If menu_choice is provided, acts on the menu selection.
-        - If menu_choice is None, treats user_input as a new question and returns summary + menu.
-        - Returns a dict with:
-            - 'text': the AI's message
-            - 'collected_data': the updated data
-            - 'needs_user_choice': bool
-            - 'menu': list of options (if a menu is needed)
-            - 'needs_user_input': bool (if further user input is needed for info requests)
-        - Never calls input() or print().
-        - All user interaction is handled by the CLI.
-        """
         self.logger.info(f"Starting stateless chat for: {user_input}, menu_choice={menu_choice}")
         request_id = str(uuid.uuid4())
         conversation_history = history or []
-        # Use provided collected_data or initialize a new one
         current_collected_data = collected_data or {"results": {}}
         current_question = user_input
         try:
+            # Only call sufficiency agent for new, open-ended user questions (not menu choices), and only if there is history
+            if menu_choice is None:
+                if len(conversation_history) == 0:
+                    print("[DEBUG] First turn: skipping sufficiency agent, proceeding to retrieval.")
+                else:
+                    print("[DEBUG] Calling sufficiency agent for new user question.")
+                    sufficient, explanation = self.information_sufficiency_agent.is_sufficient(conversation_history, current_question)
+                    print(f"[DEBUG] SufficiencyAgent result: sufficient={sufficient}, explanation={explanation}")
+                    if sufficient:
+                        # Only use history to answer
+                        history_str = ""
+                        for turn in conversation_history:
+                            user = turn.get("user", "") or turn.get("question", "")
+                            ai = turn.get("ai", "") or turn.get("summary", {}).get("summary_text", "")
+                            if user:
+                                history_str += f"User: {user}\n"
+                            if ai:
+                                history_str += f"AI: {ai}\n"
+                        answer_prompt = f"""
+Given the following conversation history, answer the new user question as best as possible using only the information in the history.\n\nConversation History:\n{history_str}\n\nNew User Question:\n{current_question}\n\nAnswer:"""
+                        messages = [
+                            {"role": "system", "content": "You are an expert research assistant."},
+                            {"role": "user", "content": answer_prompt}
+                        ]
+                        answer = self.llm_manager.generate_response(messages)
+                        return {
+                            "text": answer,
+                            "collected_data": current_collected_data,
+                            "needs_user_choice": False,
+                            "used_history_only": True,
+                            "sufficiency_explanation": explanation
+                        }
+            elif menu_choice in ("2", "3"):
+                print("[DEBUG] Menu choice for more/specific info: skipping sufficiency agent, proceeding to retrieval/expansion.")
+                # The rest of the menu logic will handle info gathering, do not call sufficiency agent
+                pass
+            # All other menu choices or default: proceed as before
             if menu_choice is not None:
                 if menu_choice == "1":
                     # Generate final answer using the passed-in collected_data
@@ -3950,7 +3961,9 @@ Please respond with: CONTINUE or EXPAND
                 "text": text + "\nIs this information sufficient for your question?",
                 "collected_data": current_collected_data,
                 "needs_user_choice": True,
-                "menu": menu
+                "menu": menu,
+                "used_history_only": False,
+                "sufficiency_explanation": explanation if menu_choice is None and len(conversation_history) > 0 else None
             }
         except Exception as e:
             log_event("InteractiveChat", "error", {"error": str(e)}, level=logging.ERROR, request_id=request_id)
@@ -4355,6 +4368,62 @@ Return ONLY a JSON object with: query_type, target_entity, entity_type, reasonin
         # Typical keys: 'paper_content', 'summary', 'key_arguments', etc.
         content_keywords = {"paper_content", "summary", "key_arguments", "main_points", "findings", "full_text"}
         return any(k in content_keywords for k in required_info) or query_intent.get("query_type") in {"paper_summary", "key_arguments"}
+
+
+class InformationSufficiencyAgent:
+    """Agent to judge if conversation history is sufficient to answer a new question."""
+    def __init__(self, llm_manager):
+        self.llm_manager = llm_manager
+
+    def is_sufficient(self, conversation_history: list, new_question: str) -> Tuple[bool, str]:
+        # Format conversation history as text
+        history_str = ""
+        for turn in conversation_history:
+            user = turn.get("user", "") or turn.get("question", "")
+            ai = turn.get("ai", "") or turn.get("summary", {}).get("summary_text", "")
+            if user:
+                history_str += f"User: {user}\n"
+            if ai:
+                history_str += f"AI: {ai}\n"
+        prompt = f"""
+You are an expert research assistant. Given the following conversation history and a new user question, determine if the information in the history is sufficient to answer the new question without any further database or document search.
+
+- The new user question may refer to information, entities, or answers from previous turns, even if not explicitly stated.
+- Always consider the entire conversation history for context, and treat ambiguous, incomplete, or context-dependent questions (including those using pronouns, ellipsis, or implicit references) as follow-ups to the most recent relevant answer.
+- If the new question can be answered using only the information in the conversation history, respond "True"; otherwise, respond "False".
+
+Conversation History:
+{history_str}
+
+New User Question:
+{new_question}
+
+Answer strictly in the following JSON format:
+{{
+  "sufficient": true/false,
+  "explanation": "..."
+}}
+"""
+        messages = [
+            {"role": "system", "content": "You are an expert research assistant."},
+            {"role": "user", "content": prompt}
+        ]
+        # Debug logging for prompt
+        print("[DEBUG] SufficiencyAgent Prompt:\n" + prompt)
+        response = self.llm_manager.generate_response(messages)
+        print("[DEBUG] SufficiencyAgent LLM Response:\n" + str(response))
+        import json
+        # Always return a tuple (bool, str) matching the next step's expectation
+        try:
+            result = json.loads(response)
+            sufficient = bool(result.get("sufficient", False))
+            explanation = str(result.get("explanation", ""))
+            return sufficient, explanation
+        except Exception:
+            # Fallback: parse manually, but always return (False, ...)
+            if isinstance(response, str) and "true" in response.lower():
+                return True, response
+            return False, response
 
 
 if __name__ == "__main__":

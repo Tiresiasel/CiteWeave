@@ -129,21 +129,6 @@
           "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
         },
         {
-          "intext": "(Barney, 1991)",
-          "reference": {
-            "authors": [
-              "J Barney"
-            ],
-            "title": "Firm resources and sustained competitive advantage",
-            "year": "1991",
-            "journal": "J. Management",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
-          },
-          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
-        },
-        {
           "intext": "(Lippman and Rumelt, 1982)",
           "reference": {
             "authors": [
@@ -158,6 +143,21 @@
             "raw_text": "S Lippman; R Rumelt (1982). Uncertain imitability: An analysis of interfirm differences in efficiency under competition. Bell J. Econom"
           },
           "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
+        },
+        {
+          "intext": "(Barney, 1991)",
+          "reference": {
+            "authors": [
+              "J Barney"
+            ],
+            "title": "Firm resources and sustained competitive advantage",
+            "year": "1991",
+            "journal": "J. Management",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
+          },
+          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
         },
         {
           "intext": "(Simon, 1962)",
@@ -206,21 +206,6 @@
           "paper_id": "d06b337cd4a040d32033fd3eb3620613b596e4292b20c19c776280900b1c932d"
         },
         {
-          "intext": "(Weick, 1976)",
-          "reference": {
-            "authors": [
-              "K Weick"
-            ],
-            "title": "Educational organizations as loosely coupled systems",
-            "year": "1976",
-            "journal": "Admin. Sci. Quart",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "K Weick (1976). Educational organizations as loosely coupled systems. Admin. Sci. Quart"
-          },
-          "paper_id": "428309cd10117e1a6a378a2f79fc3a2e2fd514e5ab147a5fef05efa387c54516"
-        },
-        {
           "intext": "(Glassman, 1973)",
           "reference": {
             "authors": [
@@ -234,6 +219,21 @@
             "raw_text": "R Glassman (1973). Persistence and loose coupling in living systems. Behavioral Sci"
           },
           "paper_id": "73ae4f1defce998434a6de6ab2e7df5ee792a2aa6c9af3e366e1b88ecd1743aa"
+        },
+        {
+          "intext": "(Weick, 1976)",
+          "reference": {
+            "authors": [
+              "K Weick"
+            ],
+            "title": "Educational organizations as loosely coupled systems",
+            "year": "1976",
+            "journal": "Admin. Sci. Quart",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "K Weick (1976). Educational organizations as loosely coupled systems. Admin. Sci. Quart"
+          },
+          "paper_id": "428309cd10117e1a6a378a2f79fc3a2e2fd514e5ab147a5fef05efa387c54516"
         },
         {
           "intext": "(Ichniowski et al., 1997)",
@@ -361,22 +361,6 @@
           "paper_id": "313308e66c09483913cc8137c17418119258dc51573ff30653a08726a4d276cf"
         },
         {
-          "intext": "(Hwang and Weil, 1997)",
-          "reference": {
-            "authors": [
-              "M Hwang",
-              "D Weil"
-            ],
-            "title": "Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper",
-            "year": "1997",
-            "journal": "Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper",
-            "publisher": "",
-            "pub_place": "Boston, MA",
-            "raw_text": "M Hwang; D Weil (1997). Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper. Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper. , Boston, MA"
-          },
-          "paper_id": "7724d65b9c3f0f54fb37cbae1b80e34d791b116442070463dc6df42bb0d53b7f"
-        },
-        {
           "intext": "(Ichniowski et al., 1997)",
           "reference": {
             "authors": [
@@ -392,6 +376,22 @@
             "raw_text": "C Ichniowski; K Shaw; G Prennushi (1997). The effects of human resource management practices on productivity: A study of steel finishing lines. The effects of human resource management practices on productivity: A study of steel finishing lines"
           },
           "paper_id": "d9e87b93a0db7cc1123455c417b460e36265001d8bcd8f553de9f179e7e451ee"
+        },
+        {
+          "intext": "(Hwang and Weil, 1997)",
+          "reference": {
+            "authors": [
+              "M Hwang",
+              "D Weil"
+            ],
+            "title": "Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper",
+            "year": "1997",
+            "journal": "Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper",
+            "publisher": "",
+            "pub_place": "Boston, MA",
+            "raw_text": "M Hwang; D Weil (1997). Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper. Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper. , Boston, MA"
+          },
+          "paper_id": "7724d65b9c3f0f54fb37cbae1b80e34d791b116442070463dc6df42bb0d53b7f"
         },
         {
           "intext": "(Cockburn and Henderson, 1996)",
@@ -455,21 +455,6 @@
           "paper_id": "76bacdb944a90aac446248c8e8db3455d2647dfc2c154aacbacbdc4c2076b98a"
         },
         {
-          "intext": "(Topkis, 1998)",
-          "reference": {
-            "authors": [
-              "D Topkis"
-            ],
-            "title": "Supermodularity and Complementarity",
-            "year": "1998",
-            "journal": "Supermodularity and Complementarity",
-            "publisher": "Princeton University Press",
-            "pub_place": "",
-            "raw_text": "D Topkis (1998). Supermodularity and Complementarity. Supermodularity and Complementarity. Princeton University Press"
-          },
-          "paper_id": "f25850e1df3efd29f411cc4c335c7eac6cda93a8e82c75a111751911c32d84fc"
-        },
-        {
           "intext": "(Milgrom and Roberts 1990, 1995)",
           "reference": {
             "authors": [
@@ -484,6 +469,21 @@
             "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
           },
           "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
+        },
+        {
+          "intext": "(Topkis, 1998)",
+          "reference": {
+            "authors": [
+              "D Topkis"
+            ],
+            "title": "Supermodularity and Complementarity",
+            "year": "1998",
+            "journal": "Supermodularity and Complementarity",
+            "publisher": "Princeton University Press",
+            "pub_place": "",
+            "raw_text": "D Topkis (1998). Supermodularity and Complementarity. Supermodularity and Complementarity. Princeton University Press"
+          },
+          "paper_id": "f25850e1df3efd29f411cc4c335c7eac6cda93a8e82c75a111751911c32d84fc"
         },
         {
           "intext": "(Garey and Johnson, 1979)",
@@ -614,20 +614,21 @@
       "section_type": "results",
       "citations": [
         {
-          "intext": "(Milgrom and Roberts, 1990)",
+          "intext": "(Ichniowski et al., 1997)",
           "reference": {
             "authors": [
-              "P Milgrom",
-              "J Roberts"
+              "C Ichniowski",
+              "K Shaw",
+              "G Prennushi"
             ],
-            "title": "Complementarities and fit: Strategy, structure, and organizational change in manufacturing",
-            "year": "1990",
-            "journal": "J. Accounting Econom",
+            "title": "The effects of human resource management practices on productivity: A study of steel finishing lines",
+            "year": "1997",
+            "journal": "The effects of human resource management practices on productivity: A study of steel finishing lines",
             "publisher": "",
             "pub_place": "",
-            "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
+            "raw_text": "C Ichniowski; K Shaw; G Prennushi (1997). The effects of human resource management practices on productivity: A study of steel finishing lines. The effects of human resource management practices on productivity: A study of steel finishing lines"
           },
-          "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
+          "paper_id": "d9e87b93a0db7cc1123455c417b460e36265001d8bcd8f553de9f179e7e451ee"
         },
         {
           "intext": "(Hwang and Weil, 1997)",
@@ -646,21 +647,20 @@
           "paper_id": "7724d65b9c3f0f54fb37cbae1b80e34d791b116442070463dc6df42bb0d53b7f"
         },
         {
-          "intext": "(Ichniowski et al., 1997)",
+          "intext": "(Milgrom and Roberts, 1990)",
           "reference": {
             "authors": [
-              "C Ichniowski",
-              "K Shaw",
-              "G Prennushi"
+              "P Milgrom",
+              "J Roberts"
             ],
-            "title": "The effects of human resource management practices on productivity: A study of steel finishing lines",
-            "year": "1997",
-            "journal": "The effects of human resource management practices on productivity: A study of steel finishing lines",
+            "title": "Complementarities and fit: Strategy, structure, and organizational change in manufacturing",
+            "year": "1990",
+            "journal": "J. Accounting Econom",
             "publisher": "",
             "pub_place": "",
-            "raw_text": "C Ichniowski; K Shaw; G Prennushi (1997). The effects of human resource management practices on productivity: A study of steel finishing lines. The effects of human resource management practices on productivity: A study of steel finishing lines"
+            "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
           },
-          "paper_id": "d9e87b93a0db7cc1123455c417b460e36265001d8bcd8f553de9f179e7e451ee"
+          "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
         },
         {
           "intext": "(Cockburn and Henderson, 1996)",
@@ -756,6 +756,21 @@
           "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
         },
         {
+          "intext": "(Porter, 1980)",
+          "reference": {
+            "authors": [
+              "M Porter"
+            ],
+            "title": "What is strategy?",
+            "year": "1980",
+            "journal": "Competitive Strategy",
+            "publisher": "Free Press",
+            "pub_place": "",
+            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
+          },
+          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
+        },
+        {
           "intext": "(Miles and Snow, 1978)",
           "reference": {
             "authors": [
@@ -770,21 +785,6 @@
             "raw_text": "R Miles; C Snow (1978). Organizational Strategy, Structure, and Process. Organizational Strategy, Structure, and Process. McGraw-Hill"
           },
           "paper_id": "40d4dc87e16a0a521b82e37fad5781ae352165208ae08eab67dea38494d1e59d"
-        },
-        {
-          "intext": "(Porter, 1980)",
-          "reference": {
-            "authors": [
-              "M Porter"
-            ],
-            "title": "What is strategy?",
-            "year": "1980",
-            "journal": "Competitive Strategy",
-            "publisher": "Free Press",
-            "pub_place": "",
-            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
-          },
-          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
         },
         {
           "intext": "(Miller and Dess, 1993)",
@@ -1109,21 +1109,6 @@
           "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
         },
         {
-          "intext": "(Barney, 1991)",
-          "reference": {
-            "authors": [
-              "J Barney"
-            ],
-            "title": "Firm resources and sustained competitive advantage",
-            "year": "1991",
-            "journal": "J. Management",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
-          },
-          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
-        },
-        {
           "intext": "(Lippman and Rumelt, 1982)",
           "reference": {
             "authors": [
@@ -1138,6 +1123,21 @@
             "raw_text": "S Lippman; R Rumelt (1982). Uncertain imitability: An analysis of interfirm differences in efficiency under competition. Bell J. Econom"
           },
           "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
+        },
+        {
+          "intext": "(Barney, 1991)",
+          "reference": {
+            "authors": [
+              "J Barney"
+            ],
+            "title": "Firm resources and sustained competitive advantage",
+            "year": "1991",
+            "journal": "J. Management",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
+          },
+          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
         },
         {
           "intext": "(Simon, 1962)",
@@ -1245,21 +1245,6 @@
           "paper_id": "1bfa4fb23bfde71e50e44701b432e76a64e1c2887a88310f2896d4134882070e"
         },
         {
-          "intext": "(Weick, 1976)",
-          "reference": {
-            "authors": [
-              "K Weick"
-            ],
-            "title": "Educational organizations as loosely coupled systems",
-            "year": "1976",
-            "journal": "Admin. Sci. Quart",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "K Weick (1976). Educational organizations as loosely coupled systems. Admin. Sci. Quart"
-          },
-          "paper_id": "428309cd10117e1a6a378a2f79fc3a2e2fd514e5ab147a5fef05efa387c54516"
-        },
-        {
           "intext": "(Glassman, 1973)",
           "reference": {
             "authors": [
@@ -1273,6 +1258,21 @@
             "raw_text": "R Glassman (1973). Persistence and loose coupling in living systems. Behavioral Sci"
           },
           "paper_id": "73ae4f1defce998434a6de6ab2e7df5ee792a2aa6c9af3e366e1b88ecd1743aa"
+        },
+        {
+          "intext": "(Weick, 1976)",
+          "reference": {
+            "authors": [
+              "K Weick"
+            ],
+            "title": "Educational organizations as loosely coupled systems",
+            "year": "1976",
+            "journal": "Admin. Sci. Quart",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "K Weick (1976). Educational organizations as loosely coupled systems. Admin. Sci. Quart"
+          },
+          "paper_id": "428309cd10117e1a6a378a2f79fc3a2e2fd514e5ab147a5fef05efa387c54516"
         }
       ],
       "word_count": 355,
@@ -1615,22 +1615,6 @@
       "section": "2.1. Formal Model",
       "citations": [
         {
-          "intext": "(Hwang and Weil, 1997)",
-          "reference": {
-            "authors": [
-              "M Hwang",
-              "D Weil"
-            ],
-            "title": "Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper",
-            "year": "1997",
-            "journal": "Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper",
-            "publisher": "",
-            "pub_place": "Boston, MA",
-            "raw_text": "M Hwang; D Weil (1997). Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper. Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper. , Boston, MA"
-          },
-          "paper_id": "7724d65b9c3f0f54fb37cbae1b80e34d791b116442070463dc6df42bb0d53b7f"
-        },
-        {
           "intext": "(Ichniowski et al., 1997)",
           "reference": {
             "authors": [
@@ -1646,6 +1630,22 @@
             "raw_text": "C Ichniowski; K Shaw; G Prennushi (1997). The effects of human resource management practices on productivity: A study of steel finishing lines. The effects of human resource management practices on productivity: A study of steel finishing lines"
           },
           "paper_id": "d9e87b93a0db7cc1123455c417b460e36265001d8bcd8f553de9f179e7e451ee"
+        },
+        {
+          "intext": "(Hwang and Weil, 1997)",
+          "reference": {
+            "authors": [
+              "M Hwang",
+              "D Weil"
+            ],
+            "title": "Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper",
+            "year": "1997",
+            "journal": "Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper",
+            "publisher": "",
+            "pub_place": "Boston, MA",
+            "raw_text": "M Hwang; D Weil (1997). Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper. Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper. , Boston, MA"
+          },
+          "paper_id": "7724d65b9c3f0f54fb37cbae1b80e34d791b116442070463dc6df42bb0d53b7f"
         },
         {
           "intext": "(Cockburn and Henderson, 1996)",
@@ -2045,21 +2045,6 @@
       "section": "2.1. Formal Model",
       "citations": [
         {
-          "intext": "(Topkis, 1998)",
-          "reference": {
-            "authors": [
-              "D Topkis"
-            ],
-            "title": "Supermodularity and Complementarity",
-            "year": "1998",
-            "journal": "Supermodularity and Complementarity",
-            "publisher": "Princeton University Press",
-            "pub_place": "",
-            "raw_text": "D Topkis (1998). Supermodularity and Complementarity. Supermodularity and Complementarity. Princeton University Press"
-          },
-          "paper_id": "f25850e1df3efd29f411cc4c335c7eac6cda93a8e82c75a111751911c32d84fc"
-        },
-        {
           "intext": "(Milgrom and Roberts 1990, 1995)",
           "reference": {
             "authors": [
@@ -2074,6 +2059,21 @@
             "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
           },
           "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
+        },
+        {
+          "intext": "(Topkis, 1998)",
+          "reference": {
+            "authors": [
+              "D Topkis"
+            ],
+            "title": "Supermodularity and Complementarity",
+            "year": "1998",
+            "journal": "Supermodularity and Complementarity",
+            "publisher": "Princeton University Press",
+            "pub_place": "",
+            "raw_text": "D Topkis (1998). Supermodularity and Complementarity. Supermodularity and Complementarity. Princeton University Press"
+          },
+          "paper_id": "f25850e1df3efd29f411cc4c335c7eac6cda93a8e82c75a111751911c32d84fc"
         }
       ],
       "word_count": 67,
@@ -2369,22 +2369,6 @@
           "paper_id": "a0378d3e2b41af27cb74c81d1e34e4ae49b1ecd0b081f62e3e366adc03b74c6c"
         },
         {
-          "intext": "(March and Simon, 1958)",
-          "reference": {
-            "authors": [
-              "J March",
-              "H Simon"
-            ],
-            "title": "",
-            "year": "1958",
-            "journal": "",
-            "publisher": "Organizations. Wiley",
-            "pub_place": "New York",
-            "raw_text": "J March; H Simon (1958). . Organizations. Wiley, New York"
-          },
-          "paper_id": "a0378d3e2b41af27cb74c81d1e34e4ae49b1ecd0b081f62e3e366adc03b74c6c"
-        },
-        {
           "intext": "(Nelson and Winter, 1982)",
           "reference": {
             "authors": [
@@ -2399,6 +2383,22 @@
             "raw_text": "R Nelson; S Winter (1982). An Evolutionary Theory of Economic Change. An Evolutionary Theory of Economic Change. , Belknap, Cambridge, MA"
           },
           "paper_id": "62db22156b34ac94234efe08e17ec653e23354133913700d5b773e56827d217c"
+        },
+        {
+          "intext": "(March and Simon, 1958)",
+          "reference": {
+            "authors": [
+              "J March",
+              "H Simon"
+            ],
+            "title": "",
+            "year": "1958",
+            "journal": "",
+            "publisher": "Organizations. Wiley",
+            "pub_place": "New York",
+            "raw_text": "J March; H Simon (1958). . Organizations. Wiley, New York"
+          },
+          "paper_id": "a0378d3e2b41af27cb74c81d1e34e4ae49b1ecd0b081f62e3e366adc03b74c6c"
         }
       ],
       "word_count": 250,
@@ -2510,21 +2510,6 @@
       "section": "2.1. Formal Model",
       "citations": [
         {
-          "intext": "(Topkis, 1998)",
-          "reference": {
-            "authors": [
-              "D Topkis"
-            ],
-            "title": "Supermodularity and Complementarity",
-            "year": "1998",
-            "journal": "Supermodularity and Complementarity",
-            "publisher": "Princeton University Press",
-            "pub_place": "",
-            "raw_text": "D Topkis (1998). Supermodularity and Complementarity. Supermodularity and Complementarity. Princeton University Press"
-          },
-          "paper_id": "f25850e1df3efd29f411cc4c335c7eac6cda93a8e82c75a111751911c32d84fc"
-        },
-        {
           "intext": "(Milgrom and Roberts 1990, 1995)",
           "reference": {
             "authors": [
@@ -2539,6 +2524,21 @@
             "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
           },
           "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
+        },
+        {
+          "intext": "(Topkis, 1998)",
+          "reference": {
+            "authors": [
+              "D Topkis"
+            ],
+            "title": "Supermodularity and Complementarity",
+            "year": "1998",
+            "journal": "Supermodularity and Complementarity",
+            "publisher": "Princeton University Press",
+            "pub_place": "",
+            "raw_text": "D Topkis (1998). Supermodularity and Complementarity. Supermodularity and Complementarity. Princeton University Press"
+          },
+          "paper_id": "f25850e1df3efd29f411cc4c335c7eac6cda93a8e82c75a111751911c32d84fc"
         }
       ],
       "word_count": 352,
@@ -3838,20 +3838,21 @@
       "section": "Table 6\nResults of Follow-the-Leader Imitation Efforts",
       "citations": [
         {
-          "intext": "(Milgrom and Roberts, 1990)",
+          "intext": "(Ichniowski et al., 1997)",
           "reference": {
             "authors": [
-              "P Milgrom",
-              "J Roberts"
+              "C Ichniowski",
+              "K Shaw",
+              "G Prennushi"
             ],
-            "title": "Complementarities and fit: Strategy, structure, and organizational change in manufacturing",
-            "year": "1990",
-            "journal": "J. Accounting Econom",
+            "title": "The effects of human resource management practices on productivity: A study of steel finishing lines",
+            "year": "1997",
+            "journal": "The effects of human resource management practices on productivity: A study of steel finishing lines",
             "publisher": "",
             "pub_place": "",
-            "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
+            "raw_text": "C Ichniowski; K Shaw; G Prennushi (1997). The effects of human resource management practices on productivity: A study of steel finishing lines. The effects of human resource management practices on productivity: A study of steel finishing lines"
           },
-          "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
+          "paper_id": "d9e87b93a0db7cc1123455c417b460e36265001d8bcd8f553de9f179e7e451ee"
         },
         {
           "intext": "(Hwang and Weil, 1997)",
@@ -3870,21 +3871,20 @@
           "paper_id": "7724d65b9c3f0f54fb37cbae1b80e34d791b116442070463dc6df42bb0d53b7f"
         },
         {
-          "intext": "(Ichniowski et al., 1997)",
+          "intext": "(Milgrom and Roberts, 1990)",
           "reference": {
             "authors": [
-              "C Ichniowski",
-              "K Shaw",
-              "G Prennushi"
+              "P Milgrom",
+              "J Roberts"
             ],
-            "title": "The effects of human resource management practices on productivity: A study of steel finishing lines",
-            "year": "1997",
-            "journal": "The effects of human resource management practices on productivity: A study of steel finishing lines",
+            "title": "Complementarities and fit: Strategy, structure, and organizational change in manufacturing",
+            "year": "1990",
+            "journal": "J. Accounting Econom",
             "publisher": "",
             "pub_place": "",
-            "raw_text": "C Ichniowski; K Shaw; G Prennushi (1997). The effects of human resource management practices on productivity: A study of steel finishing lines. The effects of human resource management practices on productivity: A study of steel finishing lines"
+            "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
           },
-          "paper_id": "d9e87b93a0db7cc1123455c417b460e36265001d8bcd8f553de9f179e7e451ee"
+          "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
         },
         {
           "intext": "(Cockburn and Henderson, 1996)",
@@ -4003,21 +4003,6 @@
           "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
         },
         {
-          "intext": "(Barney, 1991)",
-          "reference": {
-            "authors": [
-              "J Barney"
-            ],
-            "title": "Firm resources and sustained competitive advantage",
-            "year": "1991",
-            "journal": "J. Management",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
-          },
-          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
-        },
-        {
           "intext": "(Lippman and Rumelt, 1982)",
           "reference": {
             "authors": [
@@ -4032,6 +4017,21 @@
             "raw_text": "S Lippman; R Rumelt (1982). Uncertain imitability: An analysis of interfirm differences in efficiency under competition. Bell J. Econom"
           },
           "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
+        },
+        {
+          "intext": "(Barney, 1991)",
+          "reference": {
+            "authors": [
+              "J Barney"
+            ],
+            "title": "Firm resources and sustained competitive advantage",
+            "year": "1991",
+            "journal": "J. Management",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
+          },
+          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
         },
         {
           "intext": "(Lippman and Rumelt, 1982)",
@@ -4099,6 +4099,21 @@
       "section": "Table 6\nResults of Follow-the-Leader Imitation Efforts",
       "citations": [
         {
+          "intext": "(Porter, 1980)",
+          "reference": {
+            "authors": [
+              "M Porter"
+            ],
+            "title": "What is strategy?",
+            "year": "1980",
+            "journal": "Competitive Strategy",
+            "publisher": "Free Press",
+            "pub_place": "",
+            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
+          },
+          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
+        },
+        {
           "intext": "(Miles and Snow, 1978)",
           "reference": {
             "authors": [
@@ -4113,21 +4128,6 @@
             "raw_text": "R Miles; C Snow (1978). Organizational Strategy, Structure, and Process. Organizational Strategy, Structure, and Process. McGraw-Hill"
           },
           "paper_id": "40d4dc87e16a0a521b82e37fad5781ae352165208ae08eab67dea38494d1e59d"
-        },
-        {
-          "intext": "(Porter, 1980)",
-          "reference": {
-            "authors": [
-              "M Porter"
-            ],
-            "title": "What is strategy?",
-            "year": "1980",
-            "journal": "Competitive Strategy",
-            "publisher": "Free Press",
-            "pub_place": "",
-            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
-          },
-          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
         },
         {
           "intext": "(Miller and Dess, 1993)",
@@ -4669,21 +4669,6 @@
           "paper_id": "3cba0237aa0f8b065f04811d862e9c33e68a80c820c01cbe34060c5cde721ea3"
         },
         {
-          "intext": "(Barney, 1991)",
-          "reference": {
-            "authors": [
-              "J Barney"
-            ],
-            "title": "Firm resources and sustained competitive advantage",
-            "year": "1991",
-            "journal": "J. Management",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
-          },
-          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
-        },
-        {
           "intext": "(Lippman and Rumelt, 1982)",
           "reference": {
             "authors": [
@@ -4698,6 +4683,21 @@
             "raw_text": "S Lippman; R Rumelt (1982). Uncertain imitability: An analysis of interfirm differences in efficiency under competition. Bell J. Econom"
           },
           "paper_id": "0d09d40019bbc54921d5c2e295ea83098b58d963280c60610870628aac0c01cc"
+        },
+        {
+          "intext": "(Barney, 1991)",
+          "reference": {
+            "authors": [
+              "J Barney"
+            ],
+            "title": "Firm resources and sustained competitive advantage",
+            "year": "1991",
+            "journal": "J. Management",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "J Barney (1991). Firm resources and sustained competitive advantage. J. Management"
+          },
+          "paper_id": "93f0ffae1df0c73b6f97026188f7ae28aa8bced382978ee9071f286edf8a05ff"
         }
       ],
       "word_count": 45,
@@ -4883,21 +4883,6 @@
       "sentence_text": "Students of both biological systems (e.g., Glassman 1973) and organizations (e.g., Weick 1976) have noted that systems whose elements are tightly coupled to one another ﬁnd it difﬁcult to learn and adapt to environmental change.",
       "citations": [
         {
-          "intext": "(Weick, 1976)",
-          "reference": {
-            "authors": [
-              "K Weick"
-            ],
-            "title": "Educational organizations as loosely coupled systems",
-            "year": "1976",
-            "journal": "Admin. Sci. Quart",
-            "publisher": "",
-            "pub_place": "",
-            "raw_text": "K Weick (1976). Educational organizations as loosely coupled systems. Admin. Sci. Quart"
-          },
-          "paper_id": "428309cd10117e1a6a378a2f79fc3a2e2fd514e5ab147a5fef05efa387c54516"
-        },
-        {
           "intext": "(Glassman, 1973)",
           "reference": {
             "authors": [
@@ -4911,6 +4896,21 @@
             "raw_text": "R Glassman (1973). Persistence and loose coupling in living systems. Behavioral Sci"
           },
           "paper_id": "73ae4f1defce998434a6de6ab2e7df5ee792a2aa6c9af3e366e1b88ecd1743aa"
+        },
+        {
+          "intext": "(Weick, 1976)",
+          "reference": {
+            "authors": [
+              "K Weick"
+            ],
+            "title": "Educational organizations as loosely coupled systems",
+            "year": "1976",
+            "journal": "Admin. Sci. Quart",
+            "publisher": "",
+            "pub_place": "",
+            "raw_text": "K Weick (1976). Educational organizations as loosely coupled systems. Admin. Sci. Quart"
+          },
+          "paper_id": "428309cd10117e1a6a378a2f79fc3a2e2fd514e5ab147a5fef05efa387c54516"
         }
       ],
       "word_count": 35,
@@ -5513,22 +5513,6 @@
       "sentence_text": "3 See, for instance, Cockburn and Henderson (1996), Hwang and Weil (1997), Ichniowski et al. (1997), MacDufﬁe (1995), Milgrom and Roberts (1990, 1995), Porter (1996), and Siggelkow (1998).",
       "citations": [
         {
-          "intext": "(Hwang and Weil, 1997)",
-          "reference": {
-            "authors": [
-              "M Hwang",
-              "D Weil"
-            ],
-            "title": "Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper",
-            "year": "1997",
-            "journal": "Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper",
-            "publisher": "",
-            "pub_place": "Boston, MA",
-            "raw_text": "M Hwang; D Weil (1997). Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper. Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper. , Boston, MA"
-          },
-          "paper_id": "7724d65b9c3f0f54fb37cbae1b80e34d791b116442070463dc6df42bb0d53b7f"
-        },
-        {
           "intext": "(Ichniowski et al., 1997)",
           "reference": {
             "authors": [
@@ -5544,6 +5528,22 @@
             "raw_text": "C Ichniowski; K Shaw; G Prennushi (1997). The effects of human resource management practices on productivity: A study of steel finishing lines. The effects of human resource management practices on productivity: A study of steel finishing lines"
           },
           "paper_id": "d9e87b93a0db7cc1123455c417b460e36265001d8bcd8f553de9f179e7e451ee"
+        },
+        {
+          "intext": "(Hwang and Weil, 1997)",
+          "reference": {
+            "authors": [
+              "M Hwang",
+              "D Weil"
+            ],
+            "title": "Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper",
+            "year": "1997",
+            "journal": "Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper",
+            "publisher": "",
+            "pub_place": "Boston, MA",
+            "raw_text": "M Hwang; D Weil (1997). Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper. Production complementarities and the diffusion of modern manufacturing practices: Evidence from the U.S. apparel industry. Working paper. , Boston, MA"
+          },
+          "paper_id": "7724d65b9c3f0f54fb37cbae1b80e34d791b116442070463dc6df42bb0d53b7f"
         },
         {
           "intext": "(Cockburn and Henderson, 1996)",
@@ -6964,22 +6964,6 @@
       "sentence_text": "First, it is commonly posited that managers satisﬁce rather than optimize (e.g., March and Simon 1958, Nelson and Winter 1982).",
       "citations": [
         {
-          "intext": "(March and Simon, 1958)",
-          "reference": {
-            "authors": [
-              "J March",
-              "H Simon"
-            ],
-            "title": "",
-            "year": "1958",
-            "journal": "",
-            "publisher": "Organizations. Wiley",
-            "pub_place": "New York",
-            "raw_text": "J March; H Simon (1958). . Organizations. Wiley, New York"
-          },
-          "paper_id": "a0378d3e2b41af27cb74c81d1e34e4ae49b1ecd0b081f62e3e366adc03b74c6c"
-        },
-        {
           "intext": "(Nelson and Winter, 1982)",
           "reference": {
             "authors": [
@@ -6994,6 +6978,22 @@
             "raw_text": "R Nelson; S Winter (1982). An Evolutionary Theory of Economic Change. An Evolutionary Theory of Economic Change. , Belknap, Cambridge, MA"
           },
           "paper_id": "62db22156b34ac94234efe08e17ec653e23354133913700d5b773e56827d217c"
+        },
+        {
+          "intext": "(March and Simon, 1958)",
+          "reference": {
+            "authors": [
+              "J March",
+              "H Simon"
+            ],
+            "title": "",
+            "year": "1958",
+            "journal": "",
+            "publisher": "Organizations. Wiley",
+            "pub_place": "New York",
+            "raw_text": "J March; H Simon (1958). . Organizations. Wiley, New York"
+          },
+          "paper_id": "a0378d3e2b41af27cb74c81d1e34e4ae49b1ecd0b081f62e3e366adc03b74c6c"
         }
       ],
       "word_count": 20,
@@ -7060,21 +7060,6 @@
       "sentence_text": "Finally, the NP-completeness of the strategy formulation problem poses a question for the recent, important stream of research on complementarities (e.g., Milgrom and Roberts 1990, 1995; Topkis 1998 and references therein).",
       "citations": [
         {
-          "intext": "(Topkis, 1998)",
-          "reference": {
-            "authors": [
-              "D Topkis"
-            ],
-            "title": "Supermodularity and Complementarity",
-            "year": "1998",
-            "journal": "Supermodularity and Complementarity",
-            "publisher": "Princeton University Press",
-            "pub_place": "",
-            "raw_text": "D Topkis (1998). Supermodularity and Complementarity. Supermodularity and Complementarity. Princeton University Press"
-          },
-          "paper_id": "f25850e1df3efd29f411cc4c335c7eac6cda93a8e82c75a111751911c32d84fc"
-        },
-        {
           "intext": "(Milgrom and Roberts 1990, 1995)",
           "reference": {
             "authors": [
@@ -7089,6 +7074,21 @@
             "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
           },
           "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
+        },
+        {
+          "intext": "(Topkis, 1998)",
+          "reference": {
+            "authors": [
+              "D Topkis"
+            ],
+            "title": "Supermodularity and Complementarity",
+            "year": "1998",
+            "journal": "Supermodularity and Complementarity",
+            "publisher": "Princeton University Press",
+            "pub_place": "",
+            "raw_text": "D Topkis (1998). Supermodularity and Complementarity. Supermodularity and Complementarity. Princeton University Press"
+          },
+          "paper_id": "f25850e1df3efd29f411cc4c335c7eac6cda93a8e82c75a111751911c32d84fc"
         }
       ],
       "word_count": 31,
@@ -8764,20 +8764,21 @@
       "sentence_text": "bundles of practices whose superior performance is well documented: e.g., modern manufacturing techniques (Milgrom and Roberts 1990), ﬂexible production systems in the auto industry (MacDufﬁe 1995), bundles of high-performance work practices in the steel ﬁnishing industry (Ichniowski et al. 1997), modern logistical practices in the textile business (Hwang and Weil 1997), and science-driven research in pharmaceuticals (Cockburn and Henderson 1996).",
       "citations": [
         {
-          "intext": "(Milgrom and Roberts, 1990)",
+          "intext": "(Ichniowski et al., 1997)",
           "reference": {
             "authors": [
-              "P Milgrom",
-              "J Roberts"
+              "C Ichniowski",
+              "K Shaw",
+              "G Prennushi"
             ],
-            "title": "Complementarities and fit: Strategy, structure, and organizational change in manufacturing",
-            "year": "1990",
-            "journal": "J. Accounting Econom",
+            "title": "The effects of human resource management practices on productivity: A study of steel finishing lines",
+            "year": "1997",
+            "journal": "The effects of human resource management practices on productivity: A study of steel finishing lines",
             "publisher": "",
             "pub_place": "",
-            "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
+            "raw_text": "C Ichniowski; K Shaw; G Prennushi (1997). The effects of human resource management practices on productivity: A study of steel finishing lines. The effects of human resource management practices on productivity: A study of steel finishing lines"
           },
-          "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
+          "paper_id": "d9e87b93a0db7cc1123455c417b460e36265001d8bcd8f553de9f179e7e451ee"
         },
         {
           "intext": "(Hwang and Weil, 1997)",
@@ -8796,21 +8797,20 @@
           "paper_id": "7724d65b9c3f0f54fb37cbae1b80e34d791b116442070463dc6df42bb0d53b7f"
         },
         {
-          "intext": "(Ichniowski et al., 1997)",
+          "intext": "(Milgrom and Roberts, 1990)",
           "reference": {
             "authors": [
-              "C Ichniowski",
-              "K Shaw",
-              "G Prennushi"
+              "P Milgrom",
+              "J Roberts"
             ],
-            "title": "The effects of human resource management practices on productivity: A study of steel finishing lines",
-            "year": "1997",
-            "journal": "The effects of human resource management practices on productivity: A study of steel finishing lines",
+            "title": "Complementarities and fit: Strategy, structure, and organizational change in manufacturing",
+            "year": "1990",
+            "journal": "J. Accounting Econom",
             "publisher": "",
             "pub_place": "",
-            "raw_text": "C Ichniowski; K Shaw; G Prennushi (1997). The effects of human resource management practices on productivity: A study of steel finishing lines. The effects of human resource management practices on productivity: A study of steel finishing lines"
+            "raw_text": "P Milgrom; J Roberts (1990). Complementarities and fit: Strategy, structure, and organizational change in manufacturing. J. Accounting Econom"
           },
-          "paper_id": "d9e87b93a0db7cc1123455c417b460e36265001d8bcd8f553de9f179e7e451ee"
+          "paper_id": "68afc0d175f6d9ef1a0aa0646a96d6e2f9be64b641c5ffbfe6e5bb82e9228e12"
         },
         {
           "intext": "(Cockburn and Henderson, 1996)",
@@ -9194,6 +9194,21 @@
       "sentence_text": "This also helps to explain recurring efforts to classify strategies into a manageable number of generic types (e.g., Miles and Snow 1978, Porter 1980).",
       "citations": [
         {
+          "intext": "(Porter, 1980)",
+          "reference": {
+            "authors": [
+              "M Porter"
+            ],
+            "title": "What is strategy?",
+            "year": "1980",
+            "journal": "Competitive Strategy",
+            "publisher": "Free Press",
+            "pub_place": "",
+            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
+          },
+          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
+        },
+        {
           "intext": "(Miles and Snow, 1978)",
           "reference": {
             "authors": [
@@ -9208,21 +9223,6 @@
             "raw_text": "R Miles; C Snow (1978). Organizational Strategy, Structure, and Process. Organizational Strategy, Structure, and Process. McGraw-Hill"
           },
           "paper_id": "40d4dc87e16a0a521b82e37fad5781ae352165208ae08eab67dea38494d1e59d"
-        },
-        {
-          "intext": "(Porter, 1980)",
-          "reference": {
-            "authors": [
-              "M Porter"
-            ],
-            "title": "What is strategy?",
-            "year": "1980",
-            "journal": "Competitive Strategy",
-            "publisher": "Free Press",
-            "pub_place": "",
-            "raw_text": "M Porter (1980). What is strategy?. Competitive Strategy. Free Press"
-          },
-          "paper_id": "173351e3b52c290f3b87bf4cfc6a670449b8a7cabb82f9618cb5082f2d6b55a0"
         }
       ],
       "word_count": 24,
@@ -9438,7 +9438,7 @@
     "paragraphs_with_citations": 25,
     "total_citations": 47,
     "total_references": 38,
-    "processing_timestamp": "2025-07-22T23:59:24.584877",
+    "processing_timestamp": "2025-07-23T04:55:14.372248",
     "graph_db_stats": {
       "sections_created": 6,
       "paragraphs_created": 209,
