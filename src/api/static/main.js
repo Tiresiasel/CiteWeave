@@ -34,6 +34,15 @@ function getActiveChat() {
   return state.chats.find(c => c.id === state.activeChatId) || null;
 }
 
+function getUserAvatarHtml() {
+  const url = state.settings && state.settings.user_avatar_url;
+  if (url) return `<div class="avatar"><img src="${url}" alt="User"/></div>`;
+  // Fallback to the top-right avatar initial
+  const top = document.getElementById('btn_account');
+  const ch = (top && (top.textContent || '').trim()[0]) || (state.settings && state.settings.display_name ? state.settings.display_name.trim()[0] : 'A');
+  return `<div class="avatar"><div style=\"width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#1f2937;color:#e5e7eb;font-weight:700\">${(ch || 'A').toUpperCase()}</div></div>`;
+}
+
 async function apiFetch(path, opts = {}) {
   const res = await fetch(API_BASE + path, {
     headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) },
@@ -984,8 +993,9 @@ function renderChat(showTyping=false) {
   if (!chat) return;
   chat.history.forEach((turn, idx) => {
     const u = ce('div', 'msg user');
-    const userAvatar = `<div class="avatar"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#1f2937;color:#e5e7eb;font-weight:700">${(state.settings && state.settings.display_name ? state.settings.display_name[0] : 'U').toUpperCase()}</div></div>`;
-    u.innerHTML = `${userAvatar}<div class="bubble">${escapeHtml(turn.user)}</div>`;
+    const userAvatar = getUserAvatarHtml();
+    // User bubble on the right: bubble first, avatar at far right
+    u.innerHTML = `<div class="bubble">${escapeHtml(turn.user)}</div>${userAvatar}`;
     chatEl.appendChild(u);
     const isLast = idx === chat.history.length - 1;
     const aiText = turn.ai || '';
