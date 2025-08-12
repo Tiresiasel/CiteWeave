@@ -184,7 +184,12 @@ def create_app() -> Flask:
                 if isinstance(watch_map, list) and watch_map:
                     watch_dirs = [e.get('path') for e in watch_map if isinstance(e, dict) and e.get('path')]
                 if not watch_dirs:
+                    print("[watch] no watch_dirs configured; skipping")
                     return {"scanned": 0, "processed": 0}
+            try:
+                print("[watch] roots:", watch_dirs)
+            except Exception:
+                pass
             state = _read_watch_state()
             files_state = state.get('files', {})
             scanned = 0
@@ -203,7 +208,21 @@ def create_app() -> Flask:
                 pass
             for d in watch_dirs:
                 if not d or not os.path.isdir(d):
+                    try:
+                        print(f"[watch] skip non-dir: {d}")
+                    except Exception:
+                        pass
                     continue
+                # debug: count pdfs in root
+                try:
+                    cnt = 0
+                    for current, _dirs, files in os.walk(d):
+                        for name in files:
+                            if name.lower().endswith('.pdf'):
+                                cnt += 1
+                    print(f"[watch] dir {d} -> pdfs: {cnt}")
+                except Exception as _e:
+                    print(f"[watch] os.walk error on {d}: {_e}")
                 for path in _list_pdfs(d):
                     try:
                         scanned += 1
