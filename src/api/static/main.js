@@ -1002,14 +1002,14 @@ function renderChat(showTyping=false) {
     if (!(showTyping && isLast && aiText.trim() === '')) {
       const a = ce('div', 'msg ai');
       const html = renderMarkdown(aiText);
-      const aiAvatar = `<div class="avatar"><img src="/static/logo.png" alt="AI"/></div>`;
+      const aiAvatar = `<div class="avatar ai-avatar"></div>`;
       a.innerHTML = `${aiAvatar}<div class="bubble"><div class="md">${html}</div></div>`;
       chatEl.appendChild(a);
     }
   });
   if (showTyping) {
     const t = ce('div', 'msg ai');
-    const aiAvatar = `<div class="avatar"><img src="/static/logo.png" alt="AI"/></div>`;
+    const aiAvatar = `<div class="avatar ai-avatar"></div>`;
     t.innerHTML = `${aiAvatar}<div class="bubble"><span class="typing" aria-live="polite" aria-label="AI is thinking">
       <span class="dot"></span><span class="dot"></span><span class="dot"></span>
     </span></div>`;
@@ -1114,6 +1114,7 @@ async function init() {
   listDocs();
   // Settings modal
   $('#btn_settings').onclick = ()=> { location.hash = '#/settings'; };
+  // Replace top-left favicon in settings modal header to use new logo if shown by OS previews
   $('#settings_close').onclick = ()=> toggleModal('settings_modal', false);
   $('#settings_save').onclick = async ()=> {
     state.settings.api_base = $('#setting_api').value.trim();
