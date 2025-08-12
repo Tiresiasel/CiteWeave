@@ -646,6 +646,36 @@ function addFolderInputRow(prefillPath="", saved=false){
   delBtn.style.flex = '0 0 80px';
   controls.appendChild(pauseBtn); controls.appendChild(delBtn);
   controls.style.display = saved ? '' : 'none';
+
+  function updateLocalWatchMap(path, action){
+    if (!state.settings) state.settings = {};
+    const current = Array.isArray(state.settings.watch_map) ? state.settings.watch_map.slice() : [];
+    let changed = false;
+    const next = current.map(e=>{ if (e.path===path){ const out = { ...e }; action(out); changed = true; return out; } return e; });
+    state.settings.watch_map = next; if (changed) saveState();
+  }
+
+  function bindControlsForPath(path){
+    row.dataset.path = path;
+    pauseBtn.onclick = async ()=>{
+      const toPaused = (pauseBtn.textContent === 'Pause');
+      try { await apiFetch('/watch/pause', { method:'POST', body: JSON.stringify({ path, paused: toPaused }) });
+        pauseBtn.textContent = toPaused ? 'Start' : 'Pause';
+        updateLocalWatchMap(path, e=>{ e.paused = toPaused; });
+      } catch(e){}
+    };
+    delBtn.onclick = async ()=>{
+      const ok = confirm('Delete this folder from watch list?'); if (!ok) return;
+      try { await apiFetch('/watch/delete', { method:'POST', body: JSON.stringify({ path }) });
+        // remove from local
+        if (!state.settings) state.settings = {};
+        const curr = Array.isArray(state.settings.watch_map) ? state.settings.watch_map : [];
+        state.settings.watch_map = curr.filter(e=> e.path !== path);
+        saveState();
+        row.remove();
+      } catch(e){}
+    };
+  }
   btn.onclick = async ()=>{
     const path = (input.value||'').trim();
     if (!path) { input.focus(); return; }
@@ -666,14 +696,7 @@ function addFolderInputRow(prefillPath="", saved=false){
       btn.disabled = true;
       controls.style.display = '';
       // bind control actions now that it's saved
-      pauseBtn.onclick = async ()=>{
-        const paused = pauseBtn.textContent === 'Pause';
-        try { await apiFetch('/watch/pause', { method:'POST', body: JSON.stringify({ path, paused }) }); pauseBtn.textContent = paused ? 'Resume' : 'Pause'; } catch(e){}
-      };
-      delBtn.onclick = async ()=>{
-        const ok = confirm('Delete this folder from watch list?'); if (!ok) return;
-        try { await apiFetch('/watch/delete', { method:'POST', body: JSON.stringify({ path }) }); row.remove(); } catch(e){}
-      };
+      bindControlsForPath(path);
       // trigger immediate scan
       try { await apiFetch('/watch/scan-now', { method:'POST' }); } catch(_){}
       // quick poll docs to reflect new items
@@ -685,6 +708,18 @@ function addFolderInputRow(prefillPath="", saved=false){
   };
   row.appendChild(input); row.appendChild(btn); row.appendChild(controls);
   wrap.appendChild(row);
+
+  // If row is prefilled as saved, attach controls and initial button label
+  if (saved && prefillPath){
+    btn.textContent = 'Saved'; btn.disabled = true; controls.style.display = '';
+    // Set initial Pause/Start label based on local paused flag
+    try {
+      const localMap = (state.settings && Array.isArray(state.settings.watch_map)) ? state.settings.watch_map : [];
+      const found = localMap.find(e=> e.path === prefillPath);
+      if (found && found.paused) pauseBtn.textContent = 'Start'; else pauseBtn.textContent = 'Pause';
+    } catch(_){}
+    bindControlsForPath(prefillPath);
+  }
 }
 
 function renderCollections(cols) {
