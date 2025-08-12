@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>CiteWeave</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ctext y='14' font-size='14'%3E📚%3C/text%3E%3C/svg%3E" />
+  </head>
+  <body>
+    <div class="topbar">
+      <div class="brand" onclick="location.hash='#/chat'">CiteWeave</div>
+      <nav class="nav">
+        <a href="#/chat" id="nav_chat">Chat</a>
+        <a href="#/library" id="nav_library">Library</a>
+      </nav>
+      <div class="actions">
+        <button id="btn_settings" class="icon-btn circle" title="Settings" aria-label="Settings">
+          <img src="/static/icons/gear.svg" alt="Settings" width="18" height="18" />
+        </button>
+        <div class="avatar" id="btn_account" title="Account" aria-label="Account">A</div>
+      </div>
+    </div>
+
+    <div id="view"></div>
+
+    <!-- Settings Modal -->
+    <div id="settings_modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="settings_title">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="settings_title">Settings</h3>
+          <button id="settings_close" class="icon-btn" aria-label="Close">
+            ✕
+          </button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>API Base URL</label>
+            <input id="setting_api" placeholder="http://localhost:31415" />
+          </div>
+          <div class="form-group">
+            <label>OpenAI API Key</label>
+            <input id="openai_key" type="password" placeholder="sk-..." />
+          </div>
+          <div class="form-group">
+            <label>Theme</label>
+            <select id="theme_select">
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Directory Watch (auto-import PDFs)</label>
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px">
+              <input type="checkbox" id="watch_enabled" /> <span style="color:#9aa4b2">Enable</span>
+            </div>
+            <label>Interval (seconds)</label>
+            <input id="watch_interval" type="number" min="10" value="300" />
+            <label>Watch Directories (comma separated)</label>
+            <input id="watch_dirs" placeholder="/path/one,/path/two" />
+            <div style="margin-top:6px">
+              <button id="watch_scan_now" class="icon-btn">Scan Now</button>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="settings_save" class="primary">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Account Modal (lightweight) -->
+    <div id="account_modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="account_title">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="account_title">Account</h3>
+          <button id="account_close" class="icon-btn" aria-label="Close">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label>Display Name</label>
+            <input id="display_name" placeholder="Your name" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="account_save" class="primary">Save</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Library View (rendered into #view when route = /library) -->
+
+    <script type="module" src="/static/main.js"></script>
+  </body>
+  </html>
+
+
