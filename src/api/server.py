@@ -1489,12 +1489,15 @@ def create_app() -> Flask:
             lines.append("")
             overlay = "\n".join(lines)
             if update:
-                # rewrite watch_map paths to container paths for runtime use
+                # Rewrite watch_map to use container paths for runtime scanning, preserving real host_path
                 next_map = []
-                for e, p in zip([x for x in wm if isinstance(x, dict) and x.get('path')], plans):
+                for e in wm:
+                    if not isinstance(e, dict) or not e.get('path') and not e.get('host_path'):
+                        continue
+                    host = e.get('host_path') or e.get('path')
                     ne = dict(e)
-                    ne['host_path'] = e.get('path')
-                    ne['path'] = p['container']
+                    ne['host_path'] = host
+                    ne['path'] = f"/data/host/{slugify(host)}"
                     next_map.append(ne)
                 s['watch_map'] = next_map
                 _write_settings(s)
