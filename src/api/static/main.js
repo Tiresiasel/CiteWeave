@@ -577,6 +577,15 @@ function renderLibrary() {
       }
     } catch(e) { console.error('load docs to list failed', e); }
   })();
+  // Prefill existing watch_map rows from local state (for persistence even when backend fails)
+  try {
+    const localMap = (state.settings && Array.isArray(state.settings.watch_map)) ? state.settings.watch_map : [];
+    const inputs = document.getElementById('folder_inputs');
+    if (inputs && localMap.length && !inputs.dataset.prefilled) {
+      inputs.dataset.prefilled = '1';
+      localMap.forEach(e=> addFolderInputRow(e.path||''));
+    }
+  } catch(_){}
 }
 
 function addFolderInputRow(prefillPath=""){
@@ -606,11 +615,18 @@ function addFolderInputRow(prefillPath=""){
       const map = Array.isArray(v.watch_map) ? v.watch_map.slice() : [];
       if (!map.find(e=>e.path===path)) map.push({ path, collection: col });
       await apiFetch('/settings', { method:'POST', body: JSON.stringify({ watch_map: map, watch_enabled: true }) });
+      // persist locally as well
+      if (!state.settings) state.settings = {};
+      const localMap = Array.isArray(state.settings.watch_map) ? state.settings.watch_map.slice() : [];
+      if (!localMap.find(e=>e.path===path)) localMap.push({ path, collection: col });
+      state.settings.watch_map = localMap; saveState();
       // button state: Saved, then add a new empty row below
       btn.textContent = 'Saved';
       btn.disabled = true;
       // trigger immediate scan
       try { await apiFetch('/watch/scan-now', { method:'POST' }); } catch(_){}
+      // quick poll docs to reflect new items
+      try { const colNow = state.selectedCollection || 'Default'; for (let i=0;i<5;i++){ setTimeout(()=> apiFetch('/documents?collection='+encodeURIComponent(colNow)).then(r=>{ state.docs = r.documents||[]; const listNow = document.getElementById('docs_list'); if (listNow) { listNow.innerHTML = ''; } renderLibrary(); }).catch(()=>{}), i*1000); } } catch(_){}
       addFolderInputRow("");
       await renderWatchList();
     } catch(e) { console.error(e); }

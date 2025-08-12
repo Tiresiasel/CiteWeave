@@ -970,6 +970,27 @@ def create_app() -> Flask:
             # default to Default collection if not provided
             collection = collection_q or default_collection
             docs = get_state_db().list_documents(collection=collection)
+            # Ensure any currently in-progress jobs with known filename but no paper_id appear as pending items
+            try:
+                js = app.config.get("JOB_STATUS", {})
+                for jid, st in js.items():
+                    if st and not st.get('done') and st.get('filename') and (st.get('collection') == collection):
+                        docs.insert(0, {
+                            "paper_id": st.get('paper_id'),
+                            "title": st.get('filename'),
+                            "authors": [],
+                            "year": None,
+                            "doi": None,
+                            "original_filename": st.get('filename'),
+                            "new_filename": st.get('filename'),
+                            "local_path": None,
+                            "collection": collection,
+                            "status": st.get('stage') or 'queued',
+                            "created_at": st.get('updated_at'),
+                            "updated_at": st.get('updated_at'),
+                        })
+            except Exception:
+                pass
             return jsonify({"success": True, "documents": docs, "collection": collection})
         except Exception as e:
             return jsonify({"error": True, "error_message": str(e)}), 500
