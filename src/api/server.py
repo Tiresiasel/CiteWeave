@@ -192,10 +192,13 @@ def create_app() -> Flask:
             processor = get_doc_processor()
             # Build mapping path->collection (fallback to default)
             path_to_collection: Dict[str, str] = {}
+            path_paused: Dict[str, bool] = {}
             try:
                 for e in (watch_map if isinstance(watch_map, list) else []):
                     if isinstance(e, dict) and e.get('path'):
-                        path_to_collection[os.path.abspath(e['path'])] = e.get('collection') or default_collection
+                        abp = os.path.abspath(e['path'])
+                        path_to_collection[abp] = e.get('collection') or default_collection
+                        path_paused[abp] = bool(e.get('paused'))
             except Exception:
                 pass
             for d in watch_dirs:
@@ -206,9 +209,25 @@ def create_app() -> Flask:
                         scanned += 1
                         st = os.stat(path)
                         key = os.path.abspath(path)
+                        # skip paused folders
+                        for root, paused in list(path_paused.items()):
+                            if paused and key.startswith(root.rstrip(os.sep) + os.sep):
+                                raise Exception("paused")
                         last_mtime = files_state.get(key, {}).get('mtime')
                         if last_mtime is not None and float(last_mtime) >= st.st_mtime:
                             continue
+                        # Create a job entry for this file processing (progress shows in UI)
+                        try:
+                            job_id = f"watch_{int(time.time()*1000)}_{os.path.basename(path)}"
+                            now_ts = int(time.time())
+                            app.config["JOB_STATUS"][job_id] = {"done": False, "success": None, "progress": 5, "stage": "processing", "filename": os.path.basename(path), "collection": path_to_collection.get(d, default_collection), "updated_at": now_ts}
+                            app.config["JOBS_DIRTY"] = True
+                            try:
+                                get_state_db().upsert_job({"id": job_id, "paper_id": None, "filename": os.path.basename(path), "progress": 5, "stage": "processing", "done": 0, "success": None, "error": None, "updated_at": now_ts})
+                            except Exception:
+                                pass
+                        except Exception:
+                            pass
                         # Process new or updated file
                         result = processor.process_document(path, save_results=True)
                         files_state[key] = {"mtime": st.st_mtime, "paper_id": result.get('paper_id')}
@@ -281,6 +300,17 @@ def create_app() -> Flask:
                                 except Exception:
                                     pass
                                 sdb.upsert_document(doc)
+                        except Exception:
+                            pass
+                        # finalize job
+                        try:
+                            now_ts2 = int(time.time())
+                            app.config["JOB_STATUS"][job_id].update({"done": True, "success": True, "progress": 100, "stage": "done", "updated_at": now_ts2, "paper_id": result.get('paper_id')})
+                            app.config["JOBS_DIRTY"] = True
+                            try:
+                                get_state_db().upsert_job({"id": job_id, "paper_id": result.get('paper_id'), "filename": os.path.basename(path), "progress": 100, "stage": "done", "done": 1, "success": 1, "error": None, "updated_at": now_ts2})
+                            except Exception:
+                                pass
                         except Exception:
                             pass
                         processed += 1
@@ -1171,6 +1201,41 @@ def create_app() -> Flask:
         except Exception as e:
             return jsonify({"error": True, "error_type": "list_error", "error_message": str(e)}), 500
         return jsonify({"success": True, "documents": results})
+
+    @app.post("/api/v1/watch/pause")
+    def watch_pause() -> Any:
+        payload = request.get_json(silent=True) or {}
+        path = (payload.get("path") or "").strip()
+        paused = bool(payload.get("paused"))
+        if not path:
+            return jsonify({"error": True, "error_message": "path required"}), 400
+        s = _read_settings()
+        arr = s.get('watch_map') or []
+        changed = False
+        out = []
+        for e in arr:
+            if isinstance(e, dict) and e.get('path') == path:
+                e['paused'] = paused
+                changed = True
+            out.append(e)
+        if not changed:
+            return jsonify({"error": True, "error_message": "path not found"}), 404
+        s['watch_map'] = out
+        _write_settings(s)
+        return jsonify({"success": True})
+
+    @app.post("/api/v1/watch/delete")
+    def watch_delete() -> Any:
+        payload = request.get_json(silent=True) or {}
+        path = (payload.get("path") or "").strip()
+        if not path:
+            return jsonify({"error": True, "error_message": "path required"}), 400
+        s = _read_settings()
+        arr = s.get('watch_map') or []
+        next_map = [e for e in arr if not (isinstance(e, dict) and e.get('path') == path)]
+        s['watch_map'] = next_map
+        _write_settings(s)
+        return jsonify({"success": True})
 
     @app.post("/api/v1/docs/mark")
     def mark_doc() -> Any:

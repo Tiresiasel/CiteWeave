@@ -312,6 +312,31 @@ function renderLibrary() {
     });
   }
 
+  // Wire Pause/Delete actions for watch_list (event delegation)
+  const watchListEl = document.getElementById('watch_list');
+  if (watchListEl && !watchListEl.dataset.wired) {
+    watchListEl.dataset.wired = '1';
+    watchListEl.addEventListener('click', async (ev)=>{
+      const row = ev.target.closest('.row');
+      if (!row) return;
+      const path = (row.dataset && row.dataset.path) || row.querySelector('.path')?.textContent || '';
+      if (!path) return;
+      const btnPause = ev.target.closest('.icon-chip.pause');
+      const btnDelete = ev.target.closest('.icon-chip.delete');
+      if (btnPause) {
+        const paused = !row.classList.contains('paused');
+        try { await apiFetch('/watch/pause', { method:'POST', body: JSON.stringify({ path, paused }) }); row.classList.toggle('paused', paused); } catch(e){}
+        return;
+      }
+      if (btnDelete) {
+        const ok = confirm('Delete this folder from watch list?');
+        if (!ok) return;
+        try { await apiFetch('/watch/delete', { method:'POST', body: JSON.stringify({ path }) }); row.remove(); } catch(e){}
+        return;
+      }
+    });
+  }
+
   // Fallback: ensure UI shows a Default collection immediately
   if (!state.collections || !state.collections.length) {
     state.collections = ['Default'];
@@ -853,24 +878,19 @@ async function renderWatchList() {
       row.style.borderRadius = '12px';
       row.style.marginBottom = '6px';
       const col = entry.collection || 'Default';
-      row.innerHTML = `<div style="color:var(--text)">${entry.path}</div>
+      row.dataset.path = entry.path;
+      const paused = entry.paused ? 'paused' : '';
+      row.classList.toggle('paused', !!entry.paused);
+      row.innerHTML = `<div class="path" style="color:var(--text)">${entry.path}</div>
         <div class="row" style="gap:8px; align-items:center">
           <div class="pill" title="Collection">${col}</div>
-          <div class="icon-chip warn" title="Remove" role="button" aria-label="Remove">
+          <div class="icon-chip pause" title="${entry.paused ? 'Resume' : 'Pause'}" role="button" aria-label="Pause">
+            <svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M8 5h3v14H8zM13 5h3v14h-3z' stroke='currentColor' stroke-width='1.6'/></svg>
+          </div>
+          <div class="icon-chip delete warn" title="Delete" role="button" aria-label="Delete">
             <svg viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M5 7h14M9 7V5h6v2m-8 0l1 12h8l1-12' stroke='currentColor' stroke-width='1.6' stroke-linecap='round'/></svg>
           </div>
         </div>`;
-      const del = row.querySelector('.icon-chip.warn');
-      del.onclick = async ()=>{
-        try {
-          const s2 = await apiFetch('/settings');
-          const v2 = s2.settings || {};
-          const arr = Array.isArray(v2.watch_map) ? v2.watch_map : [];
-          const next = arr.filter(e => e.path !== entry.path);
-          await apiFetch('/settings', { method:'POST', body: JSON.stringify({ watch_map: next }) });
-          await renderWatchList();
-        } catch(e) {}
-      };
       list.appendChild(row);
     });
   } catch(e) { /* ignore */ }

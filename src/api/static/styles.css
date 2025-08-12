@@ -201,3 +201,6 @@ input[type="file"]::file-selector-button:hover {
 .typing .dot:nth-child(3) { animation-delay: .4s; }
 @keyframes blink { 0%, 80%, 100% { opacity:.2; transform:translateY(0); } 40% { opacity:1; transform:translateY(-2px); } }
 
+/* Watch list row states */
+.list .row.paused { opacity:.6; }
+
