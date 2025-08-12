@@ -88,9 +88,9 @@ html, body { height:100%; margin:0; background:var(--bg); color:var(--text); fon
 .msg.ai .bubble .md th, .msg.ai .bubble .md td { border:1px solid #2a2a2a; padding:6px 8px; text-align:left; }
 .msg.ai .bubble .md a { color:#93c5fd; text-decoration:none; }
 .msg.ai .bubble .md a:hover { text-decoration:underline; }
-.composer { display:flex; justify-content:center; padding:14px; border-top:none; background:transparent; position:sticky; bottom:0; box-shadow:none; }
-.input-wrap { position:relative; width:min(820px, 96%); }
-.composer textarea { width:100%; height:44px; background:#0f0f0f; border:1px solid var(--muted); color:var(--text); border-radius:9999px; padding:10px 50px 10px 16px; resize:none; outline:none; box-shadow:none; line-height:24px; font-size:14px; }
+.composer { display:flex; justify-content:center; padding:22px 12px; border-top:none; background:transparent; position:sticky; bottom:0; box-shadow:none; }
+.input-wrap { position:relative; width:100%; }
+.composer textarea { width:100%; height:66px; background:#0f0f0f; border:1px solid var(--muted); color:var(--text); border-radius:9999px; padding:14px 56px 14px 18px; resize:none; outline:none; box-shadow:none; line-height:26px; font-size:14px; }
 .composer textarea::placeholder { color:#a6a6a6; }
 .composer textarea:focus { outline:none; box-shadow:0 0 0 1px rgba(255,255,255,.06) inset; }
 .composer button.primary { background:#1a1a1a; color:var(--text); border:1px solid var(--muted); border-radius:9999px; padding:12px 16px; font-weight:700; cursor:pointer; }
@@ -129,10 +129,10 @@ html, body { height:100%; margin:0; background:var(--bg); color:var(--text); fon
 .primary { background:#1a1a1a; color:var(--text); border:1px solid var(--muted); border-radius:9999px; padding:10px 14px; font-weight:700; cursor:pointer; }
 
 /* Send button (arrow icon) inside input */
-.send-btn { position:absolute; right:6px; top:50%; transform:translateY(-50%); width:32px; height:32px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:#2a2a2a; color:#eaeaea; border:1px solid var(--muted); cursor:pointer; }
+.send-btn { position:absolute; right:8px; top:50%; transform:translateY(-50%); width:34px; height:34px; display:flex; align-items:center; justify-content:center; border-radius:50%; background:transparent; color:#eaeaea; border:1px solid transparent; cursor:pointer; }
 .send-btn svg { pointer-events:none; }
 .send-btn { transition:background-color .15s ease, border-color .15s ease; }
-.send-btn:hover { background:#343434; border-color:#3a3a3a; }
+.send-btn:hover { background:#2a2a2a; border-color:#3a3a3a; }
 
 /* Input visibility toggle (eye) */
 .input-inline { position:relative; }
@@ -173,7 +173,7 @@ input[type="file"]::file-selector-button:hover {
 
 /* Pane background tones + separators (Cursor-like) */
 .left-pane { background:rgba(255,255,255,0.02); border-right:1px solid rgba(255,255,255,0.06); padding-right:16px; min-height:100%; }
-.center-pane { background:rgba(255,255,255,0.03); padding:0 16px; min-height:100%; }
+.center-pane { background:rgba(255,255,255,0.03); padding:0 24px; min-height:100%; }
 .right-pane { background:rgba(255,255,255,0.02); border-left:1px solid rgba(255,255,255,0.06); padding-left:16px; }
 
 /* Kebab context menu */

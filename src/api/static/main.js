@@ -152,8 +152,8 @@ function renderChatPage() {
       <div class="input-wrap">
         <textarea id="input" placeholder="Ask anything..."></textarea>
         <button id="send" class="send-btn" title="Send" aria-label="Send">
-          <svg width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
-            <path d="M6 4l12 8-12 8V4z"/>
+          <svg class="send-triangle" width="18" height="18" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+            <path d="M5 3l15 9-15 9 4-9-4-9z"/>
           </svg>
         </button>
       </div>
