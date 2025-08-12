@@ -1002,14 +1002,14 @@ function renderChat(showTyping=false) {
     if (!(showTyping && isLast && aiText.trim() === '')) {
       const a = ce('div', 'msg ai');
       const html = renderMarkdown(aiText);
-      const aiAvatar = `<div class="avatar ai-avatar"></div>`;
+      const aiAvatar = `<div class="avatar ai-avatar" style="background-image:url('/static/logo.png?v=1')"></div>`;
       a.innerHTML = `${aiAvatar}<div class="bubble"><div class="md">${html}</div></div>`;
       chatEl.appendChild(a);
     }
   });
   if (showTyping) {
     const t = ce('div', 'msg ai');
-    const aiAvatar = `<div class="avatar ai-avatar"></div>`;
+    const aiAvatar = `<div class="avatar ai-avatar" style="background-image:url('/static/logo.png?v=1')"></div>`;
     t.innerHTML = `${aiAvatar}<div class="bubble"><span class="typing" aria-live="polite" aria-label="AI is thinking">
       <span class="dot"></span><span class="dot"></span><span class="dot"></span>
     </span></div>`;
