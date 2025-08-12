@@ -930,8 +930,11 @@ async function uploadFiles(files) {
 
 function renderRoute() {
   document.querySelectorAll('.nav a').forEach(a=>a.classList.remove('active'));
-  if (state.route === '#/library') $('#nav_library').classList.add('active');
-  else $('#nav_chat').classList.add('active');
+  if (state.route === '#/library') {
+    $('#nav_library').classList.add('active');
+  } else if (state.route === '#/chat' || state.route === '' || state.route === '#' || state.route == null) {
+    $('#nav_chat').classList.add('active');
+  }
   if (state.route === '#/library') renderLibrary();
   else if (state.route === '#/settings') renderSettingsPage();
   else renderChatPage();
