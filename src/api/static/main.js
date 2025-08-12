@@ -982,14 +982,18 @@ function renderChat(showTyping=false) {
   chatEl.innerHTML = '';
   const chat = getActiveChat();
   if (!chat) return;
-  chat.history.forEach(turn => {
+  chat.history.forEach((turn, idx) => {
     const u = ce('div', 'msg user');
     u.innerHTML = `<div class="bubble">${escapeHtml(turn.user)}</div>`;
     chatEl.appendChild(u);
-    const a = ce('div', 'msg ai');
-    const html = renderMarkdown(turn.ai || '');
-    a.innerHTML = `<div class="bubble"><div class="md">${html}</div></div>`;
-    chatEl.appendChild(a);
+    const isLast = idx === chat.history.length - 1;
+    const aiText = turn.ai || '';
+    if (!(showTyping && isLast && aiText.trim() === '')) {
+      const a = ce('div', 'msg ai');
+      const html = renderMarkdown(aiText);
+      a.innerHTML = `<div class="bubble"><div class="md">${html}</div></div>`;
+      chatEl.appendChild(a);
+    }
   });
   if (showTyping) {
     const t = ce('div', 'msg ai');
