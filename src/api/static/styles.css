@@ -157,7 +157,7 @@ html, body { height:100%; margin:0; background:var(--bg); color:var(--text); fon
 .settings-pane .save-container { flex:0 0 48.8%; max-width:800px; }
 
 /* Scroll to bottom floating button */
-.scroll-bottom { position:absolute; right:14px; bottom:84px; width:38px; height:38px; border-radius:50%; border:1px solid var(--muted); background:#141414; color:var(--text); display:flex; align-items:center; justify-content:center; cursor:pointer; opacity:0.9; }
+.scroll-bottom { position:absolute; left:50%; transform:translateX(-50%); bottom:110px; width:36px; height:36px; border-radius:50%; border:1px solid var(--muted); background:#141414; color:var(--text); display:flex; align-items:center; justify-content:center; cursor:pointer; opacity:0.9; box-shadow:0 6px 18px rgba(0,0,0,.35); }
 .scroll-bottom.hidden { display:none; }
 
 /* Style native file input button to match design language */
