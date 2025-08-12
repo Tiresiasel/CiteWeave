@@ -20,31 +20,60 @@ cd "$ROOT_DIR"
 
 gen_overlay() {
   echo "[run.sh] Generating docker overlay from watch_map (update=${update_flag})"
-  # Use python to parse JSON and write overlay to file (avoid jq dependency)
+  # Fetch mounts from API, then locally compose an overlay that filters out invalid hosts
   python3 - <<'PY' "${API_BASE}" "${COMPOSE_OVERLAY}" "${update_flag}"
-import json, sys, urllib.request
+import json, os, sys, urllib.request
 api, out, update = sys.argv[1], sys.argv[2], sys.argv[3].lower()=='true'
-body = json.dumps({"update_watch_map": update}).encode()
-req = urllib.request.Request(api + "/mounts/overlay", data=body, headers={"Content-Type":"application/json"}, method="POST")
-with urllib.request.urlopen(req) as r:
-    data = json.loads(r.read().decode())
+def post(url, payload):
+    body = json.dumps(payload).encode()
+    req = urllib.request.Request(url, data=body, headers={"Content-Type":"application/json"}, method="POST")
+    with urllib.request.urlopen(req) as r:
+        return json.loads(r.read().decode())
+data = post(api + "/mounts/overlay", {"update_watch_map": update})
 if not data.get('success'):
     print("[run.sh] ERROR: overlay generation failed", file=sys.stderr)
     print(json.dumps(data, indent=2), file=sys.stderr)
     sys.exit(1)
-overlay = data.get('overlay','')
-mounts = data.get('mounts', [])
-open(out, 'w').write(overlay + ("\n" if not overlay.endswith("\n") else ""))
+mounts = data.get('mounts', []) or []
+valid = []
+skipped = []
+for m in mounts:
+    host = (m.get('host') or '').strip()
+    cont = (m.get('container') or '').strip()
+    # host 必须是宿主机真实路径且存在；不能以 /data/host 开头
+    if host.startswith('/data/host') or not host.startswith('/') or not os.path.exists(host):
+        skipped.append((host, cont))
+    else:
+        valid.append((host, cont))
+lines = [
+    'services:',
+    '  citeweave:',
+    '    volumes:',
+    '      - app_data:/app/data',
+]
+for h, c in valid:
+    lines.append(f'      - {h}:{c}:ro')
+overlay = "\n".join(lines) + "\n"
+open(out, 'w').write(overlay)
 print("[run.sh] Overlay written:", out)
 print("[run.sh] Planned binds:")
-for m in mounts:
-    print(" - {} -> {}".format(m.get('host'), m.get('container')))
+for h, c in valid:
+    print(f" - {h} -> {c}")
+if skipped:
+    print("[run.sh] Skipped mounts (host not valid or not shared):")
+    for h, c in skipped:
+        print(f"   - {h} -> {c}")
 PY
 }
 
 start_compose() {
   echo "[run.sh] Starting services with overlay..."
-  docker compose -f "$COMPOSE_MAIN" -f "$COMPOSE_OVERLAY" up -d
+  # 允许用户在不同架构/compose 文件名下运行
+  if [[ -f docker-compose.amd64.yml ]]; then
+    docker compose -f docker-compose.amd64.yml -f "$COMPOSE_OVERLAY" up -d
+  else
+    docker compose -f "$COMPOSE_MAIN" -f "$COMPOSE_OVERLAY" up -d
+  fi
 }
 
 start_base_if_needed() {
