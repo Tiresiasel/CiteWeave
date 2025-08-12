@@ -22,7 +22,7 @@ html, body { height:100%; margin:0; background:var(--bg); color:var(--text); fon
 .icon-btn.circle { width:28px; height:28px; padding:0; }
 .icon-btn.circle img { filter: invert(95%); opacity:.95; }
 /* Replace any default emoji/book icon near title bar hints with logo for consistency */
-.topbar .brand::before { content:""; display:inline-block; width:16px; height:16px; background:url('/static/logo.png') center/cover no-repeat; margin-right:8px; vertical-align:middle; border-radius:4px; }
+.topbar .brand::before { content:""; display:inline-block; width:16px; height:16px; background:url('/static/logo.png?v=1') center/cover no-repeat; margin-right:8px; vertical-align:middle; border-radius:4px; }
 .avatar { width:28px; height:28px; border-radius:50%; background:#1f2937; display:flex; align-items:center; justify-content:center; font-weight:700; cursor:pointer; border:1px solid var(--muted); }
 
 #view { padding:16px; }
