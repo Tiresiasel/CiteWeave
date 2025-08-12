@@ -1448,6 +1448,60 @@ def create_app() -> Flask:
         app.config["EXECUTOR"].submit(_do_delete)
         return jsonify({"success": True, "deletion_id": deletion_id})
 
+    @app.post("/api/v1/mounts/overlay")
+    def generate_mounts_overlay() -> Any:
+        """Generate a docker-compose overlay file content for bind-mounting watch_map paths.
+        Body: { update_watch_map: bool }
+        Returns overlay YAML content and planned host->container mappings.
+        """
+        try:
+            payload = request.get_json(silent=True) or {}
+            update = bool(payload.get('update_watch_map'))
+            s = _read_settings() or {}
+            wm = s.get('watch_map') or []
+            if not isinstance(wm, list):
+                wm = []
+            # Build host->container mapping with safe slugs
+            def slugify(p: str) -> str:
+                import re
+                return re.sub(r"[^A-Za-z0-9._-]+", "_", p.strip().strip('/')).strip('_') or "path"
+            plans = []
+            for e in wm:
+                if not isinstance(e, dict) or not e.get('path'):
+                    continue
+                host_path = e['path']
+                container_path = f"/data/host/{slugify(host_path)}"
+                plans.append({
+                    'host': host_path,
+                    'container': container_path,
+                    'collection': e.get('collection') or default_collection,
+                })
+            # Compose YAML text (include app_data and all binds, :ro)
+            lines = [
+                "version: '3.8'",
+                "services:",
+                "  citeweave:",
+                "    volumes:",
+                "      - app_data:/app/data",
+            ]
+            for p in plans:
+                lines.append(f"      - {p['host']}:{p['container']}:ro")
+            lines.append("")
+            overlay = "\n".join(lines)
+            if update:
+                # rewrite watch_map paths to container paths for runtime use
+                next_map = []
+                for e, p in zip([x for x in wm if isinstance(x, dict) and x.get('path')], plans):
+                    ne = dict(e)
+                    ne['host_path'] = e.get('path')
+                    ne['path'] = p['container']
+                    next_map.append(ne)
+                s['watch_map'] = next_map
+                _write_settings(s)
+            return jsonify({"success": True, "overlay": overlay, "mounts": plans, "updated": update})
+        except Exception as e:
+            return jsonify({"error": True, "error_message": str(e)}), 500
+
     return app
 
 

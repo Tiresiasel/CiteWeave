@@ -1423,6 +1423,23 @@ function renderSettingsPage() {
     } catch(e) { console.error(e); alert('Save failed'); }
   };
 
+  // Add helper button to generate docker overlay for folder mounts
+  const btn = document.createElement('button');
+  btn.id = 'btn_apply_mounts';
+  btn.className = 'primary';
+  btn.style.marginTop = '12px';
+  btn.textContent = 'Apply folder mounts (docker overlay)';
+  right.querySelector('.body').appendChild(btn);
+  btn.onclick = async ()=>{
+    try {
+      const resp = await apiFetch('/mounts/overlay', { method:'POST', body: JSON.stringify({ update_watch_map: false }) });
+      const overlay = resp.overlay || '';
+      // show dialog with instructions
+      const msg = `1) Save the following as docker-compose.mounts.yml\n\n${overlay}\n\n2) Restart with overlay:\n   docker compose -f docker-compose.yml -f docker-compose.mounts.yml up -d\n\n(可选) 若希望在容器内部直接使用容器内路径进行监控，可勾选更新 watch_map 的选项。`;
+      alert(msg);
+    } catch(e) { alert('Generate overlay failed'); }
+  };
+
   // Toggle eye visibility
   const eye = document.getElementById('toggle_key_visibility');
   let keyInput = document.getElementById('set_openai_key');
