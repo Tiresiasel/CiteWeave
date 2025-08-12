@@ -1469,7 +1469,8 @@ def create_app() -> Flask:
             for e in wm:
                 if not isinstance(e, dict) or not e.get('path'):
                     continue
-                host_path = e['path']
+                # Prefer original host_path if present (when watch_map was previously rewritten to container paths)
+                host_path = e.get('host_path') or e['path']
                 container_path = f"/data/host/{slugify(host_path)}"
                 plans.append({
                     'host': host_path,
@@ -1478,7 +1479,6 @@ def create_app() -> Flask:
                 })
             # Compose YAML text (include app_data and all binds, :ro)
             lines = [
-                "version: '3.8'",
                 "services:",
                 "  citeweave:",
                 "    volumes:",
