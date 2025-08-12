@@ -221,6 +221,8 @@ def create_app() -> Flask:
                         path_paused[abp] = bool(e.get('paused'))
             except Exception:
                 pass
+            # Precompute paused roots for quick checks
+            paused_roots = [root for root, paused in path_paused.items() if paused]
             for d in watch_dirs:
                 if not d or not os.path.isdir(d):
                     try:
@@ -238,15 +240,22 @@ def create_app() -> Flask:
                     print(f"[watch] dir {d} -> pdfs: {cnt}")
                 except Exception as _e:
                     print(f"[watch] os.walk error on {d}: {_e}")
+                # Skip whole directory if this root is paused
+                if path_paused.get(d, False):
+                    try:
+                        print(f"[watch] skip paused root: {d}")
+                    except Exception:
+                        pass
+                    continue
                 for path in _list_pdfs(d):
                     try:
+                        # Skip files under any paused root silently
+                        abs_path = os.path.abspath(path)
+                        if any(abs_path.startswith(pr.rstrip(os.sep) + os.sep) for pr in paused_roots):
+                            continue
                         scanned += 1
                         st = os.stat(path)
                         key = os.path.abspath(path)
-                        # skip paused folders
-                        for root, paused in list(path_paused.items()):
-                            if paused and key.startswith(root.rstrip(os.sep) + os.sep):
-                                raise Exception("paused")
                         last_mtime = files_state.get(key, {}).get('mtime')
                         if last_mtime is not None and float(last_mtime) >= st.st_mtime:
                             continue
