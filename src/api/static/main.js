@@ -984,20 +984,23 @@ function renderChat(showTyping=false) {
   if (!chat) return;
   chat.history.forEach((turn, idx) => {
     const u = ce('div', 'msg user');
-    u.innerHTML = `<div class="bubble">${escapeHtml(turn.user)}</div>`;
+    const userAvatar = `<div class="avatar"><div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:#1f2937;color:#e5e7eb;font-weight:700">${(state.settings && state.settings.display_name ? state.settings.display_name[0] : 'U').toUpperCase()}</div></div>`;
+    u.innerHTML = `${userAvatar}<div class="bubble">${escapeHtml(turn.user)}</div>`;
     chatEl.appendChild(u);
     const isLast = idx === chat.history.length - 1;
     const aiText = turn.ai || '';
     if (!(showTyping && isLast && aiText.trim() === '')) {
       const a = ce('div', 'msg ai');
       const html = renderMarkdown(aiText);
-      a.innerHTML = `<div class="bubble"><div class="md">${html}</div></div>`;
+      const aiAvatar = `<div class="avatar"><img src="/static/logo.png" alt="AI"/></div>`;
+      a.innerHTML = `${aiAvatar}<div class="bubble"><div class="md">${html}</div></div>`;
       chatEl.appendChild(a);
     }
   });
   if (showTyping) {
     const t = ce('div', 'msg ai');
-    t.innerHTML = `<div class="bubble"><span class="typing" aria-live="polite" aria-label="AI is thinking">
+    const aiAvatar = `<div class="avatar"><img src="/static/logo.png" alt="AI"/></div>`;
+    t.innerHTML = `${aiAvatar}<div class="bubble"><span class="typing" aria-live="polite" aria-label="AI is thinking">
       <span class="dot"></span><span class="dot"></span><span class="dot"></span>
     </span></div>`;
     chatEl.appendChild(t);
