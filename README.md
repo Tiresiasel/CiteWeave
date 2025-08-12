@@ -98,6 +98,92 @@ graph TD
 ---
 
 ## 🖥️ CLI Usage (All User Interaction)
+## 🌐 REST API (Flask)
+
+You can interact with CiteWeave via a REST API server.
+
+### Start the server
+
+```bash
+python -m src.api.server
+```
+
+Environment variables:
+- `CITEWEAVE_API_HOST` (default `0.0.0.0`)
+- `CITEWEAVE_API_PORT` (default `31415`)
+- `CITEWEAVE_ENV` (`dev` enables debug)
+
+### Endpoints
+
+Base URL: `http://<host>:<port>/api/v1`
+
+- POST `/upload` (multipart/form-data)
+  - Field: `file` (PDF)
+  - Response: processing summary and full result JSON
+
+- POST `/diagnose` (multipart/form-data)
+  - Field: `file` (PDF)
+  - Response: diagnosis JSON
+
+- POST `/chat` (application/json)
+  - Body keys: `user_input` (required), optional `history`, `menu_choice`, `collected_data`
+  - Response: chat turn output including menu when applicable
+
+- GET `/health`
+  - Health check
+
+### Basic Web UI
+
+After starting the server, open your browser to `http://localhost:31415/` to use a minimal chat-centric UI:
+- Left sidebar: chats list with “New Chat” button and basic settings (API base, OpenAI key placeholder)
+- Center: chat history and composer (supports PDF upload via `/upload`)
+- Right panel: processed documents list
+
+This UI stores chats locally in your browser and talks to the server via the REST API.
+
+## 🐳 Docker Compose Deployment
+
+Run the full stack (Qdrant, GROBID, Neo4j, CiteWeave API/UI):
+
+```bash
+# Intel/x86_64 hosts
+docker compose up -d --build
+
+# Apple Silicon (M1/M2/M3) hosts
+docker compose -f docker-compose.arm64.yml up -d --build
+```
+
+Then open `http://localhost:31415/`.
+
+### Data persistence
+
+- Uploaded documents, processed results, and user settings are persisted under a named volume:
+  - App data: Docker volume `app_data` mounted to `/app/data`
+  - Qdrant data: Docker volume `qdrant_storage`
+  - Neo4j data: Docker volume `neo4j_data`
+
+You can inspect volumes with `docker volume ls`.
+
+### Environment variables (override as needed)
+
+- `CITEWEAVE_API_HOST` (default `0.0.0.0`)
+- `CITEWEAVE_API_PORT` (default `31415`)
+- `CITEWEAVE_ENV` (default `production`)
+- `CITEWEAVE_DATA_DIR` (default `/app/data`)
+- `CITEWEAVE_SETTINGS_PATH` (default `/app/data/settings.json`)
+
+### Updating
+
+```bash
+# Intel/x86_64
+docker compose pull
+docker compose up -d --build
+
+# Apple Silicon
+docker compose -f docker-compose.arm64.yml pull
+docker compose -f docker-compose.arm64.yml up -d --build
+```
+
 
 **Workflow Summary:**
 1. **Upload your PDF files** (required, provides the data for all research and chat)

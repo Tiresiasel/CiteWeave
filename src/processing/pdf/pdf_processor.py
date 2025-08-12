@@ -9,7 +9,10 @@ from lxml import etree
 import logging
 import hashlib
 import io
+import ast
 
+# LLM manager for fallback metadata extraction
+from src.llm.enhanced_llm_manager import EnhancedLLMManager
 # Multiple PDF parsing engines with fallback support
 try:
     import fitz  # pymupdf - best for complex PDFs
@@ -160,12 +163,283 @@ class PDFProcessor:
         except Exception as e:
             logging.warning(f"PyPDF2 extraction failed: {e}")
         
-        # Strategy 5: Last resort - filename-based metadata
+        # Strategy 5: LLM fallback using first three pages text
+        try:
+            logging.info("Attempting metadata extraction with LLM from first three pages...")
+            llm_metadata = self._extract_metadata_with_llm(pdf_path, max_pages=3)
+            if llm_metadata and self._validate_metadata_quality(llm_metadata):
+                logging.info("Successfully extracted metadata using LLM (first three pages)")
+                llm_metadata["extraction_method"] = "LLM_First3Pages"
+                # If DOI present, try to enrich via CrossRef but keep LLM as fallback
+                doi_candidate = llm_metadata.get("doi")
+                if doi_candidate and doi_candidate not in ("Unknown DOI", "", None):
+                    try:
+                        logging.info(f"Enriching LLM metadata via CrossRef for DOI: {doi_candidate}")
+                        crossref_from_llm = self._fetch_metadata_from_crossref(doi_candidate)
+                        if self._validate_metadata_quality(crossref_from_llm):
+                            crossref_from_llm["extraction_method"] = "CrossRef_via_LLM_DOI"
+                            crossref_from_llm["doi"] = doi_candidate
+                            return crossref_from_llm
+                    except Exception as e:
+                        logging.warning(f"CrossRef enrichment failed for LLM DOI {doi_candidate}: {e}")
+                return llm_metadata
+            else:
+                logging.warning("LLM metadata quality validation failed")
+        except Exception as e:
+            logging.warning(f"LLM-based metadata extraction failed: {e}")
+        
+        # Strategy 6: Last resort - filename-based metadata
         logging.warning("All primary metadata extraction methods failed, using filename fallback")
         filename_metadata = self._extract_metadata_from_filename(pdf_path)
         filename_metadata["extraction_method"] = "Filename_Fallback"
         
         return filename_metadata
+
+    def _extract_metadata_with_llm(self, pdf_path: str, max_pages: int = 3) -> Dict:
+        """
+        Use a large language model to extract metadata from the first N pages of a PDF.
+        Returns a dict with keys: title, authors (list[str]), year, doi, journal, publisher, abstract.
+        """
+        preview_text = self._get_first_n_pages_text(pdf_path, max_pages)
+        if not preview_text or len(preview_text.strip()) == 0:
+            raise RuntimeError("No text available from the first pages for LLM extraction")
+        
+        llm = EnhancedLLMManager()
+        system_prompt = (
+            "You are an expert at reading academic papers and extracting bibliographic metadata. "
+            "Given the first pages of a paper, extract structured metadata. Do not fabricate data. "
+            "If a field cannot be determined from the text, output a clear 'Unknown ...' placeholder. "
+            "Prefer exact strings from the document for title and authors."
+        )
+        user_prompt = (
+            "Extract the following fields as strict JSON with keys: \n"
+            "- title (string)\n"
+            "- authors (array of strings, each 'Given Family')\n"
+            "- year (string, 4-digit or 'Unknown Year')\n"
+            "- doi (string like '10.xxxx/...' or 'Unknown DOI')\n"
+            "- journal (string or 'Unknown Journal')\n"
+            "- publisher (string or 'Unknown Publisher')\n"
+            "- abstract (string or 'Unknown Abstract')\n\n"
+            "Rules:\n"
+            "- Return ONLY valid JSON, no commentary, no code fences.\n"
+            "- Do not guess a DOI; only include it if explicitly present; otherwise 'Unknown DOI'.\n"
+            "- Authors should be captured exactly as listed; include all visible authors on the page(s).\n\n"
+            f"Document (first {max_pages} pages) below:\n\n{preview_text}"
+        )
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+        response_text = llm.generate_response(messages, max_tokens=1200, temperature=0.0)
+        parsed = self._parse_llm_metadata_response(response_text)
+        if parsed is None:
+            # Retry with a stricter follow-up prompt requesting JSON only
+            retry_text = self._retry_llm_for_json(llm, preview_text, max_pages)
+            parsed = self._parse_llm_metadata_response(retry_text)
+        if parsed is None:
+            # Heuristic fallback from the LLM response and preview text
+            parsed = self._heuristic_extract_metadata_from_text(response_text, preview_text)
+        return parsed
+
+    def _parse_llm_metadata_response(self, text: str) -> Optional[Dict]:
+        """
+        Robustly parse LLM output into a metadata dict. Returns None if parsing fails.
+        """
+        if not isinstance(text, str):
+            return None
+        cleaned = text.strip()
+        # Remove common code fences and labels
+        cleaned = cleaned.replace("```json", "").replace("```", "").strip()
+        # Try direct JSON first
+        try:
+            obj = json.loads(cleaned)
+            return self._normalize_llm_parsed_metadata(obj)
+        except Exception:
+            pass
+        # Try to extract the first JSON object via brace matching
+        obj_str = self._extract_first_json_object(cleaned)
+        if obj_str:
+            for attempt in range(3):
+                try:
+                    return self._normalize_llm_parsed_metadata(json.loads(obj_str))
+                except Exception:
+                    # Attempt light repairs: convert single quotes, remove trailing commas
+                    obj_str = self._lightly_repair_json_string(obj_str)
+            # Try Python literal eval as last resort
+            try:
+                py_obj = ast.literal_eval(obj_str)
+                if isinstance(py_obj, dict):
+                    return self._normalize_llm_parsed_metadata(py_obj)
+            except Exception:
+                pass
+        return None
+
+    def _extract_first_json_object(self, text: str) -> Optional[str]:
+        stack = []
+        start = -1
+        for i, ch in enumerate(text):
+            if ch == '{':
+                if not stack:
+                    start = i
+                stack.append('{')
+            elif ch == '}':
+                if stack:
+                    stack.pop()
+                    if not stack and start != -1:
+                        return text[start:i+1]
+        return None
+
+    def _lightly_repair_json_string(self, s: str) -> str:
+        # Remove trailing commas before } or ]
+        s = re.sub(r",\s*(\}|\])", r"\1", s)
+        # Replace Python booleans and None
+        s = s.replace("None", "null").replace("True", "true").replace("False", "false")
+        return s
+
+    def _normalize_llm_parsed_metadata(self, parsed: Dict) -> Dict:
+        # Title
+        title = str(parsed.get("title", "Unknown Title")).strip() or "Unknown Title"
+        # Authors: handle list of dicts, list of strings, or single string
+        authors_field = parsed.get("authors", [])
+        authors: List[str] = []
+        if isinstance(authors_field, list):
+            for a in authors_field:
+                if isinstance(a, dict):
+                    given = str(a.get("given", "")).strip()
+                    family = str(a.get("family", "")).strip()
+                    name = f"{given} {family}".strip()
+                    if name:
+                        authors.append(name)
+                elif isinstance(a, str):
+                    authors.append(a.strip())
+        elif isinstance(authors_field, dict):
+            given = str(authors_field.get("given", "")).strip()
+            family = str(authors_field.get("family", "")).strip()
+            name = f"{given} {family}".strip()
+            if name:
+                authors.append(name)
+        elif isinstance(authors_field, str):
+            # Split common separators
+            parts = re.split(r"\s*(?:,| and | & |;|\n)\s*", authors_field)
+            authors.extend([p for p in (part.strip() for part in parts) if p])
+        if not authors:
+            authors = ["Unknown Author"]
+        # Year
+        year_val = parsed.get("year", "Unknown Year")
+        if isinstance(year_val, int):
+            year = str(year_val)
+        else:
+            year = str(year_val).strip() or "Unknown Year"
+        # DOI and other fields
+        doi = str(parsed.get("doi", "Unknown DOI")).strip() or "Unknown DOI"
+        journal = str(parsed.get("journal", "Unknown Journal")).strip() or "Unknown Journal"
+        publisher = str(parsed.get("publisher", "Unknown Publisher")).strip() or "Unknown Publisher"
+        abstract = str(parsed.get("abstract", "Unknown Abstract")).strip() or "Unknown Abstract"
+        return {
+            "title": title,
+            "authors": authors,
+            "year": year,
+            "doi": doi,
+            "journal": journal,
+            "publisher": publisher,
+            "abstract": abstract,
+        }
+
+    def _retry_llm_for_json(self, llm: EnhancedLLMManager, preview_text: str, max_pages: int) -> str:
+        system_prompt = (
+            "Return ONLY a single JSON object matching the schema. No explanations, no code fences, no extra text."
+        )
+        schema_hint = (
+            "Schema keys: title (string), authors (array of strings), year (string), doi (string), "
+            "journal (string), publisher (string), abstract (string)."
+        )
+        user_prompt = (
+            f"{schema_hint}\nIf a value is unknown, use 'Unknown ...' placeholders exactly.\n\n"
+            f"Document (first {max_pages} pages):\n\n{preview_text}"
+        )
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+        return llm.generate_response(messages, max_tokens=800, temperature=0.0)
+
+    def _heuristic_extract_metadata_from_text(self, llm_text: str, preview_text: str) -> Dict:
+        # DOI regex
+        doi_pattern = r"10\.\d{4,9}/[-._;()/:A-Z0-9]+"
+        doi_match = re.search(doi_pattern, (llm_text or "") + "\n" + (preview_text or ""), re.IGNORECASE)
+        doi = doi_match.group(0) if doi_match else "Unknown DOI"
+        # Year
+        year_match = re.search(r"\b(19\d{2}|20\d{2})\b", (llm_text or "") + "\n" + (preview_text or ""))
+        year = year_match.group(0) if year_match else "Unknown Year"
+        # Title: pick the first non-empty long line from preview
+        title = "Unknown Title"
+        for line in (preview_text or "").splitlines():
+            stripped = line.strip()
+            if len(stripped.split()) >= 5 and len(stripped) > 15:
+                title = stripped
+                break
+        # Authors: naive extraction from llm_text lines mentioning 'author'
+        authors = ["Unknown Author"]
+        m = re.search(r"authors?\s*[:\-]\s*(.+)", llm_text or "", re.IGNORECASE)
+        if m:
+            parts = re.split(r"\s*(?:,| and | & |;|\n)\s*", m.group(1))
+            cleaned = [p for p in (part.strip(' .') for part in parts) if p]
+            if cleaned:
+                authors = cleaned
+        return {
+            "title": title,
+            "authors": authors,
+            "year": year,
+            "doi": doi,
+            "journal": "Unknown Journal",
+            "publisher": "Unknown Publisher",
+            "abstract": "Unknown Abstract",
+        }
+
+    def _get_first_n_pages_text(self, pdf_path: str, n: int = 3) -> str:
+        """
+        Extract text from the first N pages using the best available engine.
+        """
+        try:
+            if HAS_PYMUPDF:
+                doc = fitz.open(pdf_path)
+                pages = []
+                for idx in range(min(n, len(doc))):
+                    page = doc.load_page(idx)
+                    text = page.get_text("text")
+                    if text:
+                        pages.append(text)
+                doc.close()
+                return "\n".join(pages)
+        except Exception as e:
+            logging.warning(f"PyMuPDF failed for first pages extraction: {e}")
+        
+        try:
+            if HAS_PYPDF2:
+                reader = PdfReader(pdf_path)
+                pages = []
+                for idx, page in enumerate(reader.pages[:n]):
+                    text = page.extract_text()
+                    if text:
+                        pages.append(text)
+                return "\n".join(pages)
+        except Exception as e:
+            logging.warning(f"PyPDF2 failed for first pages extraction: {e}")
+        
+        # Last attempt with pdfplumber
+        try:
+            if HAS_PDFPLUMBER:
+                with pdfplumber.open(pdf_path) as pdf:
+                    pages = []
+                    for idx, page in enumerate(pdf.pages[:n]):
+                        text = page.extract_text() or ""
+                        if text:
+                            pages.append(text)
+                return "\n".join(pages)
+        except Exception as e:
+            logging.warning(f"pdfplumber failed for first pages extraction: {e}")
+        
+        return ""
 
     def _validate_metadata_quality(self, metadata: Dict) -> bool:
         """

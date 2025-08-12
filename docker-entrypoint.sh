@@ -21,7 +21,7 @@ if [ ! -f "${CITEWEAVE_SETTINGS_PATH}" ]; then
 EOF
 fi
 
-# 2) Wait for dependent services if env hints are present
+# 2) Optionally wait for dependent services if explicitly enabled
 wait_for_url() {
   url="$1"; name="$2"; timeout_sec="${3:-60}"
   echo "[CiteWeave] Waiting for ${name} at ${url}..."
@@ -37,18 +37,21 @@ wait_for_url() {
   return 1
 }
 
-if [ -n "${QDRANT_URL:-}" ]; then
-  wait_for_url "${QDRANT_URL%/}/collections" "Qdrant" 90 || true
-fi
-if [ -n "${GROBID_URL:-}" ]; then
-  wait_for_url "${GROBID_URL%/}/api/isalive" "GROBID" 90 || true
-fi
-if [ -n "${NEO4J_URI:-}" ]; then
-  # Neo4j http UI often at :7474; if only bolt given, skip
-  neo4j_http="${NEO4J_HTTP:-}"
-  if [ -n "$neo4j_http" ]; then
-    wait_for_url "$neo4j_http" "Neo4j" 90 || true
+if [ "${CITEWEAVE_WAIT_FOR_DEPS:-0}" = "1" ]; then
+  if [ -n "${QDRANT_URL:-}" ]; then
+    wait_for_url "${QDRANT_URL%/}/readyz" "Qdrant" 90 || true
   fi
+  if [ -n "${GROBID_URL:-}" ]; then
+    wait_for_url "${GROBID_URL%/}/api/isalive" "GROBID" 90 || true
+  fi
+  if [ -n "${NEO4J_URI:-}" ]; then
+    neo4j_http="${NEO4J_HTTP:-}"
+    if [ -n "$neo4j_http" ]; then
+      wait_for_url "$neo4j_http" "Neo4j" 90 || true
+    fi
+  fi
+else
+  echo "[CiteWeave] Skipping dependency wait; UI will be available immediately."
 fi
 
 echo "[CiteWeave] Starting API server..."

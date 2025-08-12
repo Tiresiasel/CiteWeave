@@ -1,5 +1,67 @@
 # API Interface Data Formats
 
+## REST API (Flask) Endpoints
+
+Base URL: `/api/v1`
+
+- POST `/upload`
+  - Description: Upload and process a single PDF file.
+  - Request: `multipart/form-data` with field `file` (PDF).
+  - Response (200):
+    ```json
+    {
+      "success": true,
+      "summary": {
+        "paper_id": "string",
+        "total_sentences": 0,
+        "sentences_with_citations": 0,
+        "total_citations": 0,
+        "total_references": 0
+      },
+      "result": { }
+    }
+    ```
+  - Errors (4xx/5xx): `Standard Error Response`.
+
+- POST `/diagnose`
+  - Description: Diagnose a PDF for processing quality before upload.
+  - Request: `multipart/form-data` with field `file` (PDF).
+  - Response (200):
+    ```json
+    {
+      "success": true,
+      "diagnosis": { }
+    }
+    ```
+
+- POST `/chat`
+  - Description: Stateless chat turn with the multi-agent research system.
+  - Request: `application/json`
+    ```json
+    {
+      "user_input": "string",
+      "history": [{"user": "string", "ai": "string"}],
+      "menu_choice": "1|2|3|4",
+      "collected_data": {"results": {}}
+    }
+    ```
+  - Response (200):
+    ```json
+    {
+      "success": true,
+      "response": {
+        "text": "string",
+        "collected_data": {"results": {}},
+        "needs_user_choice": true,
+        "menu": ["Yes, generate final answer", "No, gather more information", "Tell me what specific information you want", "Exit"]
+      }
+    }
+    ```
+
+- GET `/health`
+  - Description: Health check endpoint.
+  - Response: `{ "status": "ok" }`
+
 ## Core Class Method Interfaces
 
 ### 1. DocumentProcessor Interface

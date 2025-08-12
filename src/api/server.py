@@ -590,6 +590,28 @@ def create_app() -> Flask:
             return send_from_directory(static_dir, "index.html")
         return jsonify({"status": "ok", "message": "API is running"})
 
+    @app.get("/static/logo.png")
+    def serve_logo_png():
+        """Serve the app logo from static dir if present; otherwise fall back to project root or data dir.
+        This ensures the favicon and AI avatar work even if the file was dropped at project root as logo.png.
+        """
+        static_dir = os.path.join(os.path.dirname(__file__), "static")
+        candidate_paths = [
+            os.path.join(static_dir, "logo.png"),
+            os.path.join(os.getcwd(), "logo.png"),
+            os.path.join(str(data_dir), "logo.png"),
+        ]
+        for path in candidate_paths:
+            if os.path.exists(path):
+                return send_from_directory(os.path.dirname(path), os.path.basename(path))
+        # Transparent 1x1 PNG fallback to avoid broken images
+        import base64
+        from flask import Response
+        transparent_png = base64.b64decode(
+            b"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAoMBgZ1T4nsAAAAASUVORK5CYII="
+        )
+        return Response(transparent_png, mimetype="image/png")
+
     @app.get("/static/<path:filename>")
     def serve_static(filename: str):
         static_dir = os.path.join(os.path.dirname(__file__), "static")

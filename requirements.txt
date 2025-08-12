@@ -196,3 +196,6 @@ websockets==15.0.1
 xxhash==3.5.0
 yarl==1.20.1
 zstandard==0.23.0
+
+flask==3.0.3
+flask-cors==5.0.0

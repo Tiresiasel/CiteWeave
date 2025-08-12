@@ -3905,73 +3905,7 @@ Please respond with: CONTINUE or EXPAND
         current_collected_data = collected_data or {"results": {}}
         current_question = user_input
         try:
-            # Only call sufficiency agent for new, open-ended user questions (not menu choices), and only if there is history
-            if menu_choice is None:
-                if len(conversation_history) == 0:
-                    pass  # Suppress debug print
-                else:
-                    pass  # Suppress debug print
-                    sufficient, explanation = self.information_sufficiency_agent.is_sufficient(conversation_history, current_question)
-                    pass  # Suppress debug print
-                    if sufficient:
-                        # Only use history to answer
-                        history_str = ""
-                        for turn in conversation_history:
-                            user = turn.get("user", "") or turn.get("question", "")
-                            ai = turn.get("ai", "") or turn.get("summary", {}).get("summary_text", "")
-                            if user:
-                                history_str += f"User: {user}\n"
-                            if ai:
-                                history_str += f"AI: {ai}\n"
-                        answer_prompt = f"""
-Given the following conversation history, answer the new user question as best as possible using only the information in the history.\n\nConversation History:\n{history_str}\n\nNew User Question:\n{current_question}\n\nAnswer:"""
-                        messages = [
-                            {"role": "system", "content": "You are an expert research assistant."},
-                            {"role": "user", "content": answer_prompt}
-                        ]
-                        answer = self.llm_manager.generate_response(messages)
-                        return {
-                            "text": answer,
-                            "collected_data": current_collected_data,
-                            "needs_user_choice": False,
-                            "used_history_only": True,
-                            "sufficiency_explanation": explanation
-                        }
-            elif menu_choice in ("2", "3"):
-                pass  # Suppress debug print
-                # The rest of the menu logic will handle info gathering, do not call sufficiency agent
-                pass
-            # All other menu choices or default: proceed as before
-            if menu_choice is not None:
-                if menu_choice == "1":
-                    # Generate final answer using the passed-in collected_data
-                    final_response = self._generate_final_answer(current_question, current_collected_data, conversation_history, request_id)
-                    return {
-                        "text": final_response,
-                        "collected_data": current_collected_data,
-                        "needs_user_choice": False
-                    }
-                elif menu_choice == "4":
-                    # Exit requested: stop immediately without calling AI
-                    return {
-                        "text": "Exiting chat.",
-                        "collected_data": current_collected_data,
-                        "needs_user_choice": False
-                    }
-                elif menu_choice == "2":
-                    # Ask for additional info
-                    return {
-                        "text": "What additional information would you like me to gather?",
-                        "collected_data": current_collected_data,
-                        "needs_user_input": True
-                    }
-                elif menu_choice == "3":
-                    # User wants to specify what to focus on
-                    return {
-                        "text": "Please specify what aspect or information you want to focus on.",
-                        "collected_data": current_collected_data,
-                        "needs_user_input": True
-                    }
+            # Remove interactive menu flow and always decide sufficiency automatically
             # ... rest of the function ...
             # Default: treat as new question
             research_result = self._execute_research_directly(current_question, request_id)
@@ -3982,26 +3916,63 @@ Given the following conversation history, answer the new user question as best a
             information_summary = self.information_summary_agent.summarize_information(
                 current_question, current_collected_data, research_result.get("query_intent", {}), request_id
             )
-            text = (
-                f"Information Gathered:\n"
-                f"Confidence Level: {information_summary.get('confidence_level', 'medium').upper()}\n\n"
-                f"{information_summary.get('summary_text', 'Information has been gathered.')}\n\n"
-                f"Data Overview:\n{information_summary.get('data_overview', 'No data available')}\n"
-            )
-            menu = [
-                "Yes, generate final answer",
-                "No, gather more information",
-                "Tell me what specific information you want",
-                "Exit"
-            ]
-            return {
-                "text": text + "\nIs this information sufficient for your question?",
-                "collected_data": current_collected_data,
-                "needs_user_choice": True,
-                "menu": menu,
-                "used_history_only": False,
-                "sufficiency_explanation": explanation if menu_choice is None and len(conversation_history) > 0 else None
-            }
+            # Decide sufficiency automatically
+            confidence = (information_summary or {}).get('confidence_level', 'low').lower()
+            # heuristic: medium/high -> sufficient
+            sufficient = confidence in ('medium', 'high')
+
+            # Build right-side bibliography list (titles only) for UI consumption
+            bibliography = []
+            try:
+                for key, result in current_collected_data.get('results', {}).items():
+                    data = result.get('data', result) if isinstance(result, dict) else result
+                    if isinstance(data, dict):
+                        for _collection, items in data.items():
+                            if isinstance(items, list):
+                                for item in items:
+                                    if isinstance(item, dict):
+                                        title = item.get('title') or item.get('name')
+                                        if title and title not in bibliography:
+                                            bibliography.append(title)
+                    elif isinstance(data, list):
+                        for item in data:
+                            if isinstance(item, dict):
+                                title = item.get('title') or item.get('name')
+                                if title and title not in bibliography:
+                                    bibliography.append(title)
+            except Exception:
+                pass
+
+            if sufficient:
+                final_response = self._generate_final_answer(current_question, current_collected_data, conversation_history, request_id)
+                return {
+                    "text": final_response,
+                    "collected_data": current_collected_data,
+                    "needs_user_choice": False,
+                    "bibliography": bibliography
+                }
+            else:
+                # gather more automatically by expanding queries derived from summary
+                try:
+                    followup_queries = self.additional_query_agent.parse_user_instructions(
+                        "continue gathering more evidence for the question", current_collected_data, current_question, request_id
+                    )
+                    add_data = self._execute_additional_queries(followup_queries, request_id)
+                    if add_data and "results" in add_data:
+                        current_collected_data["results"].update(add_data["results"])
+                except Exception:
+                    pass
+                # regenerate summary and final answer after augmentation
+                information_summary = self.information_summary_agent.summarize_information(
+                    current_question, current_collected_data, research_result.get("query_intent", {}), request_id
+                )
+                final_response = self._generate_final_answer(current_question, current_collected_data, conversation_history, request_id)
+                return {
+                    "text": final_response,
+                    "collected_data": current_collected_data,
+                    "needs_user_choice": False,
+                    "bibliography": bibliography
+                }
         except Exception as e:
             log_event("InteractiveChat", "error", {"error": str(e)}, level=logging.ERROR, request_id=request_id)
             return {
