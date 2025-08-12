@@ -3951,6 +3951,13 @@ Given the following conversation history, answer the new user question as best a
                         "collected_data": current_collected_data,
                         "needs_user_choice": False
                     }
+                elif menu_choice == "4":
+                    # Exit requested: stop immediately without calling AI
+                    return {
+                        "text": "Exiting chat.",
+                        "collected_data": current_collected_data,
+                        "needs_user_choice": False
+                    }
                 elif menu_choice == "2":
                     # Ask for additional info
                     return {

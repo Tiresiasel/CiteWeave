@@ -429,6 +429,10 @@ def handle_chat_command(args):
                 for idx, option in enumerate(response["menu"], 1):
                     print(f"{idx}. {option}")
                 user_input = prompt("Enter your choice: ").strip()
+                # Exit immediately if the user selects the explicit Exit option
+                if user_input == "4":
+                    print("Exiting chat.")
+                    break
                 if user_input.lower() in ("exit", "quit"):
                     print("Exiting chat.")
                     break
