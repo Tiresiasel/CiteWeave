@@ -237,10 +237,7 @@ function renderLibrary() {
         <div id="docs_list" class="list" style="margin-top:6px"></div>
       </div>
       <div id="folder_panel" style="display:none">
-        <div class="row" style="margin-top:10px; gap:8px">
-          <input id="folder_input" placeholder="/path/to/folder" class="select" style="flex:1" />
-          <button id="btn_add_folder" class="primary">Add folder</button>
-        </div>
+        <div id="folder_inputs" class="list" style="margin-top:10px; gap:8px"></div>
         <div id="watch_list" class="list" style="margin-top:12px"></div>
       </div>
     </div>`;
@@ -430,22 +427,8 @@ function renderLibrary() {
   // Buttons
   // No explicit button upload; drag-and-drop only for files
 
-  document.getElementById('btn_add_folder').onclick = async ()=>{
-    const path = document.getElementById('folder_input').value.trim();
-    if (!path) return;
-    // merge into settings watch_map: bind folder -> current collection
-    try {
-      const col = state.selectedCollection || 'Default';
-      const s = await apiFetch('/settings');
-      const v = s.settings || {};
-      const map = Array.isArray(v.watch_map) ? v.watch_map.slice() : [];
-      if (!map.find(e=>e.path===path)) map.push({ path, collection: col });
-      await apiFetch('/settings', { method:'POST', body: JSON.stringify({ watch_map: map, watch_enabled: true }) });
-      // trigger a scan immediately
-      try { await apiFetch('/watch/scan-now', { method:'POST' }); } catch(e){}
-      await renderWatchList();
-    } catch(e) { console.error(e); }
-  };
+  // Create the first folder input row
+  addFolderInputRow();
 
   // legacy handler removed; use inline new collection editor instead
   const legacyAdd = document.getElementById('add_collection');
@@ -594,6 +577,46 @@ function renderLibrary() {
       }
     } catch(e) { console.error('load docs to list failed', e); }
   })();
+}
+
+function addFolderInputRow(prefillPath=""){
+  const wrap = document.getElementById('folder_inputs');
+  if (!wrap) return;
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.style.gap = '8px';
+  row.style.alignItems = 'center';
+  const input = document.createElement('input');
+  input.className = 'select';
+  input.placeholder = '/path/to/folder';
+  input.style.flex = '1.2';
+  input.value = prefillPath;
+  const btn = document.createElement('button');
+  btn.className = 'primary';
+  btn.textContent = 'Add';
+  btn.style.flex = '0 0 90px';
+  btn.style.padding = '8px 10px';
+  btn.onclick = async ()=>{
+    const path = (input.value||'').trim();
+    if (!path) { input.focus(); return; }
+    try {
+      const col = state.selectedCollection || 'Default';
+      const s = await apiFetch('/settings');
+      const v = s.settings || {};
+      const map = Array.isArray(v.watch_map) ? v.watch_map.slice() : [];
+      if (!map.find(e=>e.path===path)) map.push({ path, collection: col });
+      await apiFetch('/settings', { method:'POST', body: JSON.stringify({ watch_map: map, watch_enabled: true }) });
+      // button state: Saved, then add a new empty row below
+      btn.textContent = 'Saved';
+      btn.disabled = true;
+      // trigger immediate scan
+      try { await apiFetch('/watch/scan-now', { method:'POST' }); } catch(_){}
+      addFolderInputRow("");
+      await renderWatchList();
+    } catch(e) { console.error(e); }
+  };
+  row.appendChild(input); row.appendChild(btn);
+  wrap.appendChild(row);
 }
 
 function renderCollections(cols) {
