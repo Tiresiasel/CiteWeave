@@ -176,16 +176,31 @@ def create_app() -> Flask:
         with _watch_lock:
             settings = _read_settings()
             watch_enabled = settings.get('watch_enabled', False)
-            watch_dirs = settings.get('watch_directories', []) or []
-            # Support structured mapping: [{ path, collection }]
+            # Prefer structured watch_map if present; fallback to legacy list; then merge & de-dup
             watch_map = settings.get('watch_map') or []
+            legacy = settings.get('watch_directories', []) or []
+            candidate_dirs = []
+            if isinstance(watch_map, list):
+                candidate_dirs.extend([e.get('path') for e in watch_map if isinstance(e, dict) and e.get('path')])
+            if isinstance(legacy, list):
+                candidate_dirs.extend([p for p in legacy if isinstance(p, str) and p])
+            # Normalize: strip quotes/whitespace, absolute path check, filter actually existing dirs
+            norm = []
+            for p in candidate_dirs:
+                if not p:
+                    continue
+                p2 = str(p).strip().strip("'\"")
+                if os.path.isdir(p2):
+                    norm.append(os.path.abspath(p2))
+            # de-dup while preserving order
+            seen = set()
+            watch_dirs = []
+            for d in norm:
+                if d not in seen:
+                    watch_dirs.append(d); seen.add(d)
             if not watch_enabled or not watch_dirs:
-                # If directories are not provided the legacy way, derive from watch_map
-                if isinstance(watch_map, list) and watch_map:
-                    watch_dirs = [e.get('path') for e in watch_map if isinstance(e, dict) and e.get('path')]
-                if not watch_dirs:
-                    print("[watch] no watch_dirs configured; skipping")
-                    return {"scanned": 0, "processed": 0}
+                print("[watch] no effective watch dirs; enabled=", watch_enabled, "dirs=", watch_dirs)
+                return {"scanned": 0, "processed": 0}
             try:
                 print("[watch] roots:", watch_dirs)
             except Exception:
