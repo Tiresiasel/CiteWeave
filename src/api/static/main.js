@@ -441,6 +441,8 @@ function renderLibrary() {
       const map = Array.isArray(v.watch_map) ? v.watch_map.slice() : [];
       if (!map.find(e=>e.path===path)) map.push({ path, collection: col });
       await apiFetch('/settings', { method:'POST', body: JSON.stringify({ watch_map: map, watch_enabled: true }) });
+      // trigger a scan immediately
+      try { await apiFetch('/watch/scan-now', { method:'POST' }); } catch(e){}
       await renderWatchList();
     } catch(e) { console.error(e); }
   };

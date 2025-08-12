@@ -441,8 +441,8 @@ def create_app() -> Flask:
         if not isinstance(payload, dict):
             return jsonify({"error": True, "error_type": "invalid_input", "error_message": "JSON body expected"}), 400
         s = _read_settings()
-        # allow list
-        for key in ("api_base", "theme", "display_name", "openai_key", "watch_enabled", "watch_interval_seconds", "watch_directories", "embedding_provider"):
+        # allow list (include watch_map for folder monitoring)
+        for key in ("api_base", "theme", "display_name", "openai_key", "watch_enabled", "watch_interval_seconds", "watch_directories", "watch_map", "embedding_provider"):
             if key in payload:
                 s[key] = payload[key]
         _write_settings(s)
