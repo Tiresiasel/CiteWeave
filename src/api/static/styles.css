@@ -1,6 +1,17 @@
-:root { --bg:#111111; --panel:#171717; --muted:#2a2a2a; --text:#e5e5e5; --sub:#a3a3a3; --accent:#2a2a2a; --danger:#ef4444; --card:#1c1c1c; --hover:#1a1a1a; --active:#262626; }
+:root { --bg:#111111; --panel:#171717; --muted:#2a2a2a; --text:#e5e5e5; --sub:#a3a3a3; --accent:#2a2a2a; --danger:#ef4444; --card:#1c1c1c; --hover:#1a1a1a; --active:#262626; 
+  /* unified scrollbar palette */
+  --scrollbar-track:#141414; --scrollbar-thumb:#2b2b2b; --scrollbar-thumb-hover:#3a3a3a; }
 * { box-sizing: border-box; }
 html, body { height:100%; margin:0; background:var(--bg); color:var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica Neue, Arial; }
+
+/* Consistent dark scrollbars (Firefox) */
+* { scrollbar-width: thin; scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track); }
+
+/* Consistent dark scrollbars (WebKit) */
+::-webkit-scrollbar { width: 10px; height:10px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); border-radius: 8px; }
+::-webkit-scrollbar-thumb { background-color: var(--scrollbar-thumb); border-radius: 8px; border:2px solid var(--scrollbar-track); }
+::-webkit-scrollbar-thumb:hover { background-color: var(--scrollbar-thumb-hover); }
 
 .topbar { height:56px; display:flex; align-items:center; justify-content:space-between; padding:0 16px; background:var(--panel); border-bottom:1px solid rgba(255,255,255,.06); position:sticky; top:0; z-index:50; }
 .brand { font-weight:700; letter-spacing:.02em; cursor:pointer; }
