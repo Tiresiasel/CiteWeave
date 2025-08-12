@@ -238,7 +238,6 @@ function renderLibrary() {
       </div>
       <div id="folder_panel" style="display:none">
         <div id="folder_inputs" class="list" style="margin-top:10px; gap:8px"></div>
-        <div id="watch_list" class="list" style="margin-top:12px"></div>
       </div>
     </div>`;
   grid.appendChild(right);
@@ -608,12 +607,13 @@ function renderLibrary() {
     const inputs = document.getElementById('folder_inputs');
     if (inputs && localMap.length && !inputs.dataset.prefilled) {
       inputs.dataset.prefilled = '1';
-      localMap.forEach(e=> addFolderInputRow(e.path||''));
+      // render by created order: earliest first, latest last
+      localMap.forEach(e=> addFolderInputRow(e.path||'', true));
     }
   } catch(_){}
 }
 
-function addFolderInputRow(prefillPath=""){
+function addFolderInputRow(prefillPath="", saved=false){
   const wrap = document.getElementById('folder_inputs');
   if (!wrap) return;
   const row = document.createElement('div');
@@ -627,9 +627,25 @@ function addFolderInputRow(prefillPath=""){
   input.value = prefillPath;
   const btn = document.createElement('button');
   btn.className = 'primary';
-  btn.textContent = 'Add';
+  btn.textContent = saved ? 'Saved' : 'Add';
+  btn.disabled = !!saved;
   btn.style.flex = '0 0 90px';
   btn.style.padding = '8px 10px';
+  // control group (pause/delete) appears only after saving
+  const controls = document.createElement('div');
+  controls.className = 'row';
+  controls.style.gap = '8px';
+  controls.style.alignItems = 'center';
+  const pauseBtn = document.createElement('button');
+  pauseBtn.className = 'primary';
+  pauseBtn.textContent = 'Pause';
+  pauseBtn.style.flex = '0 0 80px';
+  const delBtn = document.createElement('button');
+  delBtn.className = 'primary';
+  delBtn.textContent = 'Delete';
+  delBtn.style.flex = '0 0 80px';
+  controls.appendChild(pauseBtn); controls.appendChild(delBtn);
+  controls.style.display = saved ? '' : 'none';
   btn.onclick = async ()=>{
     const path = (input.value||'').trim();
     if (!path) { input.focus(); return; }
@@ -648,15 +664,26 @@ function addFolderInputRow(prefillPath=""){
       // button state: Saved, then add a new empty row below
       btn.textContent = 'Saved';
       btn.disabled = true;
+      controls.style.display = '';
+      // bind control actions now that it's saved
+      pauseBtn.onclick = async ()=>{
+        const paused = pauseBtn.textContent === 'Pause';
+        try { await apiFetch('/watch/pause', { method:'POST', body: JSON.stringify({ path, paused }) }); pauseBtn.textContent = paused ? 'Resume' : 'Pause'; } catch(e){}
+      };
+      delBtn.onclick = async ()=>{
+        const ok = confirm('Delete this folder from watch list?'); if (!ok) return;
+        try { await apiFetch('/watch/delete', { method:'POST', body: JSON.stringify({ path }) }); row.remove(); } catch(e){}
+      };
       // trigger immediate scan
       try { await apiFetch('/watch/scan-now', { method:'POST' }); } catch(_){}
       // quick poll docs to reflect new items
       try { const colNow = state.selectedCollection || 'Default'; for (let i=0;i<5;i++){ setTimeout(()=> apiFetch('/documents?collection='+encodeURIComponent(colNow)).then(r=>{ state.docs = r.documents||[]; const listNow = document.getElementById('docs_list'); if (listNow) { listNow.innerHTML = ''; } renderLibrary(); }).catch(()=>{}), i*1000); } } catch(_){}
-      addFolderInputRow("");
+      // append new empty row at bottom
+      addFolderInputRow("", false);
       await renderWatchList();
     } catch(e) { console.error(e); }
   };
-  row.appendChild(input); row.appendChild(btn);
+  row.appendChild(input); row.appendChild(btn); row.appendChild(controls);
   wrap.appendChild(row);
 }
 
