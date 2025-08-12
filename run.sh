@@ -47,6 +47,17 @@ start_compose() {
   docker compose -f "$COMPOSE_MAIN" -f "$COMPOSE_OVERLAY" up -d
 }
 
+start_base_if_needed() {
+  echo -n "[run.sh] Checking API availability"
+  if curl -fsS "${API_BASE%/api/v1}/api/v1/health" >/dev/null 2>&1; then
+    echo " OK"
+    return 0
+  fi
+  echo " -> starting base compose first"
+  docker compose -f "$COMPOSE_MAIN" up -d
+  wait_health || true
+}
+
 wait_health() {
   echo -n "[run.sh] Waiting for API health"
   for i in $(seq 1 60); do
@@ -68,6 +79,7 @@ show_mounts() {
   docker inspect citeweave-app --format '{{range .Mounts}}{{println .Source "->" .Destination}}{{end}}' || true
 }
 
+start_base_if_needed
 gen_overlay
 start_compose
 wait_health || true
