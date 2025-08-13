@@ -262,16 +262,88 @@ def create_app() -> Flask:
                         prev_error = prev_entry.get('error')
                         if last_mtime is not None and float(last_mtime) >= st.st_mtime and not prev_error:
                             continue
-                        # Create a job entry for this file processing (progress shows in UI)
+                        # Prepare job entry (queued first)
                         try:
                             job_id = f"watch_{int(time.time()*1000)}_{os.path.basename(path)}"
                             now_ts = int(time.time())
-                            app.config["JOB_STATUS"][job_id] = {"done": False, "success": None, "progress": 5, "stage": "processing", "filename": os.path.basename(path), "collection": path_to_collection.get(d, default_collection), "updated_at": now_ts}
+                            collection_for_job = path_to_collection.get(d, default_collection)
+                            app.config["JOB_STATUS"][job_id] = {
+                                "done": False,
+                                "success": None,
+                                "progress": 0,
+                                "stage": "queued",
+                                "filename": os.path.basename(path),
+                                "collection": collection_for_job,
+                                "updated_at": now_ts
+                            }
                             app.config["JOBS_DIRTY"] = True
                             try:
-                                get_state_db().upsert_job({"id": job_id, "paper_id": None, "filename": os.path.basename(path), "progress": 5, "stage": "processing", "done": 0, "success": None, "error": None, "updated_at": now_ts})
+                                get_state_db().upsert_job({
+                                    "id": job_id,
+                                    "paper_id": None,
+                                    "filename": os.path.basename(path),
+                                    "progress": 0,
+                                    "stage": "queued",
+                                    "done": 0,
+                                    "success": None,
+                                    "error": None,
+                                    "updated_at": now_ts
+                                })
                             except Exception:
                                 pass
+                        except Exception:
+                            job_id = None
+                        # Start processing
+                        if job_id:
+                            try:
+                                app.config["JOB_STATUS"][job_id].update({"stage": "processing", "progress": 5, "updated_at": int(time.time())})
+                                app.config["JOBS_DIRTY"] = True
+                                try:
+                                    get_state_db().upsert_job({"id": job_id, "paper_id": None, "filename": os.path.basename(path), "progress": 5, "stage": "processing", "done": 0, "success": None, "error": None, "updated_at": int(time.time())})
+                                except Exception:
+                                    pass
+                            except Exception:
+                                pass
+                        # Ensure a 'pending' doc row exists before processing so UI can show it immediately
+                        try:
+                            import hashlib
+                            file_hash = None
+                            with open(path, 'rb') as fh:
+                                file_hash = hashlib.sha256(fh.read()).hexdigest()
+                            now_ts_doc = int(time.time())
+                            col_for_doc = path_to_collection.get(d, default_collection)
+                            sdb = get_state_db()
+                            sdb.ensure_collection(col_for_doc, now_ts_doc)
+                            # If a doc exists by hash, reuse its paper_id; else create a pending placeholder with a temp id
+                            temp_pid = None
+                            try:
+                                with sdb._conn() as conn:
+                                    row = None
+                                    if file_hash:
+                                        row = conn.execute("SELECT paper_id FROM documents WHERE collection=? AND file_hash=? LIMIT 1;", (col_for_doc, file_hash)).fetchone()
+                                    if row:
+                                        temp_pid = row[0]
+                            except Exception:
+                                pass
+                            if not temp_pid:
+                                temp_pid = f"pending_{int(time.time()*1000)}"
+                            placeholder = {
+                                "paper_id": temp_pid,
+                                "title": None,
+                                "authors_json": json.dumps([], ensure_ascii=False),
+                                "year": None,
+                                "doi": None,
+                                "original_filename": os.path.basename(path),
+                                "new_filename": os.path.basename(path),
+                                "local_path": path,
+                                "collection": col_for_doc,
+                                "status": "pending",
+                                "file_hash": file_hash,
+                                "norm_title": None,
+                                "created_at": now_ts_doc,
+                                "updated_at": now_ts_doc,
+                            }
+                            sdb.upsert_document(placeholder)
                         except Exception:
                             pass
                         # Process new or updated file
@@ -346,9 +418,21 @@ def create_app() -> Flask:
                                 except Exception:
                                     pass
                                 sdb.upsert_document(doc)
-                        except Exception:
-                            pass
-                        # finalize job
+                        except Exception as e:
+                            # mark job failure
+                            try:
+                                if job_id:
+                                    now_ts2 = int(time.time())
+                                    app.config["JOB_STATUS"][job_id].update({"done": True, "success": False, "progress": 100, "stage": "error", "updated_at": now_ts2, "error": str(e)})
+                                    app.config["JOBS_DIRTY"] = True
+                                    try:
+                                        get_state_db().upsert_job({"id": job_id, "paper_id": None, "filename": os.path.basename(path), "progress": 100, "stage": "error", "done": 1, "success": 0, "error": str(e), "updated_at": now_ts2})
+                                    except Exception:
+                                        pass
+                            except Exception:
+                                pass
+                            raise
+                        # finalize job on success
                         try:
                             now_ts2 = int(time.time())
                             app.config["JOB_STATUS"][job_id].update({"done": True, "success": True, "progress": 100, "stage": "done", "updated_at": now_ts2, "paper_id": result.get('paper_id')})
