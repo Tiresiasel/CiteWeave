@@ -1180,6 +1180,15 @@ def create_app() -> Flask:
             # default to Default collection if not provided
             collection = collection_q or default_collection
             docs = get_state_db().list_documents(collection=collection)
+            # Deduplicate by (paper_id or file_hash or norm_title) on the fly to avoid duplicate render
+            seen_keys = set()
+            unique_docs = []
+            for d in docs:
+                key = d.get('paper_id') or (d.get('file_hash') and f"hash:{d.get('file_hash')}" ) or (d.get('norm_title') and f"norm:{d.get('norm_title')}") or d.get('original_filename')
+                if key in seen_keys:
+                    continue
+                seen_keys.add(key)
+                unique_docs.append(d)
             # Ensure any currently in-progress jobs with known filename but no paper_id appear as pending items
             try:
                 js = app.config.get("JOB_STATUS", {})
@@ -1201,7 +1210,7 @@ def create_app() -> Flask:
                         })
             except Exception:
                 pass
-            return jsonify({"success": True, "documents": docs, "collection": collection})
+            return jsonify({"success": True, "documents": unique_docs, "collection": collection})
         except Exception as e:
             return jsonify({"error": True, "error_message": str(e)}), 500
 

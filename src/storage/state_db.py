@@ -76,7 +76,11 @@ class StateDB:
                     conn.execute("ALTER TABLE documents ADD COLUMN norm_title TEXT;")
                 # Create hash index only when column exists (older DBs won't break)
                 if 'file_hash' in cols:
-                    conn.execute("CREATE INDEX IF NOT EXISTS idx_documents_collection_hash ON documents(collection, file_hash);")
+                    # Prefer a uniqueness guarantee by (collection, file_hash) when hash is available
+                    try:
+                        conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS uniq_documents_collection_hash ON documents(collection, file_hash) WHERE file_hash IS NOT NULL;")
+                    except Exception:
+                        conn.execute("CREATE INDEX IF NOT EXISTS idx_documents_collection_hash ON documents(collection, file_hash);")
             except Exception:
                 pass
 
