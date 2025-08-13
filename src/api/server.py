@@ -256,8 +256,11 @@ def create_app() -> Flask:
                         scanned += 1
                         st = os.stat(path)
                         key = os.path.abspath(path)
-                        last_mtime = files_state.get(key, {}).get('mtime')
-                        if last_mtime is not None and float(last_mtime) >= st.st_mtime:
+                        # Only skip if file unchanged AND last run did not error out
+                        prev_entry = files_state.get(key, {}) if isinstance(files_state, dict) else {}
+                        last_mtime = prev_entry.get('mtime')
+                        prev_error = prev_entry.get('error')
+                        if last_mtime is not None and float(last_mtime) >= st.st_mtime and not prev_error:
                             continue
                         # Create a job entry for this file processing (progress shows in UI)
                         try:
