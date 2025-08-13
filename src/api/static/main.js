@@ -358,8 +358,72 @@ function renderLibrary() {
   tabFolders.onclick = ()=>{ tabFolders.classList.add('active'); tabFiles.classList.remove('active'); uploadPanel.style.display='none'; folderPanel.style.display='block'; };
 
   // Drag-and-drop
-    const dz = document.getElementById('uploader');
+  const dz = document.getElementById('uploader');
   if (dz) {
+    // Click to open file chooser
+    dz.style.cursor = 'pointer';
+    dz.title = 'Click to choose files or drag & drop PDFs here';
+    dz.addEventListener('click', ()=>{
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'application/pdf';
+      input.multiple = true;
+      input.style.display = 'none';
+      document.body.appendChild(input);
+      input.addEventListener('change', async ()=>{
+        const files = Array.from(input.files || []).filter(f=>/\.pdf$/i.test(f.name));
+        if (!files.length) { input.remove(); return; }
+        // Reuse existing async uploader logic by simulating a drop
+        try {
+          const list = document.getElementById('upload_list');
+          const base = state.settings.api_base || '';
+          for (const f of files) {
+            const row = ce('div', 'row');
+            row.style.justifyContent = 'space-between';
+            row.style.alignItems = 'center';
+            row.style.padding = '8px 10px';
+            row.style.border = '1px solid var(--muted)';
+            row.style.borderRadius = '12px';
+            row.style.marginBottom = '6px';
+            row.innerHTML = `<div style="color:var(--text)">${f.name}</div>
+              <div class="row" style="gap:8px; align-items:center">
+                <div class="icon-chip status" title="Pending">
+                  <svg class="ring" viewBox="0 0 36 36"><path class="track" d="M18 2a16 16 0 1 1 0 32 16 16 0 0 1 0-32"/><path class="arc" d="M18 2 a16 16 0 0 1 0 0"/></svg>
+                  <svg class="icon" viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='6' stroke='currentColor' stroke-width='1.6'/></svg>
+                </div>
+              </div>`;
+            list.appendChild(row);
+            // start async upload job
+            try {
+              const fd = new FormData(); fd.append('file', f);
+              const col = state.selectedCollection || 'Default';
+              fd.append('collection', col);
+              const res = await fetch((base||'') + API_BASE + '/upload_async', { method:'POST', body: fd });
+              const data = await res.json();
+              if (res.ok && data.success) {
+                const jobId = data.job_id;
+                const poll = async ()=>{
+                  try {
+                    const jr = await fetch((base||'') + API_BASE + '/jobs/' + jobId);
+                    const jd = await jr.json();
+                    const pr = Math.max(0, Math.min(100, jd.job?.progress || 0));
+                    const arc = row.querySelector('.icon-chip.status .arc');
+                    if (arc) {
+                      const end = (pr/100)*2*Math.PI; const r=16, cx=18, cy=18; const x=cx + r*Math.sin(end), y=cy - r*Math.cos(end); const large = end > Math.PI ? 1 : 0; arc.setAttribute('d', `M18 2 a16 16 0 ${large} 1 ${x-18} ${y-2}`); arc.setAttribute('stroke', pr>=100 ? '#22c55e' : '#6ee7b7');
+                    }
+                    if (!jd.success || !jd.job || !jd.job.done) return setTimeout(poll, 1000);
+                    try { row.remove(); } catch(_){}
+                    await listDocs();
+                  } catch(_) { setTimeout(poll, 1200); }
+                };
+                poll();
+              }
+            } catch(_){ /* ignore */ }
+          }
+        } finally { input.remove(); }
+      });
+      input.click();
+    });
     dz.addEventListener('dragover', (e)=>{ e.preventDefault(); e.stopPropagation(); dz.classList.add('dragover'); });
     dz.addEventListener('dragleave', (e)=>{ e.preventDefault(); e.stopPropagation(); dz.classList.remove('dragover'); });
     dz.addEventListener('drop', async (e)=>{
