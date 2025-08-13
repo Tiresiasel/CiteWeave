@@ -41,6 +41,28 @@ def create_app() -> Flask:
     jobs_state_path = Path(os.environ.get("CITEWEAVE_JOBS_FILE", str(data_dir / "jobs.json")))
     db_path = Path(os.environ.get("CITEWEAVE_DB_PATH", str(data_dir / "state.db")))
     default_collection = os.environ.get("CITEWEAVE_DEFAULT_COLLECTION", "Default")
+    debug_log_path = Path(os.environ.get("CITEWEAVE_WATCH_DEBUG_LOG", str(data_dir / "watch_debug.log")))
+
+    def _debug(event: str, **fields):
+        try:
+            import time, json
+            rec = {"ts": int(time.time()), "event": event}
+            rec.update(fields or {})
+            line = json.dumps(rec, ensure_ascii=False)
+            # stdout
+            try:
+                print(f"[watch] {line}")
+            except Exception:
+                pass
+            # file
+            try:
+                debug_log_path.parent.mkdir(parents=True, exist_ok=True)
+                with open(debug_log_path, 'a', encoding='utf-8') as f:
+                    f.write(line + "\n")
+            except Exception:
+                pass
+        except Exception:
+            pass
 
     def _read_settings() -> dict:
         try:
@@ -199,10 +221,10 @@ def create_app() -> Flask:
                 if d not in seen:
                     watch_dirs.append(d); seen.add(d)
             if not watch_enabled or not watch_dirs:
-                print("[watch] no effective watch dirs; enabled=", watch_enabled, "dirs=", watch_dirs)
+                _debug("scan.no_dirs", enabled=watch_enabled, dirs=watch_dirs)
                 return {"scanned": 0, "processed": 0}
             try:
-                print("[watch] roots:", watch_dirs)
+                _debug("scan.start", roots=watch_dirs)
             except Exception:
                 pass
             state = _read_watch_state()
@@ -225,10 +247,7 @@ def create_app() -> Flask:
             paused_roots = [root for root, paused in path_paused.items() if paused]
             for d in watch_dirs:
                 if not d or not os.path.isdir(d):
-                    try:
-                        print(f"[watch] skip non-dir: {d}")
-                    except Exception:
-                        pass
+                    _debug("root.skip_non_dir", root=d)
                     continue
                 # debug: count pdfs in root
                 try:
@@ -237,30 +256,30 @@ def create_app() -> Flask:
                         for name in files:
                             if name.lower().endswith('.pdf'):
                                 cnt += 1
-                    print(f"[watch] dir {d} -> pdfs: {cnt}")
+                    _debug("root.summary", root=d, pdf_count=cnt)
                 except Exception as _e:
-                    print(f"[watch] os.walk error on {d}: {_e}")
+                    _debug("root.walk_error", root=d, error=str(_e))
                 # Skip whole directory if this root is paused
                 if path_paused.get(d, False):
-                    try:
-                        print(f"[watch] skip paused root: {d}")
-                    except Exception:
-                        pass
+                    _debug("root.skip_paused", root=d)
                     continue
                 for path in _list_pdfs(d):
                     try:
                         # Skip files under any paused root silently
                         abs_path = os.path.abspath(path)
                         if any(abs_path.startswith(pr.rstrip(os.sep) + os.sep) for pr in paused_roots):
+                            _debug("file.skip_paused_branch", path=abs_path)
                             continue
                         scanned += 1
                         st = os.stat(path)
                         key = os.path.abspath(path)
+                        _debug("file.detected", path=key, mtime=st.st_mtime)
                         # Only skip if file unchanged AND last run did not error out
                         prev_entry = files_state.get(key, {}) if isinstance(files_state, dict) else {}
                         last_mtime = prev_entry.get('mtime')
                         prev_error = prev_entry.get('error')
                         if last_mtime is not None and float(last_mtime) >= st.st_mtime and not prev_error:
+                            _debug("file.skip_unchanged", path=key, last_mtime=last_mtime, mtime=st.st_mtime)
                             continue
                         # Prepare job entry (queued first)
                         try:
@@ -291,6 +310,7 @@ def create_app() -> Flask:
                                 })
                             except Exception:
                                 pass
+                            _debug("job.queued", job_id=job_id, filename=os.path.basename(path), collection=collection_for_job)
                         except Exception:
                             job_id = None
                         # Start processing
@@ -302,6 +322,7 @@ def create_app() -> Flask:
                                     get_state_db().upsert_job({"id": job_id, "paper_id": None, "filename": os.path.basename(path), "progress": 5, "stage": "processing", "done": 0, "success": None, "error": None, "updated_at": int(time.time())})
                                 except Exception:
                                     pass
+                                _debug("job.started", job_id=job_id)
                             except Exception:
                                 pass
                         # Ensure a 'pending' doc row exists before processing so UI can show it immediately
@@ -344,6 +365,7 @@ def create_app() -> Flask:
                                 "updated_at": now_ts_doc,
                             }
                             sdb.upsert_document(placeholder)
+                            _debug("db.placeholder", filename=os.path.basename(path), collection=col_for_doc, file_hash=file_hash, paper_id=temp_pid)
                         except Exception:
                             pass
                         # Process new or updated file
@@ -429,6 +451,13 @@ def create_app() -> Flask:
                                         get_state_db().upsert_job({"id": job_id, "paper_id": None, "filename": os.path.basename(path), "progress": 100, "stage": "error", "done": 1, "success": 0, "error": str(e), "updated_at": now_ts2})
                                     except Exception:
                                         pass
+                                try:
+                                    # best-effort mark placeholder as error
+                                    if 'temp_pid' in locals() and temp_pid:
+                                        get_state_db().set_document_status(temp_pid, 'error', int(time.time()))
+                                except Exception:
+                                    pass
+                                _debug("file.error", filename=os.path.basename(path), error=str(e))
                             except Exception:
                                 pass
                             raise
@@ -448,10 +477,12 @@ def create_app() -> Flask:
                         time.sleep(0.2)
                     except Exception as e:
                         files_state[key] = {"error": str(e), "mtime": st.st_mtime if 'st' in locals() else None}
+                        _debug("file.exception", path=key, error=str(e))
                         continue
             state['files'] = files_state
             state['last_scan'] = int(time.time())
             _write_watch_state(state)
+            _debug("scan.finish", scanned=scanned, processed=processed, last_scan=state['last_scan'])
             return {"scanned": scanned, "processed": processed, "last_scan": state['last_scan']}
 
     def _watch_loop():
