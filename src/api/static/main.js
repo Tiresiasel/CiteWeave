@@ -644,6 +644,12 @@ function addFolderInputRow(prefillPath="", saved=false){
   delBtn.className = 'primary';
   delBtn.textContent = 'Delete';
   delBtn.style.flex = '0 0 80px';
+  // Add Scan now button next to Pause/Delete for immediate trigger
+  const scanBtn = document.createElement('button');
+  scanBtn.className = 'primary';
+  scanBtn.textContent = 'Scan now';
+  scanBtn.style.flex = '0 0 90px';
+  controls.appendChild(scanBtn);
   controls.appendChild(pauseBtn); controls.appendChild(delBtn);
   controls.style.display = saved ? '' : 'none';
 
@@ -657,6 +663,9 @@ function addFolderInputRow(prefillPath="", saved=false){
 
   function bindControlsForPath(path){
     row.dataset.path = path;
+    scanBtn.onclick = async ()=>{
+      try { await apiFetch('/watch/scan-now', { method:'POST' }); await listDocs(); } catch(e){}
+    };
     pauseBtn.onclick = async ()=>{
       const toPaused = (pauseBtn.textContent === 'Pause');
       try { await apiFetch('/watch/pause', { method:'POST', body: JSON.stringify({ path, paused: toPaused }) });
