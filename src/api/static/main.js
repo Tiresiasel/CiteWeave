@@ -1272,6 +1272,13 @@ async function init() {
     saveState(); toggleModal('settings_modal', false);
   };
   $('#watch_scan_now').onclick = async ()=> { try { await apiFetch('/watch/scan-now', { method: 'POST' }); } catch (e) { console.error(e); } };
+  // Ensure Directory Watch defaults visible even if backend has no settings yet
+  try {
+    const s0 = await apiFetch('/settings');
+    const v0 = s0.settings || {};
+    const we0 = document.getElementById('watch_enabled'); if (we0) we0.checked = v0.watch_enabled !== false;
+    const wi0 = document.getElementById('watch_interval'); if (wi0) wi0.value = v0.watch_interval_seconds || 300;
+  } catch(_){ /* ignore */ }
   $('#btn_account').onclick = ()=> toggleModal('account_modal', true);
   $('#account_close').onclick = ()=> toggleModal('account_modal', false);
   $('#account_save').onclick = ()=> { toggleModal('account_modal', false); };

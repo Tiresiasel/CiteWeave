@@ -495,6 +495,13 @@ def create_app() -> Flask:
     @app.get("/api/v1/settings")
     def get_settings() -> Any:
         s = _read_settings() or {}
+        # Provide sensible defaults for watcher if missing
+        if 'watch_enabled' not in s:
+            s['watch_enabled'] = True
+        if 'watch_interval_seconds' not in s:
+            s['watch_interval_seconds'] = 300
+        if 'watch_directories' not in s:
+            s['watch_directories'] = []
         # Derive key presence from .env or settings
         env_vars_local = _read_env_file()
         env_key = env_vars_local.get('OPENAI_API_KEY') or os.environ.get('OPENAI_API_KEY')
