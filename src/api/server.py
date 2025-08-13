@@ -697,6 +697,17 @@ def create_app() -> Flask:
         threading.Thread(target=_scan_once, daemon=True).start()
         return jsonify({"success": True})
 
+    @app.post("/api/v1/watch/scan-once")
+    def watch_scan_once():
+        """Run one scan cycle synchronously and return counts for debugging."""
+        try:
+            res = _scan_once()
+            if not isinstance(res, dict):
+                res = {"result": res}
+            return jsonify({"success": True, **res})
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e) }), 500
+
     # Start watcher background thread once
     def _ensure_watch_thread():
         nonlocal _scan_thread_started
