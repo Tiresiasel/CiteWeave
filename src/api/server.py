@@ -817,6 +817,7 @@ def create_app() -> Flask:
 
     @app.post("/api/v1/watch/scan-now")
     def watch_scan_now():
+        _debug("api.scan_now")
         _scan_now_event.set()
         # trigger immediate scan in background but return quickly
         threading.Thread(target=_scan_once, daemon=True).start()
