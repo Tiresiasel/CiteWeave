@@ -23,7 +23,15 @@ class AuthorPaperIndex:
     Supports finding all papers by an author and getting PDF paths.
     """
     
-    def __init__(self, storage_root: str = "data/papers", index_db_path: str = "data/author_paper_index.db"):
+    def __init__(self, storage_root: str = None, index_db_path: str = None):
+        # Use environment variables or default paths
+        if storage_root is None:
+            data_dir = os.environ.get("CITEWEAVE_DATA_DIR", "data")
+            storage_root = os.path.join(data_dir, "papers")
+        
+        if index_db_path is None:
+            data_dir = os.environ.get("CITEWEAVE_DATA_DIR", "data")
+            index_db_path = os.path.join(data_dir, "author_paper_index.db")
         """
         Initialize the author-paper index.
         

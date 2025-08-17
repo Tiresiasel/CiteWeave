@@ -11,7 +11,7 @@ import json
 # Add src to Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
 
-from src.agents.multi_agent_system import EnhancedMultiAgentSystem
+from src.agents.archive.multi_agent_system import EnhancedMultiAgentSystem
 from src.graph_builder import GraphDB
 from src.vector_indexer import VectorIndexer
 from src.config_manager import ConfigManager

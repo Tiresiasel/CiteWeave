@@ -58,20 +58,22 @@ services:
     container_name: citeweave-app
     # App can start regardless; entrypoint waits for deps via URLs
     environment:
-      - CITEWEAVE_API_HOST=0.0.0.0
-      - CITEWEAVE_API_PORT=31415
-      - CITEWEAVE_ENV=production
-      - CITEWEAVE_DATA_DIR=/app/data
-      - CITEWEAVE_SETTINGS_PATH=/app/data/settings.json
-      - QDRANT_URL=http://qdrant:6333
-      - GROBID_URL=http://grobid:8070
-      - NEO4J_URI=bolt://neo4j:7687
-      - NEO4J_USERNAME=neo4j
-      - NEO4J_PASSWORD=12345678
+      - CITEWEAVE_API_HOST=${CITEWEAVE_API_HOST:-0.0.0.0}
+      - CITEWEAVE_API_PORT=${CITEWEAVE_API_PORT:-31415}
+      - CITEWEAVE_ENV=${CITEWEAVE_ENV:-production}
+      - CITEWEAVE_DATA_DIR=${CITEWEAVE_DATA_DIR:-/app/data}
+      - CITEWEAVE_LOGS_DIR=${CITEWEAVE_LOGS_DIR:-/app/logs}
+      - CITEWEAVE_SETTINGS_PATH=${CITEWEAVE_SETTINGS_PATH:-/app/data/settings.json}
+      - QDRANT_URL=${QDRANT_URL:-http://qdrant:6333}
+      - GROBID_URL=${GROBID_URL:-http://grobid:8070}
+      - NEO4J_URI=${NEO4J_URI:-bolt://neo4j:7687}
+      - NEO4J_USERNAME=${NEO4J_USERNAME:-neo4j}
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-12345678}
     ports:
       - "31415:31415"
     volumes:
-      - app_data:/app/data
+      - ${CITEWEAVE_DATA_DIR:-./data}:/app/data  # Mount host data directory (includes logs)
+      # Note: app_data volume removed, now using direct host mount for data persistence
     restart: unless-stopped
     develop:
       watch:
@@ -98,6 +100,4 @@ volumes:
   qdrant_storage:
     driver: local
   neo4j_data:
-    driver: local 
-  app_data:
     driver: local

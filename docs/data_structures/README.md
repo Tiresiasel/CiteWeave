@@ -1,20 +1,20 @@
-> **This project is licensed under the Apache License 2.0. See the LICENSE file for details.**
-
 # CiteWeave Data Structure Documentation
 
-## 🔄 **NEW PARALLEL STRUCTURE UPDATE** 
+> **This project is licensed under the Apache License 2.0. See the LICENSE file for details.**
 
-### Key Changes (2025)
-- **Unified Citation Format**: All levels (sections, paragraphs, sentences) use identical citation structure
-- **Parallel Arrays**: `sections[]`, `paragraphs[]`, `sentences[]` are now independent parallel arrays
-- **No Nesting**: Paragraphs are no longer nested inside sections for better query performance
-- **Consistent API**: Same citation format across all data access methods
-- **🆕 PDF Query System**: Direct access to complete paper content via stored processed documents
+## 🔄 **CURRENT IMPLEMENTATION UPDATE** 
 
-## 📄 **NEW PDF Query System**
+### Key Features (2025)
+- **Multi-Level Citation Structure**: Sentences and paragraphs support citation tracking
+- **Unified Paper ID System**: SHA256-based paper identification for cross-database consistency
+- **Enhanced Graph Database**: Neo4j with comprehensive node types and relationship management
+- **Vector Database Integration**: Qdrant with multi-level semantic indexing
+- **PDF Query System**: Direct access to complete paper content via stored processed documents
+
+## 📄 **PDF Query System**
 
 ### Overview
-CiteWeave now supports direct PDF content queries, providing access to complete paper content without database limitations.
+CiteWeave supports direct PDF content queries, providing access to complete paper content without database limitations.
 
 ### Available Query Methods
 1. **`query_pdf_content(paper_id, query)`** - Keyword search within papers
@@ -47,21 +47,11 @@ CiteWeave now supports direct PDF content queries, providing access to complete 
   - `issue`: string (optional) 
   - `pages`: string (optional)
 
-- **Section** (NEW)
-  - `id`: string (e.g., `section_{index}`)
-  - `title`: string (section heading)
-  - `text`: string (full section text)
-  - `section_index`: int
-  - `section_type`: string (e.g., introduction, methodology, results)
-  - `paragraph_count`: int
-  - `word_count`: int
-  - `char_count`: int
-
 - **Paragraph**
   - `id`: string (e.g., `para_{index}`)
   - `text`: string
   - `paragraph_index`: int
-  - `section`: string (name of containing section)
+  - `section`: string (section name as attribute, not a separate node)
   - `citation_count`: int
   - `sentence_count`: int
   - `has_citations`: bool (True if this paragraph contains any citations)
@@ -77,18 +67,27 @@ CiteWeave now supports direct PDF content queries, providing access to complete 
   - `word_count`: int
   - `char_count`: int
 
+- **Argument** (Legacy Support)
+  - `id`: string
+  - `text`: string
+  - `claim_type`: string
+  - `section`: string (optional)
+  - `version`: string
+  - `confidence`: float (optional)
+  - `custom_tags`: list of string (optional)
+
 ### Relationship Types
 
 - `(:Sentence)-[:BELONGS_TO]->(:Paragraph)`
 - `(:Sentence)-[:BELONGS_TO]->(:Paper)`
 - `(:Paragraph)-[:BELONGS_TO]->(:Paper)`
-- `(:Section)-[:BELONGS_TO]->(:Paper)` (NEW)
+- `(:Argument)-[:BELONGS_TO]->(:Paper)` (Legacy)
 - `(:Sentence)-[:CITES]->(:Paper)`
   - `citation_text`, `citation_context`, `confidence`, `created_at`
 - `(:Paragraph)-[:CITES]->(:Paper)`
   - `citation_count`, `citation_density`, `created_at`
-- `(:Section)-[:CITES]->(:Paper)` (NEW)
-  - `citation_count`, `aggregated_from_paragraphs`, `created_at`
+- `(:Argument)-[:RELATES]->(:Argument|:Paper)` (Legacy)
+  - `relation_type`, `confidence`, `version`
 
 ### 结构示意
 
@@ -98,21 +97,28 @@ graph TD
   Para1[Paragraph]
   Sent1[Sentence]
   Paper2[Paper]
+  Arg1[Argument]
+  
   Paper1 -->|BELONGS_TO| Para1
-  Para1 -->|BELONGS_TO| Paper1
-  Sent1 -->|BELONGS_TO| Para1
+  Para1 -->|BELONGS_TO| Sent1
   Sent1 -->|BELONGS_TO| Paper1
   Sent1 -->|CITES| Paper2
   Para1 -->|CITES| Paper2
+  Arg1 -->|BELONGS_TO| Paper1
+  Arg1 -->|RELATES| Paper2
 ```
 
+### Important Notes
+- **Section information is stored as a string attribute** in Paragraph nodes, not as separate Section nodes
+- **The actual hierarchy is**: Paper → Paragraph → Sentence
+- **This design choice** provides flexibility while maintaining performance
 
 ## 🧬 Embedding Database Structure (Qdrant/VectorDB)
 
 ### Collections (Multi-Level Indexing)
-- `sentences`：句子级向量（formerly claims collection）
+- `sentences`：句子级向量
 - `paragraphs`：段落级向量 
-- `sections`：章节级向量  
+- `sections`：章节级向量（注意：这是向量索引，不是图数据库节点）
 - `citations`：引用文本向量
 
 ### 向量配置
@@ -145,6 +151,7 @@ graph TD
 ```json
 {
   "sentence_index": "int",
+  "sentence_type": "string",
   "has_citations": "boolean",
   "word_count": "int",
   "char_count": "int"
@@ -158,8 +165,7 @@ graph TD
   "section": "string",
   "citation_count": "int",
   "sentence_count": "int",
-  "has_citations": "boolean",
-  "page": "int"
+  "has_citations": "boolean"
 }
 ```
 
@@ -176,9 +182,10 @@ graph TD
 **Citations Collection:**
 ```json
 {
+  "citation_index": "int",
   "citation_text": "string",
   "cited_paper_id": "string",
-  "context": "string",
+  "citation_context": "string",
   "confidence": "float"
 }
 ```
@@ -192,8 +199,8 @@ collection: sentences
     payload:
       paper_id: "..."
       sentence_index: 0
-      text: "..."
       sentence_type: "..."
+      text: "..."
       title: "..."
       authors: ["..."]
       year: "..."
@@ -205,7 +212,69 @@ collection: paragraphs
 ...
 ```
 
+## 🔧 **Implementation Details**
+
+### Paper ID Generation
+- **Algorithm**: SHA256 hash of title + year + authors
+- **Uniqueness**: Ensures global uniqueness across all databases
+- **Consistency**: Same paper_id used in Neo4j, Qdrant, and file system
+
+### Database Integration
+- **GraphDB**: Handles Neo4j operations with comprehensive node and relationship management
+- **VectorIndexer**: Manages Qdrant collections with unified metadata structure
+- **DatabaseIntegrator**: Coordinates data flow between all storage systems
+
+### Processing Pipeline
+1. **PDF Processing**: Text extraction and structure analysis
+2. **Citation Parsing**: Sentence and paragraph-level citation detection
+3. **Graph Building**: Neo4j node and relationship creation
+4. **Vector Indexing**: Semantic embedding generation and storage
+5. **Data Synchronization**: Ensuring consistency across all databases
+
+## 📊 **Data Flow Architecture**
+
+```
+PDF Document → DocumentProcessor → CitationParser → GraphBuilder + VectorIndexer
+     ↓                    ↓              ↓              ↓
+Processed JSON → DatabaseIntegrator → Neo4j + Qdrant + SQLite
+```
+
+### Section Handling in Practice
+```python
+# Sections are processed as follows:
+for paragraph in paragraphs:
+    self.graph_db.create_paragraph(
+        paragraph_id=paragraph["id"],
+        paper_id=paper_id,
+        text=paragraph["text"],
+        section=paragraph.get("section", "Unknown"),  # Section as string attribute
+        # ... other attributes
+    )
+    
+    # Section information is also indexed in vector database
+    self.vector_indexer.index_sections(
+        paper_id=paper_id,
+        sections=section_data,  # For vector search
+        metadata=metadata
+    )
+```
+
+## Performance Considerations
+
+### Advantages of Current Design
+- **Simpler Graph Structure**: Fewer nodes and relationships to manage
+- **Faster Queries**: Direct access to section information without graph traversal
+- **Easier Maintenance**: Section changes don't require graph restructuring
+- **Flexible Section Handling**: Section names can be easily updated
+
+### Trade-offs
+- **Limited Section Analysis**: Cannot perform complex graph operations on sections
+- **Section Relationships**: Cannot directly model relationships between sections
+- **Section Metadata**: Section-level statistics require aggregation queries
+
 ## 备注
 - Paper ID 统一由 PaperIDGenerator 生成（SHA256 hash，确保全局唯一）
 - 所有节点、向量的 `paper_id` 字段保持一致，实现多模态数据的跨库关联
-- Graph数据库和Embedding数据库可通过 `paper_id` 实现高效联动 
+- Graph数据库和Embedding数据库可通过 `paper_id` 实现高效联动
+- 支持向后兼容，保留原有的Argument节点结构
+- **Section信息作为Paragraph的属性存储**，不是独立的图节点，但在向量数据库中仍有独立的索引 

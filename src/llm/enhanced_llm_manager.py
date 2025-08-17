@@ -46,7 +46,7 @@ class LanguageDetector:
     """Simple language detection using common patterns"""
     
     LANGUAGE_PATTERNS = {
-        'zh': ['的', '是', '在', '了', '和', '有', '我', '你', '他', '她', '论文', '引用', '作者'],
+        'zh': ['的', '是', '在', '了', '和', '有', '我', '你', '他', '她', '论文', '引用', '作者',"这","那"],
         'fr': ['le', 'la', 'les', 'un', 'une', 'de', 'du', 'des', 'et', 'ou', 'qui', 'que'],
         'de': ['der', 'die', 'das', 'und', 'oder', 'ist', 'sind', 'ein', 'eine', 'mit', 'zu'],
         'es': ['el', 'la', 'los', 'las', 'un', 'una', 'de', 'del', 'y', 'o', 'que', 'es'],
@@ -155,14 +155,13 @@ class EnhancedLLMManager:
             model = self.get_agent_model("language_processor")
             
             prompt = ChatPromptTemplate.from_messages([
-                ("system", f"""You are a professional translator. Translate the following text from {detected_lang} to {target_language}.
-                
-Instructions:
-- Preserve technical terms and proper names (especially author names, paper titles)
-- Maintain the original meaning and tone
-- Do not add explanations or comments
-- Return ONLY the translated text
-- For all key academic terms, author names, paper titles, and technical keywords, always provide the original English term in parentheses or slashes after the translated/localized term, regardless of the output language. This helps the reader match the original source."""),
+                ("system", f"""You are a professional translator. Translate the following text from {detected_lang} to {target_language}.                                
+                Instructions:
+                - Preserve technical terms and proper names (especially author names, paper titles)
+                - Maintain the original meaning and tone
+                - Do not add explanations or comments
+                - Return ONLY the translated text
+                - For all key academic terms, author names, paper titles, and technical keywords, always provide the original English term in parentheses or slashes after the translated/localized term, regardless of the output language. This helps the reader match the original source."""),
                 ("user", "{text}")
             ])
             
@@ -233,13 +232,13 @@ Instructions:
             
             prompt = ChatPromptTemplate.from_messages([
                 ("system", """Summarize this academic paper discussion conversation. Include:
-1. Key papers and authors mentioned
-2. Main topics explored
-3. Types of queries asked (citation analysis, paper search, etc.)
-4. Important findings or patterns discovered
+                1. Key papers and authors mentioned
+                2. Main topics explored
+                3. Types of queries asked (citation analysis, paper search, etc.)
+                4. Important findings or patterns discovered
 
-Keep the summary concise but informative for future context.
-For all key academic terms, author names, paper titles, and technical keywords, always provide the original English term in parentheses or slashes after the translated/localized term, regardless of the output language. This helps the reader match the original source."""),
+                Keep the summary concise but informative for future context.
+                For all key academic terms, author names, paper titles, and technical keywords, always provide the original English term in parentheses or slashes after the translated/localized term, regardless of the output language. This helps the reader match the original source."""),
                 ("user", "Conversation to summarize:\n\n{{conversation}}")
             ])
             
@@ -294,18 +293,18 @@ For all key academic terms, author names, paper titles, and technical keywords, 
             
             prompt = ChatPromptTemplate.from_messages([
                 ("system", f"""You are helping users with academic paper queries. When information is unclear or missing, 
-you need to ask clarifying questions in {user_language}.
+                you need to ask clarifying questions in {user_language}.
 
-Generate a helpful clarification question that:
-1. Explains what information is unclear or missing
-2. Suggests specific details the user could provide
-3. Offers options when possible
-4. Is polite and encouraging
+                Generate a helpful clarification question that:
+                1. Explains what information is unclear or missing
+                2. Suggests specific details the user could provide
+                3. Offers options when possible
+                4. Is polite and encouraging
 
-For all key academic terms, author names, paper titles, and technical keywords, always provide the original English term in parentheses or slashes after the translated/localized term, regardless of the output language. This helps the reader match the original source.
+                For all key academic terms, author names, paper titles, and technical keywords, always provide the original English term in parentheses or slashes after the translated/localized term, regardless of the output language. This helps the reader match the original source.
 
-Issue: {issue}
-Context: {context}"""),
+                Issue: {issue}
+                Context: {context}"""),
                 ("user", "Generate a clarification question for this situation.")
             ])
             

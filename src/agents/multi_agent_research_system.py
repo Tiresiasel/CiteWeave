@@ -8,10 +8,11 @@ import logging
 import uuid
 import os
 import sys
+import time
+import psutil
 from typing import Dict, List, Optional, Tuple, Any, Union, TypedDict, Annotated
 from dataclasses import dataclass, asdict
 from enum import Enum
-import time
 import operator
 import re
 
@@ -19,6 +20,13 @@ import re
 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
+
+# Import trace storage system
+try:
+    from src.storage.query_trace_storage import QueryTraceStorage
+except ImportError:
+    # Fallback if import fails
+    QueryTraceStorage = None
 
 try:
     from langgraph.graph import StateGraph, END, START
@@ -3049,6 +3057,23 @@ class LangGraphResearchSystem:
         self.question_analyzer = LLMQuestionAnalysisAgent(self.model_config_manager)
         self.fuzzy_matcher = FuzzyMatchingAgent(self.query_agent, self.model_config_manager)
         self.query_planner = QueryPlanningAgent(self.query_agent, None, self.model_config_manager)  # vector_indexer will be set later
+        
+        # Initialize trace storage system
+        if QueryTraceStorage:
+            try:
+                self.trace_storage = QueryTraceStorage()
+                self.current_query_id = None
+                self.current_query = None
+                self.current_thread_id = "default"
+                self.current_user_id = "default"
+                self.query_start_time = None
+                self.logger.info("Query trace storage system initialized")
+            except Exception as e:
+                self.logger.warning(f"Failed to initialize trace storage: {e}")
+                self.trace_storage = None
+        else:
+            self.trace_storage = None
+            self.logger.warning("QueryTraceStorage not available")
         self.data_retrieval_coordinator = DataRetrievalCoordinator(self.query_agent, None, self.model_config_manager)  # vector_indexer will be set later
         
         try:
@@ -3904,15 +3929,91 @@ Please respond with: CONTINUE or EXPAND
         conversation_history = history or []
         current_collected_data = collected_data or {"results": {}}
         current_question = user_input
+        
+        # Start query tracing
+        if self.trace_storage:
+            try:
+                self.current_query = user_input
+                self.current_thread_id = "default"
+                self.current_user_id = "default"
+                self.query_start_time = time.time()
+                self.current_query_id = self.trace_storage.start_query_trace(
+                    query_text=user_input,
+                    thread_id=self.current_thread_id,
+                    user_id=self.current_user_id,
+                    query_type="interactive_chat",
+                    language="en"
+                )
+                self.logger.info(f"Started query trace: {self.current_query_id}")
+                
+                # Record workflow start
+                step_id = self.trace_storage.add_execution_step(
+                    query_id=self.current_query_id,
+                    step_order=1,
+                    agent_name="system",
+                    workflow_step="query_start",
+                    routing_decision="start_interactive_chat",
+                    input_state={"user_input": user_input, "history": len(history) if history else 0},
+                    output_state={"status": "started"},
+                    decision_reasoning="User initiated interactive research chat",
+                    next_agent="query_planner",
+                    execution_time=0.0,
+                    memory_usage=0,
+                    agent_state={"status": "initialized"}
+                )
+            except Exception as e:
+                self.logger.error(f"Failed to start query trace: {e}")
+                self.current_query_id = None
         try:
             # Remove interactive menu flow and always decide sufficiency automatically
             # ... rest of the function ...
             # Default: treat as new question
+            
+            # Record workflow step: research execution
+            if self.trace_storage and self.current_query_id:
+                try:
+                    step_id = self.trace_storage.add_execution_step(
+                        query_id=self.current_query_id,
+                        step_order=2,
+                        agent_name="system",
+                        workflow_step="research_execution",
+                        routing_decision="execute_research_directly",
+                        input_state={"question": current_question, "request_id": request_id},
+                        output_state={"status": "executing"},
+                        decision_reasoning="Direct research execution for new question",
+                        next_agent="research_workflow",
+                        execution_time=0.0,
+                        memory_usage=0,
+                        agent_state={"status": "executing"}
+                    )
+                except Exception as e:
+                    self.logger.error(f"Failed to record research execution trace: {e}")
+            
             research_result = self._execute_research_directly(current_question, request_id)
             if research_result and "collected_data" in research_result:
                 new_data = research_result["collected_data"]
                 if new_data and "results" in new_data:
                     current_collected_data["results"].update(new_data["results"])
+            # Record workflow step: information summary
+            if self.trace_storage and self.current_query_id:
+                try:
+                    step_id = self.trace_storage.add_execution_step(
+                        query_id=self.current_query_id,
+                        step_order=3,
+                        agent_name="information_summary_agent",
+                        workflow_step="information_summary",
+                        routing_decision="summarize_collected_data",
+                        input_state={"question": current_question, "collected_data_keys": list(current_collected_data.get("results", {}).keys())},
+                        output_state={"status": "summarizing"},
+                        decision_reasoning="Summarize collected research data for sufficiency assessment",
+                        next_agent="sufficiency_assessment",
+                        execution_time=0.0,
+                        memory_usage=0,
+                        agent_state={"status": "summarizing"}
+                    )
+                except Exception as e:
+                    self.logger.error(f"Failed to record information summary trace: {e}")
+            
             information_summary = self.information_summary_agent.summarize_information(
                 current_question, current_collected_data, research_result.get("query_intent", {}), request_id
             )
@@ -3920,6 +4021,26 @@ Please respond with: CONTINUE or EXPAND
             confidence = (information_summary or {}).get('confidence_level', 'low').lower()
             # heuristic: medium/high -> sufficient
             sufficient = confidence in ('medium', 'high')
+            
+            # Record workflow step: sufficiency assessment
+            if self.trace_storage and self.current_query_id:
+                try:
+                    step_id = self.trace_storage.add_execution_step(
+                        query_id=self.current_query_id,
+                        step_order=4,
+                        agent_name="system",
+                        workflow_step="sufficiency_assessment",
+                        routing_decision=f"confidence_{confidence}_sufficient_{sufficient}",
+                        input_state={"confidence_level": confidence, "information_summary": information_summary},
+                        output_state={"sufficient": sufficient, "confidence": confidence},
+                        decision_reasoning=f"Automatic sufficiency assessment: confidence={confidence}, sufficient={sufficient}",
+                        next_agent="final_answer_generation" if sufficient else "query_expansion",
+                        execution_time=0.0,
+                        memory_usage=0,
+                        agent_state={"status": "assessing"}
+                    )
+                except Exception as e:
+                    self.logger.error(f"Failed to record sufficiency assessment trace: {e}")
 
             # Build right-side bibliography list (titles only) for UI consumption
             bibliography = []
@@ -3944,7 +4065,52 @@ Please respond with: CONTINUE or EXPAND
                 pass
 
             if sufficient:
+                # Record workflow step: final answer generation
+                if self.trace_storage and self.current_query_id:
+                    try:
+                        step_id = self.trace_storage.add_execution_step(
+                            query_id=self.current_query_id,
+                            step_order=5,
+                            agent_name="final_answer_agent",
+                            workflow_step="final_answer_generation",
+                            routing_decision="generate_final_answer",
+                            input_state={"question": current_question, "collected_data_summary": len(current_collected_data.get("results", {}))},
+                            output_state={"status": "generating"},
+                            decision_reasoning="Sufficient information collected, generating final answer",
+                            next_agent="response_completion",
+                            execution_time=0.0,
+                            memory_usage=0,
+                            agent_state={"status": "generating"}
+                        )
+                    except Exception as e:
+                        self.logger.error(f"Failed to record final answer generation trace: {e}")
+                
                 final_response = self._generate_final_answer(current_question, current_collected_data, conversation_history, request_id)
+                
+                # Complete query tracing
+                if self.trace_storage and self.current_query_id:
+                    try:
+                        total_execution_time = time.time() - self.query_start_time
+                        memory_usage = psutil.Process().memory_info().rss if hasattr(psutil, 'Process') else 0
+                        self.trace_storage.complete_query_trace(
+                            query_id=self.current_query_id,
+                            final_response=final_response,
+                            confidence_score=0.8,  # Default confidence for interactive chat
+                            total_execution_time=total_execution_time,
+                            total_memory_usage=memory_usage,
+                            data_sources_used=["interactive_chat"],
+                            errors=[],
+                            warnings=[]
+                        )
+                        self.logger.info(f"Completed query trace: {self.current_query_id}")
+                    except Exception as e:
+                        self.logger.error(f"Failed to complete query trace: {e}")
+                    finally:
+                        # Reset current query tracking
+                        self.current_query_id = None
+                        self.current_query = None
+                        self.query_start_time = None
+                
                 return {
                     "text": final_response,
                     "collected_data": current_collected_data,
@@ -3967,6 +4133,31 @@ Please respond with: CONTINUE or EXPAND
                     current_question, current_collected_data, research_result.get("query_intent", {}), request_id
                 )
                 final_response = self._generate_final_answer(current_question, current_collected_data, conversation_history, request_id)
+                
+                # Complete query tracing
+                if self.trace_storage and self.current_query_id:
+                    try:
+                        total_execution_time = time.time() - self.query_start_time
+                        memory_usage = psutil.Process().memory_info().rss if hasattr(psutil, 'Process') else 0
+                        self.trace_storage.complete_query_trace(
+                            query_id=self.current_query_id,
+                            final_response=final_response,
+                            confidence_score=0.8,  # Default confidence for interactive chat
+                            total_execution_time=total_execution_time,
+                            total_memory_usage=memory_usage,
+                            data_sources_used=["interactive_chat"],
+                            errors=[],
+                            warnings=[]
+                        )
+                        self.logger.info(f"Completed query trace: {self.current_query_id}")
+                    except Exception as e:
+                        self.logger.error(f"Failed to complete query trace: {e}")
+                    finally:
+                        # Reset current query tracking
+                        self.current_query_id = None
+                        self.current_query = None
+                        self.query_start_time = None
+                
                 return {
                     "text": final_response,
                     "collected_data": current_collected_data,
@@ -3974,6 +4165,28 @@ Please respond with: CONTINUE or EXPAND
                     "bibliography": bibliography
                 }
         except Exception as e:
+            # Log error in trace if available
+            if self.trace_storage and self.current_query_id:
+                try:
+                    total_execution_time = time.time() - self.query_start_time
+                    memory_usage = psutil.Process().memory_info().rss if hasattr(psutil, 'Process') else 0
+                    self.trace_storage.complete_query_trace(
+                        query_id=self.current_query_id,
+                        final_response=f"❌ Error during interactive research: {str(e)}",
+                        confidence_score=0.0,
+                        total_execution_time=total_execution_time,
+                        total_memory_usage=memory_usage,
+                        data_sources_used=[],
+                        errors=[str(e)],
+                        warnings=[]
+                    )
+                except Exception as trace_error:
+                    self.logger.error(f"Failed to log error in trace: {trace_error}")
+                finally:
+                    self.current_query_id = None
+                    self.current_query = None
+                    self.query_start_time = None
+            
             log_event("InteractiveChat", "error", {"error": str(e)}, level=logging.ERROR, request_id=request_id)
             return {
                 "text": f"❌ Error during interactive research: {str(e)}",

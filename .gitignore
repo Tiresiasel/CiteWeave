@@ -231,3 +231,7 @@ test_files/*
 data/*
 
 config/model_config.jsonconfig/model_config.json
+
+*.sqlite
+*.db
+*.pdf

@@ -65,6 +65,20 @@ graph TD
 
 ## ⚡ Quick Start: Set Up All Services
 
+### Automated Setup (Recommended)
+```bash
+# Clone the repository
+git clone <your-repo-url>
+cd CiteWeave
+
+# Run the automated setup script
+./scripts/setup_deployment.sh
+
+# Start all services
+./run.sh --rebuild
+```
+
+### Manual Setup
 1. **Set Up Your Python Environment**
    - Python 3.12 is recommended.
    - Install dependencies: `pip install -r requirements.txt`.
@@ -74,10 +88,21 @@ graph TD
      ```
 
 2. **Configure Environment Variables**
-   - Copy the template: `cp .env_template .env`
+   - Copy the template: `cp config.env.example .env`
    - Edit `.env` and fill in your OpenAI API key, Neo4j password, etc.
 
 3. **Start All Core Services (Qdrant, GROBID, Neo4j)**
+
+   **Option A: Using run.sh (Recommended)**
+   - Download docker desktop if you don't have it already. (https://www.docker.com/products/docker-desktop/)
+   - Download docker compose if you don't have it already. (https://docs.docker.com/compose/install/)
+   - Make the script executable and run:
+     ```bash
+     chmod +x run.sh
+     ./run.sh
+     ```
+
+   **Option B: Manual Docker Compose**
    - Download docker desktop if you don't have it already. (https://www.docker.com/products/docker-desktop/)
    - Download docker compose if you don't have it already. (https://docs.docker.com/compose/install/)
    - Run:
@@ -85,10 +110,10 @@ graph TD
      docker-compose up -d
      ```
 
-     To check if the services are running, run:
-     ```bash
-     python scripts/start_services.py
-     ```
+   To check if the services are running, run:
+   ```bash
+   python scripts/start_services.py
+   ```
 
 4. **Wait for Services to Be Ready**
    - Once you see the service URLs, you're ready to use CiteWeave!
@@ -143,7 +168,37 @@ This UI stores chats locally in your browser and talks to the server via the RES
 
 ## 🐳 Docker Compose Deployment
 
-Run the full stack (Qdrant, GROBID, Neo4j, CiteWeave API/UI):
+### Quick Start with run.sh (Recommended)
+
+The easiest way to deploy CiteWeave is using the `run.sh` script, which automatically handles container management and host-folder mounts:
+
+```bash
+# Basic restart with automatic watch_map update and rebuild (DEFAULT - recommended)
+./run.sh
+
+# Skip watch_map update (use existing mount configuration)
+./run.sh --no-update-watch-map
+
+# Skip rebuilding containers (use existing images)
+./run.sh --no-rebuild
+
+# Enter watch mode after starting (updates + rebuilds + watch)
+./run.sh --watch
+```
+
+**What run.sh does (DEFAULT behavior):**
+1. Stops all existing containers safely
+2. **Automatically updates** watch_map and generates dynamic mount configurations
+3. **Rebuilds all containers** with latest code changes
+4. Starts all services with proper host-folder mounts
+5. Waits for services to be healthy
+6. Triggers initial document scan
+
+**Note:** By default, run.sh always updates the watch_map and rebuilds containers to ensure you have the latest configuration and code. Use `--no-update-watch-map` or `--no-rebuild` only if you want to skip these updates.
+
+### Manual Docker Compose
+
+Alternatively, you can run the full stack manually (Qdrant, GROBID, Neo4j, CiteWeave API/UI):
 
 ```bash
 # Intel/x86_64 hosts
@@ -157,7 +212,16 @@ Then open `http://localhost:31415/`.
 
 ### Data persistence
 
-- Uploaded documents, processed results, and user settings are persisted under a named volume:
+#### With run.sh (Host-folder mounts)
+When using `run.sh`, your data is persisted directly in your project directory:
+- **App data**: `./data/` → `/app/data` (papers, vector indexes, logs)
+- **Query traces**: `./logs/` → `/app/logs` (query execution logs)
+- **Configuration**: `./config/` → `/app/config`
+
+This ensures your data persists even when containers are removed and makes it easy to backup or version control your data.
+
+#### With manual Docker Compose
+- Uploaded documents, processed results, and user settings are persisted under named volumes:
   - App data: Docker volume `app_data` mounted to `/app/data`
   - Qdrant data: Docker volume `qdrant_storage`
   - Neo4j data: Docker volume `neo4j_data`
@@ -174,6 +238,22 @@ You can inspect volumes with `docker volume ls`.
 
 ### Updating
 
+#### Using run.sh (Recommended)
+```bash
+# For quick restart without config changes (skips watch_map update)
+./run.sh --no-update-watch-map
+
+# For quick restart without rebuilding (skips container rebuild)
+./run.sh --no-rebuild
+
+# For development with watch mode (updates + rebuilds + watch)
+./run.sh --watch
+
+# Default behavior - updates watch_map and rebuilds (recommended)
+./run.sh
+```
+
+#### Manual Update
 ```bash
 # Intel/x86_64
 docker compose pull

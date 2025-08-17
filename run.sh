@@ -2,24 +2,44 @@
 set -euo pipefail
 
 # Run CiteWeave with dynamic host-folder mounts generated from watch_map
-# Usage: ./run.sh [--update-watch-map]
-#   --update-watch-map  Update server watch_map to container paths when generating overlay
+# Usage: ./run.sh [OPTION]
+#   (no option)        Stop containers, rebuild and restart all services (DEFAULT: updates watch_map + rebuilds)
+#   --no-update-watch-map  Skip updating server watch_map (use existing mount configuration)
+#   --no-rebuild      Skip rebuilding containers (use existing images)
+#   --watch           Enter watch mode after starting services
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 API_BASE="${API_BASE:-http://localhost:31415/api/v1}"
 COMPOSE_MAIN="${COMPOSE_MAIN:-docker-compose.yml}"
 COMPOSE_OVERLAY="${COMPOSE_OVERLAY:-docker-compose.mounts.yml}"
 
-update_flag=false
-if [[ "${1:-}" == "--update-watch-map" ]]; then
-  update_flag=true
+# Load environment variables if .env file exists
+if [[ -f ".env" ]]; then
+    echo "[run.sh] Loading environment from .env file"
+    export $(grep -v '^#' .env | xargs)
+fi
+
+# Default to updating watch_map and rebuilding unless explicitly disabled
+update_flag=true
+rebuild_flag=true
+
+if [[ "${1:-}" == "--no-update-watch-map" ]]; then
+  update_flag=false
+fi
+
+if [[ "${1:-}" == "--no-rebuild" ]]; then
+  rebuild_flag=false
 fi
 
 echo "[run.sh] Project root: ${ROOT_DIR}"
 cd "$ROOT_DIR"
 
 gen_overlay() {
-  echo "[run.sh] Generating docker overlay from watch_map (update=${update_flag})"
+  if [[ "$update_flag" == "true" ]]; then
+    echo "[run.sh] Generating docker overlay from watch_map (DEFAULT: updating watch_map)"
+  else
+    echo "[run.sh] Generating docker overlay from watch_map (SKIPPING: using existing configuration)"
+  fi
   # Fetch mounts from API, then locally compose an overlay that filters out invalid hosts
   python3 - <<'PY' "${API_BASE}" "${COMPOSE_OVERLAY}" "${update_flag}"
 import json, os, sys, urllib.request
@@ -49,7 +69,7 @@ lines = [
     'services:',
     '  citeweave:',
     '    volumes:',
-    '      - app_data:/app/data',
+    # Note: app_data volume removed, using direct host mount for data persistence
 ]
 for h, c in valid:
     lines.append(f'      - {h}:{c}:ro')
@@ -66,13 +86,41 @@ if skipped:
 PY
 }
 
-start_compose() {
-  echo "[run.sh] Starting services with overlay..."
-  # 允许用户在不同架构/compose 文件名下运行
+stop_containers() {
+  echo "[run.sh] Stopping existing containers..."
+  # 停止所有相关的容器
   if [[ -f docker-compose.amd64.yml ]]; then
-    docker compose -f docker-compose.amd64.yml -f "$COMPOSE_OVERLAY" up -d
+    docker compose -f docker-compose.amd64.yml -f "$COMPOSE_OVERLAY" down --remove-orphans 2>/dev/null || true
+    docker compose -f docker-compose.amd64.yml down --remove-orphans 2>/dev/null || true
   else
-    docker compose -f "$COMPOSE_MAIN" -f "$COMPOSE_OVERLAY" up -d
+    docker compose -f "$COMPOSE_MAIN" -f "$COMPOSE_OVERLAY" down --remove-orphans 2>/dev/null || true
+    docker compose -f "$COMPOSE_MAIN" down --remove-orphans 2>/dev/null || true
+  fi
+  
+  # 强制停止可能还在运行的容器
+  docker stop citeweave-app citeweave-qdrant citeweave-grobid citeweave-neo4j 2>/dev/null || true
+  docker rm citeweave-app citeweave-qdrant citeweave-grobid citeweave-neo4j 2>/dev/null || true
+  
+  echo "[run.sh] Containers stopped and removed"
+}
+
+start_compose() {
+  if [[ "$rebuild_flag" == "true" ]]; then
+    echo "[run.sh] Starting services with overlay and rebuilding..."
+    # 允许用户在不同架构/compose 文件名下运行
+    if [[ -f docker-compose.amd64.yml ]]; then
+      docker compose -f docker-compose.amd64.yml -f "$COMPOSE_OVERLAY" up -d --build
+    else
+      docker compose -f "$COMPOSE_MAIN" -f "$COMPOSE_OVERLAY" up -d --build
+    fi
+  else
+    echo "[run.sh] Starting services with overlay (no rebuild)..."
+    # 允许用户在不同架构/compose 文件名下运行
+    if [[ -f docker-compose.amd64.yml ]]; then
+      docker compose -f docker-compose.amd64.yml -f "$COMPOSE_OVERLAY" up -d
+    else
+      docker compose -f "$COMPOSE_MAIN" -f "$COMPOSE_OVERLAY" up -d
+    fi
   fi
 }
 
@@ -110,6 +158,7 @@ show_mounts() {
 
 start_base_if_needed
 gen_overlay
+stop_containers
 start_compose
 wait_health || true
 show_mounts
@@ -117,5 +166,8 @@ trigger_scan
 
 echo "[run.sh] Done. Open http://localhost:31415"
 
-docker compose up -d --build citeweave
-docker compose watch
+# 如果需要进入watch模式（默认已经重建了）
+if [[ "${1:-}" == "--watch" ]]; then
+  echo "[run.sh] Entering watch mode..."
+  docker compose watch
+fi
