@@ -224,10 +224,15 @@ rng_state.pth
 trainer_state.json
 training_args.bin
 
-# test files
-test_files/*
+# OpenClaw local artifacts
+.openclaw/
 
-# data
+# Runtime data should stay out of git (code/data separation)
 data/*
+!data/.gitkeep
+!data/README.md
 
-config/model_config.jsonconfig/model_config.json
+# Local test PDFs should stay out of git
+test_files/*
+!test_files/.gitkeep
+!test_files/README.md
