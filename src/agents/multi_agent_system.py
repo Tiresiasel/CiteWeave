@@ -26,6 +26,16 @@ from src.storage.graph_builder import GraphDB
 from src.storage.vector_indexer import VectorIndexer
 from src.storage.author_paper_index import AuthorPaperIndex
 from src.llm.enhanced_llm_manager import EnhancedLLMManager
+from src.agents.routing import (
+    DEFAULT_ROUTE,
+    ROUTE_AUTHOR_COLLECTION,
+    ROUTE_GRAPH_ANALYSIS,
+    ROUTE_PDF_ANALYSIS,
+    ROUTE_VECTOR_SEARCH,
+    normalize_routes,
+    next_required_route,
+    route_for_priority,
+)
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -466,7 +476,7 @@ class EnhancedMultiAgentSystem:
             error_msg = f"Smart routing failed: {str(e)}"
             state.errors.append(error_msg)
             # Fallback to basic routing
-            state.required_routes = ["vector_search"]
+            state.required_routes = [DEFAULT_ROUTE]
             state.retrieval_priorities = [RetrievalPriority.EMBEDDING_VECTOR]
             logger.error(error_msg)
         
@@ -487,15 +497,7 @@ class EnhancedMultiAgentSystem:
             # Get current priority retrieval method
             current_priority = state.retrieval_priorities[state.current_retrieval_index]
             
-            # Map priority to route name
-            priority_to_route = {
-                RetrievalPriority.EMBEDDING_VECTOR: "vector_search",
-                RetrievalPriority.GRAPH_DATABASE: "graph_analysis",
-                RetrievalPriority.PDF_CONTENT: "pdf_analysis",
-                RetrievalPriority.AUTHOR_INDEX: "author_collection"
-            }
-            
-            current_route = priority_to_route.get(current_priority, "vector_search")
+            current_route = route_for_priority(current_priority.value)
             
             # Check if this route is needed and not completed
             if current_route in state.required_routes and current_route not in state.completed_routes:
@@ -686,8 +688,8 @@ class EnhancedMultiAgentSystem:
                     all_relationships[paper_id] = relationships
             
             state.citation_relationships = all_relationships
-            state.route_results["graph_analysis"] = all_relationships
-            state.completed_routes.append("graph_analysis")
+            state.route_results[ROUTE_GRAPH_ANALYSIS] = all_relationships
+            state.completed_routes.append(ROUTE_GRAPH_ANALYSIS)
             state.debug_messages.append(f"Graph citation analysis completed for {len(all_relationships)} papers")
             
         except Exception as e:
@@ -705,8 +707,8 @@ class EnhancedMultiAgentSystem:
             # Use smart search which automatically determines granularity level
             results = self.vector_indexer.search(state.processed_query, limit=10)
             state.vector_results = results
-            state.route_results["vector_search"] = results
-            state.completed_routes.append("vector_search")
+            state.route_results[ROUTE_VECTOR_SEARCH] = results
+            state.completed_routes.append(ROUTE_VECTOR_SEARCH)
             state.debug_messages.append(f"Vector concept search returned {len(results)} results at appropriate granularity")
             
         except Exception as e:
@@ -734,17 +736,17 @@ class EnhancedMultiAgentSystem:
             
             if not pdf_paths:
                 state.warnings.append("No accessible PDF files found for the specified papers")
-                state.route_results["pdf_analysis"] = "No PDFs available"
+                state.route_results[ROUTE_PDF_ANALYSIS] = "No PDFs available"
             else:
                 # Use large context model for PDF analysis
                 large_model = self.llm_manager.get_agent_model("response_generator")
                 
                 pdf_analysis = await self._analyze_pdfs_with_ai(pdf_paths, state.processed_query, large_model)
                 state.pdf_content_analysis = pdf_analysis
-                state.route_results["pdf_analysis"] = pdf_analysis
+                state.route_results[ROUTE_PDF_ANALYSIS] = pdf_analysis
                 state.debug_messages.append(f"PDF analysis completed for {len(pdf_paths)} documents")
             
-            state.completed_routes.append("pdf_analysis")
+            state.completed_routes.append(ROUTE_PDF_ANALYSIS)
             
         except Exception as e:
             error_msg = f"PDF content analysis failed: {str(e)}"
@@ -763,7 +765,7 @@ class EnhancedMultiAgentSystem:
             
             if not author_name:
                 state.warnings.append("No author specified for collection analysis")
-                state.route_results["author_collection"] = "No author specified"
+                state.route_results[ROUTE_AUTHOR_COLLECTION] = "No author specified"
             else:
                 # Find all papers by the author
                 author_papers = self.author_index.find_papers_by_author(author_name, exact_match=False)
@@ -771,7 +773,7 @@ class EnhancedMultiAgentSystem:
                 
                 if not author_papers:
                     state.warnings.append(f"No papers found for author '{author_name}'")
-                    state.route_results["author_collection"] = f"No papers found for {author_name}"
+                    state.route_results[ROUTE_AUTHOR_COLLECTION] = f"No papers found for {author_name}"
                 else:
                     # Get PDF paths for all papers
                     paper_ids = [p["paper_id"] for p in author_papers]
@@ -785,15 +787,15 @@ class EnhancedMultiAgentSystem:
                         collection_analysis = await self._analyze_author_collection(
                             author_name, author_papers, available_pdfs, state.processed_query, large_model
                         )
-                        state.route_results["author_collection"] = collection_analysis
+                        state.route_results[ROUTE_AUTHOR_COLLECTION] = collection_analysis
                         state.debug_messages.append(f"Author collection analysis completed for {author_name}: {len(author_papers)} papers, {len(available_pdfs)} PDFs")
                     else:
                         # Fallback to metadata-only analysis
                         metadata_analysis = await self._analyze_author_metadata_only(author_name, author_papers, state.processed_query)
-                        state.route_results["author_collection"] = metadata_analysis
+                        state.route_results[ROUTE_AUTHOR_COLLECTION] = metadata_analysis
                         state.debug_messages.append(f"Author metadata analysis completed for {author_name}: {len(author_papers)} papers")
             
-            state.completed_routes.append("author_collection")
+            state.completed_routes.append(ROUTE_AUTHOR_COLLECTION)
             
         except Exception as e:
             error_msg = f"Author collection analysis failed: {str(e)}"
@@ -962,12 +964,10 @@ For all key academic terms, author names, paper titles, and technical keywords, 
             try:
                 routes = json.loads(result.strip())
                 if isinstance(routes, list):
-                    # Validate routes
-                    valid_routes = ["graph_analysis", "vector_search", "pdf_analysis", "author_collection"]
-                    filtered_routes = [r for r in routes if r in valid_routes]
-                    return filtered_routes if filtered_routes else ["vector_search"]  # fallback
+                    filtered_routes = normalize_routes(routes)
+                    return filtered_routes if filtered_routes else [DEFAULT_ROUTE]  # fallback
                 else:
-                    return ["vector_search"]  # fallback
+                    return [DEFAULT_ROUTE]  # fallback
             except:
                 # Fallback to pattern matching if JSON parsing fails
                 return self._fallback_route_analysis(query, entities)
@@ -984,29 +984,30 @@ For all key academic terms, author names, paper titles, and technical keywords, 
         # Check for citation-related queries
         citation_keywords = ['cite', 'citation', 'referenced', 'reference', 'mention']
         if any(kw in query_lower for kw in citation_keywords):
-            routes.append("graph_analysis")
+            routes.append(ROUTE_GRAPH_ANALYSIS)
         
         # Check for concept definition queries  
         definition_keywords = ['what is', 'definition', 'concept', 'theory']
         if any(kw in query_lower for kw in definition_keywords):
-            routes.append("vector_search")
+            routes.append(ROUTE_VECTOR_SEARCH)
         
         # Check for document content queries
         content_keywords = ['what does it discuss', 'content', 'discussion', 'paper']
         if any(kw in query_lower for kw in content_keywords):
             if entities.get("author") and "all" in query_lower:
-                routes.append("author_collection")
+                routes.append(ROUTE_AUTHOR_COLLECTION)
             else:
-                routes.append("pdf_analysis")
+                routes.append(ROUTE_PDF_ANALYSIS)
         
         # Author-related queries
         if entities.get("author"):
             if "all" in query_lower:
-                routes.append("author_collection")
+                routes.append(ROUTE_AUTHOR_COLLECTION)
             elif not routes:  # If no other specific routes, search for author's papers
-                routes.append("graph_analysis")
+                routes.append(ROUTE_GRAPH_ANALYSIS)
         
-        return routes if routes else ["vector_search"]
+        filtered_routes = normalize_routes(routes)
+        return filtered_routes if filtered_routes else [DEFAULT_ROUTE]
 
     async def _calculate_routing_confidence(self, query: str, entities: Dict[str, Any], routes: List[str], model) -> float:
         """Calculate confidence in routing decisions"""
@@ -1041,7 +1042,7 @@ For all key academic terms, author names, paper titles, and technical keywords, 
     def _needs_disambiguation(self, entities: Dict[str, Any], routes: List[str]) -> bool:
         """Check if paper disambiguation is needed before routing"""
         # Need disambiguation if we have author but need specific papers for PDF/graph analysis
-        if entities.get("author") and ("pdf_analysis" in routes or "graph_analysis" in routes):
+        if entities.get("author") and (ROUTE_PDF_ANALYSIS in routes or ROUTE_GRAPH_ANALYSIS in routes):
             return not entities.get("year") and not entities.get("title")
         return False
 
@@ -1071,23 +1072,15 @@ For all key academic terms, author names, paper titles, and technical keywords, 
 
     def _coordinate_routes(self, state: QueryState) -> str:
         """Coordinate execution of required routes"""
-        remaining_routes = [route for route in state.required_routes if route not in state.completed_routes]
-        
-        if not remaining_routes:
+        next_route = next_required_route(state.required_routes, state.completed_routes)
+
+        if not next_route:
             return "generate_response"
-        
-        # Return the next route to process
-        next_route = remaining_routes[0]
-        if next_route == "graph_analysis":
-            return "graph_analysis"
-        elif next_route == "vector_search":
-            return "vector_search"
-        elif next_route == "pdf_analysis":
-            return "pdf_analysis"
-        elif next_route == "author_collection":
-            return "author_collection"
-        else:
-            return "generate_response"
+
+        if next_route in (ROUTE_GRAPH_ANALYSIS, ROUTE_VECTOR_SEARCH, ROUTE_PDF_ANALYSIS, ROUTE_AUTHOR_COLLECTION):
+            return next_route
+
+        return "generate_response"
 
     # Language Processing Methods
     async def _detect_language(self, query: str) -> str:
@@ -1222,7 +1215,7 @@ Response: {{"author": "Michael Porter", "year": 1980, "keywords": ["competitive"
         elif state.query_type == QueryType.CITATION_ANALYSIS:
             return "direct_citation"
         else:
-            return "vector_search"
+            return DEFAULT_ROUTE
 
     def _route_after_disambiguation(self, state: QueryState) -> str:
         """Route after paper disambiguation"""
@@ -1233,7 +1226,7 @@ Response: {{"author": "Michael Porter", "year": 1980, "keywords": ["competitive"
         elif state.selected_papers:
             return "citation_analysis"
         else:
-            return "vector_search"
+            return DEFAULT_ROUTE
 
     # Utility methods
     def _classify_query_type(self, query: str, entities: Dict) -> QueryType:

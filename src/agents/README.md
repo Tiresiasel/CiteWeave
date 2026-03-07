@@ -165,8 +165,9 @@ print(result["response"])
 ## Extending the System
 
 - To add a new agent, implement the agent logic as an async method in `multi_agent_system.py` and add it to the workflow in `_build_workflow()`.
-- Update the smart router logic to route relevant queries to your new agent.
+- Update route constants/helpers in `routing.py` first (single source of truth), then update smart router prompts/examples.
 - Ensure your agent returns results in the expected format for response synthesis.
+- Add/adjust focused tests in `tests/test_routing.py` when route names or priority mapping change.
 
 ---
 
@@ -175,6 +176,7 @@ print(result["response"])
 ```
 src/agents/
   multi_agent_system.py   # Main multi-agent system logic and workflow
+  routing.py             # Route constants + normalization + priority mapping helpers
   README.md              # This documentation
 ```
 
