@@ -1,50 +1,75 @@
 import importlib.util
+import os
+import uuid
 from pathlib import Path
 
 
 _ROUTING_PATH = Path(__file__).resolve().parents[1] / "src" / "agents" / "routing.py"
-_spec = importlib.util.spec_from_file_location("citeweave_routing", _ROUTING_PATH)
-routing = importlib.util.module_from_spec(_spec)
-assert _spec.loader is not None
-_spec.loader.exec_module(routing)
-
-DEFAULT_ROUTE = routing.DEFAULT_ROUTE
-ROUTE_AUTHOR_COLLECTION = routing.ROUTE_AUTHOR_COLLECTION
-ROUTE_GRAPH_ANALYSIS = routing.ROUTE_GRAPH_ANALYSIS
-ROUTE_PDF_ANALYSIS = routing.ROUTE_PDF_ANALYSIS
-ROUTE_VECTOR_SEARCH = routing.ROUTE_VECTOR_SEARCH
-
-next_required_route = routing.next_required_route
-normalize_routes = routing.normalize_routes
-route_for_priority = routing.route_for_priority
 
 
-def test_normalize_routes_keeps_order_and_removes_invalid_duplicates():
+def _load_routing_module():
+    module_name = f"citeweave_routing_{uuid.uuid4().hex}"
+    spec = importlib.util.spec_from_file_location(module_name, _ROUTING_PATH)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
+
+
+def test_normalize_routes_keeps_order_and_supports_aliases():
+    routing = _load_routing_module()
+
     raw_routes = [
-        ROUTE_VECTOR_SEARCH,
+        routing.ROUTE_VECTOR_SEARCH,
         "invalid_route",
-        ROUTE_GRAPH_ANALYSIS,
-        ROUTE_VECTOR_SEARCH,
-        ROUTE_PDF_ANALYSIS,
+        "GRAPH",
+        routing.ROUTE_VECTOR_SEARCH,
+        "pdf-analysis",
+        "author",
     ]
 
-    assert normalize_routes(raw_routes) == [
-        ROUTE_VECTOR_SEARCH,
-        ROUTE_GRAPH_ANALYSIS,
-        ROUTE_PDF_ANALYSIS,
+    assert routing.normalize_routes(raw_routes) == [
+        routing.ROUTE_VECTOR_SEARCH,
+        routing.ROUTE_GRAPH_ANALYSIS,
+        routing.ROUTE_PDF_ANALYSIS,
+        routing.ROUTE_AUTHOR_COLLECTION,
     ]
 
 
 def test_route_for_priority_maps_known_and_defaults_unknown():
-    assert route_for_priority("embedding_vector") == ROUTE_VECTOR_SEARCH
-    assert route_for_priority("graph_database") == ROUTE_GRAPH_ANALYSIS
-    assert route_for_priority("pdf_content") == ROUTE_PDF_ANALYSIS
-    assert route_for_priority("author_index") == ROUTE_AUTHOR_COLLECTION
-    assert route_for_priority("unknown_priority") == DEFAULT_ROUTE
+    routing = _load_routing_module()
+
+    assert routing.route_for_priority("embedding_vector") == routing.ROUTE_VECTOR_SEARCH
+    assert routing.route_for_priority("graph_database") == routing.ROUTE_GRAPH_ANALYSIS
+    assert routing.route_for_priority("graph-database") == routing.ROUTE_GRAPH_ANALYSIS
+    assert routing.route_for_priority("pdf_content") == routing.ROUTE_PDF_ANALYSIS
+    assert routing.route_for_priority("author_index") == routing.ROUTE_AUTHOR_COLLECTION
+    assert routing.route_for_priority("unknown_priority") == routing.DEFAULT_ROUTE
+
+
+def test_route_for_priority_honors_safe_env_overrides():
+    routing = _load_routing_module()
+    original = os.environ.get("CITEWEAVE_ROUTE_PRIORITY_OVERRIDES")
+
+    try:
+        os.environ["CITEWEAVE_ROUTE_PRIORITY_OVERRIDES"] = (
+            '{"embedding_vector": "graph", "pdf content": "author_collection", "bad": "not_real"}'
+        )
+
+        assert routing.route_for_priority("embedding_vector") == routing.ROUTE_GRAPH_ANALYSIS
+        assert routing.route_for_priority("pdf_content") == routing.ROUTE_AUTHOR_COLLECTION
+        # Invalid override route should be ignored
+        assert routing.route_for_priority("bad") == routing.DEFAULT_ROUTE
+    finally:
+        if original is None:
+            os.environ.pop("CITEWEAVE_ROUTE_PRIORITY_OVERRIDES", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_PRIORITY_OVERRIDES"] = original
 
 
 def test_next_required_route_returns_first_unfinished_or_none():
-    required_routes = [ROUTE_GRAPH_ANALYSIS, ROUTE_VECTOR_SEARCH, ROUTE_AUTHOR_COLLECTION]
+    routing = _load_routing_module()
+    required_routes = ["graph", "vector_search", "author_collection"]
 
-    assert next_required_route(required_routes, [ROUTE_GRAPH_ANALYSIS]) == ROUTE_VECTOR_SEARCH
-    assert next_required_route(required_routes, required_routes) is None
+    assert routing.next_required_route(required_routes, [routing.ROUTE_GRAPH_ANALYSIS]) == routing.ROUTE_VECTOR_SEARCH
+    assert routing.next_required_route(required_routes, required_routes) is None

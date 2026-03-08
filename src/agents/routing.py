@@ -2,11 +2,21 @@
 
 This module centralizes route names and normalization logic so route updates
 can be made in one place.
+
+It also supports optional OpenClaw addon overrides via environment variable:
+`CITEWEAVE_ROUTE_PRIORITY_OVERRIDES`.
+
+Expected format:
+    {"priority_key": "route_name"}
+
+Only known routes are accepted to keep routing safe.
 """
 
 from __future__ import annotations
 
-from typing import Iterable, List
+import json
+import os
+from typing import Dict, Iterable, List
 
 ROUTE_GRAPH_ANALYSIS = "graph_analysis"
 ROUTE_VECTOR_SEARCH = "vector_search"
@@ -30,26 +40,89 @@ PRIORITY_TO_ROUTE = {
 }
 
 
+def _normalize_key(value: str) -> str:
+    """Normalize addon/user-provided keys for stable matching."""
+    return value.strip().lower().replace("-", "_").replace(" ", "_")
+
+
+def _parse_route_priority_overrides(raw_value: str | None) -> Dict[str, str]:
+    """Parse and validate route priority overrides from environment.
+
+    Invalid JSON, non-dict payloads, or mappings to unknown routes are ignored.
+    """
+    if not raw_value:
+        return {}
+
+    try:
+        parsed = json.loads(raw_value)
+    except json.JSONDecodeError:
+        return {}
+
+    if not isinstance(parsed, dict):
+        return {}
+
+    overrides: Dict[str, str] = {}
+    for priority_key, route_name in parsed.items():
+        if not isinstance(priority_key, str) or not isinstance(route_name, str):
+            continue
+        normalized_route = resolve_route(route_name)
+        if normalized_route:
+            overrides[_normalize_key(priority_key)] = normalized_route
+
+    return overrides
+
+
+def resolve_route(route_value: str | None) -> str | None:
+    """Resolve route name/alias to a canonical route, or None when invalid."""
+    if not route_value or not isinstance(route_value, str):
+        return None
+
+    normalized = _normalize_key(route_value)
+    route_aliases = {
+        ROUTE_GRAPH_ANALYSIS: ROUTE_GRAPH_ANALYSIS,
+        "graph": ROUTE_GRAPH_ANALYSIS,
+        ROUTE_VECTOR_SEARCH: ROUTE_VECTOR_SEARCH,
+        "vector": ROUTE_VECTOR_SEARCH,
+        ROUTE_PDF_ANALYSIS: ROUTE_PDF_ANALYSIS,
+        "pdf": ROUTE_PDF_ANALYSIS,
+        ROUTE_AUTHOR_COLLECTION: ROUTE_AUTHOR_COLLECTION,
+        "author": ROUTE_AUTHOR_COLLECTION,
+    }
+    return route_aliases.get(normalized)
+
+
 def normalize_routes(routes: Iterable[str]) -> List[str]:
     """Keep only valid routes, preserving order and removing duplicates."""
     normalized: List[str] = []
     seen = set()
     for route in routes:
-        if route in VALID_ROUTES and route not in seen:
-            normalized.append(route)
-            seen.add(route)
+        canonical_route = resolve_route(route)
+        if canonical_route and canonical_route not in seen:
+            normalized.append(canonical_route)
+            seen.add(canonical_route)
     return normalized
 
 
 def route_for_priority(priority_value: str) -> str:
-    """Map retrieval priority value to route with a safe default."""
-    return PRIORITY_TO_ROUTE.get(priority_value, DEFAULT_ROUTE)
+    """Map retrieval priority value to route with a safe default.
+
+    Supports flexible key formats (e.g., `graph-database`) and optional addon
+    overrides through `CITEWEAVE_ROUTE_PRIORITY_OVERRIDES`.
+    """
+    normalized_priority = _normalize_key(priority_value)
+    override_raw = os.getenv("CITEWEAVE_ROUTE_PRIORITY_OVERRIDES")
+    overrides = _parse_route_priority_overrides(override_raw)
+
+    if normalized_priority in overrides:
+        return overrides[normalized_priority]
+
+    return PRIORITY_TO_ROUTE.get(normalized_priority, DEFAULT_ROUTE)
 
 
 def next_required_route(required_routes: Iterable[str], completed_routes: Iterable[str]) -> str | None:
     """Return the next unfinished required route, or None when complete."""
-    completed = set(completed_routes)
-    for route in required_routes:
+    completed = set(normalize_routes(completed_routes))
+    for route in normalize_routes(required_routes):
         if route not in completed:
             return route
     return None
