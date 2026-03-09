@@ -67,6 +67,42 @@ def test_route_for_priority_honors_safe_env_overrides():
             os.environ["CITEWEAVE_ROUTE_PRIORITY_OVERRIDES"] = original
 
 
+def test_route_alias_overrides_allow_addon_aliases_but_keep_canonical_stable():
+    routing = _load_routing_module()
+    original = os.environ.get("CITEWEAVE_ROUTE_ALIASES")
+
+    try:
+        os.environ["CITEWEAVE_ROUTE_ALIASES"] = (
+            '{"citation_map": "graph_analysis", "semantic": "vector", "vector_search": "graph"}'
+        )
+
+        # Additive aliases work
+        assert routing.resolve_route("citation_map") == routing.ROUTE_GRAPH_ANALYSIS
+        assert routing.resolve_route("semantic") == routing.ROUTE_VECTOR_SEARCH
+
+        # Canonical route names are protected from remapping
+        assert routing.resolve_route("vector_search") == routing.ROUTE_VECTOR_SEARCH
+    finally:
+        if original is None:
+            os.environ.pop("CITEWEAVE_ROUTE_ALIASES", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_ALIASES"] = original
+
+
+def test_route_alias_overrides_are_used_by_normalize_routes():
+    routing = _load_routing_module()
+    original = os.environ.get("CITEWEAVE_ROUTE_ALIASES")
+
+    try:
+        os.environ["CITEWEAVE_ROUTE_ALIASES"] = '{"citation_map": "graph_analysis"}'
+        assert routing.normalize_routes(["citation_map", "graph"]) == [routing.ROUTE_GRAPH_ANALYSIS]
+    finally:
+        if original is None:
+            os.environ.pop("CITEWEAVE_ROUTE_ALIASES", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_ALIASES"] = original
+
+
 def test_next_required_route_returns_first_unfinished_or_none():
     routing = _load_routing_module()
     required_routes = ["graph", "vector_search", "author_collection"]
