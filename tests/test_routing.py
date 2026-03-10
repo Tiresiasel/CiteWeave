@@ -103,6 +103,53 @@ def test_route_alias_overrides_are_used_by_normalize_routes():
             os.environ["CITEWEAVE_ROUTE_ALIASES"] = original
 
 
+def test_active_route_configuration_exposes_safe_effective_overrides():
+    routing = _load_routing_module()
+    original_aliases = os.environ.get("CITEWEAVE_ROUTE_ALIASES")
+    original_priorities = os.environ.get("CITEWEAVE_ROUTE_PRIORITY_OVERRIDES")
+
+    try:
+        os.environ["CITEWEAVE_ROUTE_ALIASES"] = '{"citation_map": "graph_analysis", "vector_search": "graph"}'
+        os.environ["CITEWEAVE_ROUTE_PRIORITY_OVERRIDES"] = '{"pdf_content": "citation_map", "bad": "not_real"}'
+
+        config = routing.active_route_configuration()
+
+        assert config["default_route"] == routing.DEFAULT_ROUTE
+        assert config["aliases"]["citation_map"] == routing.ROUTE_GRAPH_ANALYSIS
+        assert config["alias_overrides"] == {"citation_map": routing.ROUTE_GRAPH_ANALYSIS}
+        assert config["priority_map"]["pdf_content"] == routing.ROUTE_GRAPH_ANALYSIS
+        assert config["priority_overrides"] == {"pdf_content": routing.ROUTE_GRAPH_ANALYSIS}
+    finally:
+        if original_aliases is None:
+            os.environ.pop("CITEWEAVE_ROUTE_ALIASES", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_ALIASES"] = original_aliases
+
+        if original_priorities is None:
+            os.environ.pop("CITEWEAVE_ROUTE_PRIORITY_OVERRIDES", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_PRIORITY_OVERRIDES"] = original_priorities
+
+
+def test_route_registry_refreshes_when_env_changes():
+    routing = _load_routing_module()
+    original = os.environ.get("CITEWEAVE_ROUTE_ALIASES")
+
+    try:
+        os.environ["CITEWEAVE_ROUTE_ALIASES"] = '{"semantic": "vector"}'
+        first_config = routing.active_route_configuration()
+        assert first_config["aliases"]["semantic"] == routing.ROUTE_VECTOR_SEARCH
+
+        os.environ["CITEWEAVE_ROUTE_ALIASES"] = '{"semantic": "graph"}'
+        second_config = routing.active_route_configuration()
+        assert second_config["aliases"]["semantic"] == routing.ROUTE_GRAPH_ANALYSIS
+    finally:
+        if original is None:
+            os.environ.pop("CITEWEAVE_ROUTE_ALIASES", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_ALIASES"] = original
+
+
 def test_next_required_route_returns_first_unfinished_or_none():
     routing = _load_routing_module()
     required_routes = ["graph", "vector_search", "author_collection"]

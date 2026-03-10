@@ -166,8 +166,9 @@ print(result["response"])
 
 - To add a new agent, implement the agent logic as an async method in `multi_agent_system.py` and add it to the workflow in `_build_workflow()`.
 - Update route constants/helpers in `routing.py` first (single source of truth), then update smart router prompts/examples.
+- Use `active_route_configuration()` when an addon or diagnostic surface needs the effective alias / priority snapshot after safe environment overrides are applied.
 - Ensure your agent returns results in the expected format for response synthesis.
-- Add/adjust focused tests in `tests/test_routing.py` when route names or priority mapping change.
+- Add/adjust focused tests in `tests/test_routing.py` when route names, alias handling, or priority mapping change.
 
 ---
 
