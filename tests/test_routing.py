@@ -131,6 +131,65 @@ def test_active_route_configuration_exposes_safe_effective_overrides():
             os.environ["CITEWEAVE_ROUTE_PRIORITY_OVERRIDES"] = original_priorities
 
 
+def test_active_route_configuration_reports_ignored_override_reasons():
+    routing = _load_routing_module()
+    original_aliases = os.environ.get("CITEWEAVE_ROUTE_ALIASES")
+    original_priorities = os.environ.get("CITEWEAVE_ROUTE_PRIORITY_OVERRIDES")
+
+    try:
+        os.environ["CITEWEAVE_ROUTE_ALIASES"] = '{"semantic": "vector", "vector_search": "graph", "broken": "nope"}'
+        os.environ["CITEWEAVE_ROUTE_PRIORITY_OVERRIDES"] = '{"graph_database": "semantic", "bad": "missing_route"}'
+
+        config = routing.active_route_configuration()
+
+        assert config["alias_overrides"] == {"semantic": routing.ROUTE_VECTOR_SEARCH}
+        assert config["ignored_alias_overrides"] == [
+            {"reason": "canonical_route_locked", "key": "vector_search", "route": "graph"},
+            {"reason": "unknown_route", "key": "broken", "route": "nope"},
+        ]
+        assert config["priority_overrides"] == {"graph_database": routing.ROUTE_VECTOR_SEARCH}
+        assert config["ignored_priority_overrides"] == [
+            {"reason": "unknown_route", "key": "bad", "route": "missing_route"}
+        ]
+    finally:
+        if original_aliases is None:
+            os.environ.pop("CITEWEAVE_ROUTE_ALIASES", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_ALIASES"] = original_aliases
+
+        if original_priorities is None:
+            os.environ.pop("CITEWEAVE_ROUTE_PRIORITY_OVERRIDES", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_PRIORITY_OVERRIDES"] = original_priorities
+
+
+def test_active_route_configuration_reports_invalid_payload_shape():
+    routing = _load_routing_module()
+    original_aliases = os.environ.get("CITEWEAVE_ROUTE_ALIASES")
+    original_priorities = os.environ.get("CITEWEAVE_ROUTE_PRIORITY_OVERRIDES")
+
+    try:
+        os.environ["CITEWEAVE_ROUTE_ALIASES"] = "[]"
+        os.environ["CITEWEAVE_ROUTE_PRIORITY_OVERRIDES"] = "{"
+
+        config = routing.active_route_configuration()
+
+        assert config["alias_overrides"] == {}
+        assert config["ignored_alias_overrides"] == [{"reason": "non_object_payload"}]
+        assert config["priority_overrides"] == {}
+        assert config["ignored_priority_overrides"] == [{"reason": "invalid_json"}]
+    finally:
+        if original_aliases is None:
+            os.environ.pop("CITEWEAVE_ROUTE_ALIASES", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_ALIASES"] = original_aliases
+
+        if original_priorities is None:
+            os.environ.pop("CITEWEAVE_ROUTE_PRIORITY_OVERRIDES", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_PRIORITY_OVERRIDES"] = original_priorities
+
+
 def test_route_registry_refreshes_when_env_changes():
     routing = _load_routing_module()
     original = os.environ.get("CITEWEAVE_ROUTE_ALIASES")
