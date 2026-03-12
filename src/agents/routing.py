@@ -83,6 +83,7 @@ def _parse_route_alias_overrides_with_diagnostics(raw_value: str | None) -> Tupl
     - payload must be a dict of string -> string
     - target routes must be canonical known routes
     - canonical route names cannot be remapped to different routes
+    - built-in aliases cannot be remapped to different routes
 
     Returns a tuple of:
     - accepted alias overrides
@@ -116,6 +117,11 @@ def _parse_route_alias_overrides_with_diagnostics(raw_value: str | None) -> Tupl
         # Keep canonical route keys stable for safe behavior.
         if normalized_alias in VALID_ROUTES and normalized_alias != normalized_route:
             ignored.append(_invalid_override("canonical_route_locked", alias_name, route_name))
+            continue
+
+        base_alias_target = BASE_ROUTE_ALIASES.get(normalized_alias)
+        if base_alias_target and base_alias_target != normalized_route:
+            ignored.append(_invalid_override("built_in_alias_locked", alias_name, route_name))
             continue
 
         overrides[normalized_alias] = normalized_route

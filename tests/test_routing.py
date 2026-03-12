@@ -73,7 +73,7 @@ def test_route_alias_overrides_allow_addon_aliases_but_keep_canonical_stable():
 
     try:
         os.environ["CITEWEAVE_ROUTE_ALIASES"] = (
-            '{"citation_map": "graph_analysis", "semantic": "vector", "vector_search": "graph"}'
+            '{"citation_map": "graph_analysis", "semantic": "vector", "vector_search": "graph", "graph": "vector"}'
         )
 
         # Additive aliases work
@@ -82,6 +82,9 @@ def test_route_alias_overrides_allow_addon_aliases_but_keep_canonical_stable():
 
         # Canonical route names are protected from remapping
         assert routing.resolve_route("vector_search") == routing.ROUTE_VECTOR_SEARCH
+
+        # Built-in short aliases are also protected from remapping
+        assert routing.resolve_route("graph") == routing.ROUTE_GRAPH_ANALYSIS
     finally:
         if original is None:
             os.environ.pop("CITEWEAVE_ROUTE_ALIASES", None)
@@ -137,7 +140,9 @@ def test_active_route_configuration_reports_ignored_override_reasons():
     original_priorities = os.environ.get("CITEWEAVE_ROUTE_PRIORITY_OVERRIDES")
 
     try:
-        os.environ["CITEWEAVE_ROUTE_ALIASES"] = '{"semantic": "vector", "vector_search": "graph", "broken": "nope"}'
+        os.environ["CITEWEAVE_ROUTE_ALIASES"] = (
+            '{"semantic": "vector", "vector_search": "graph", "graph": "vector", "broken": "nope"}'
+        )
         os.environ["CITEWEAVE_ROUTE_PRIORITY_OVERRIDES"] = '{"graph_database": "semantic", "bad": "missing_route"}'
 
         config = routing.active_route_configuration()
@@ -145,6 +150,7 @@ def test_active_route_configuration_reports_ignored_override_reasons():
         assert config["alias_overrides"] == {"semantic": routing.ROUTE_VECTOR_SEARCH}
         assert config["ignored_alias_overrides"] == [
             {"reason": "canonical_route_locked", "key": "vector_search", "route": "graph"},
+            {"reason": "built_in_alias_locked", "key": "graph", "route": "vector"},
             {"reason": "unknown_route", "key": "broken", "route": "nope"},
         ]
         assert config["priority_overrides"] == {"graph_database": routing.ROUTE_VECTOR_SEARCH}
