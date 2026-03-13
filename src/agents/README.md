@@ -169,6 +169,7 @@ print(result["response"])
 - Use `active_route_configuration()` when an addon or diagnostic surface needs the effective alias / priority snapshot after safe environment overrides are applied.
 - `active_route_configuration()` also reports `ignored_alias_overrides` and `ignored_priority_overrides` so addon diagnostics can explain why a user-supplied override was rejected instead of silently failing.
 - Addons may add new aliases (for example `citation_map` → `graph_analysis`), but they cannot remap canonical route names or built-in short aliases such as `graph`, `vector`, `pdf`, and `author`.
+- Normalized-key collisions are rejected for diagnostics instead of silently overwriting earlier entries (for example `semantic-search` and `semantic search` are treated as the same key).
 - Ensure your agent returns results in the expected format for response synthesis.
 - Add/adjust focused tests in `tests/test_routing.py` when route names, alias handling, or priority mapping change.
 

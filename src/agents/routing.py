@@ -114,6 +114,14 @@ def _parse_route_alias_overrides_with_diagnostics(raw_value: str | None) -> Tupl
             ignored.append(_invalid_override("unknown_route", alias_name, route_name))
             continue
 
+        existing_target = overrides.get(normalized_alias)
+        if existing_target is not None:
+            if existing_target == normalized_route:
+                ignored.append(_invalid_override("duplicate_normalized_key", alias_name, route_name))
+            else:
+                ignored.append(_invalid_override("normalized_key_conflict", alias_name, route_name))
+            continue
+
         # Keep canonical route keys stable for safe behavior.
         if normalized_alias in VALID_ROUTES and normalized_alias != normalized_route:
             ignored.append(_invalid_override("canonical_route_locked", alias_name, route_name))
@@ -166,11 +174,21 @@ def _parse_route_priority_overrides_with_diagnostics(
             ignored.append(_invalid_override("non_string_entry", priority_key, route_name))
             continue
 
+        normalized_key = _normalize_key(priority_key)
         normalized_route = _resolve_from_alias_map(route_name, alias_map)
-        if normalized_route:
-            overrides[_normalize_key(priority_key)] = normalized_route
-        else:
+        if not normalized_route:
             ignored.append(_invalid_override("unknown_route", priority_key, route_name))
+            continue
+
+        existing_target = overrides.get(normalized_key)
+        if existing_target is not None:
+            if existing_target == normalized_route:
+                ignored.append(_invalid_override("duplicate_normalized_key", priority_key, route_name))
+            else:
+                ignored.append(_invalid_override("normalized_key_conflict", priority_key, route_name))
+            continue
+
+        overrides[normalized_key] = normalized_route
 
     return overrides, ignored
 

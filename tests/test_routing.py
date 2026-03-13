@@ -215,6 +215,57 @@ def test_route_registry_refreshes_when_env_changes():
             os.environ["CITEWEAVE_ROUTE_ALIASES"] = original
 
 
+def test_active_route_configuration_rejects_normalized_alias_collisions():
+    routing = _load_routing_module()
+    original_aliases = os.environ.get("CITEWEAVE_ROUTE_ALIASES")
+
+    try:
+        os.environ["CITEWEAVE_ROUTE_ALIASES"] = (
+            '{"semantic-search": "vector", "semantic search": "graph", "citation map": "graph", "citation_map": "graph"}'
+        )
+
+        config = routing.active_route_configuration()
+
+        assert config["alias_overrides"] == {
+            "semantic_search": routing.ROUTE_VECTOR_SEARCH,
+            "citation_map": routing.ROUTE_GRAPH_ANALYSIS,
+        }
+        assert config["ignored_alias_overrides"] == [
+            {"reason": "normalized_key_conflict", "key": "semantic search", "route": "graph"},
+            {"reason": "duplicate_normalized_key", "key": "citation_map", "route": "graph"},
+        ]
+    finally:
+        if original_aliases is None:
+            os.environ.pop("CITEWEAVE_ROUTE_ALIASES", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_ALIASES"] = original_aliases
+
+
+def test_active_route_configuration_rejects_normalized_priority_collisions():
+    routing = _load_routing_module()
+    original_priorities = os.environ.get("CITEWEAVE_ROUTE_PRIORITY_OVERRIDES")
+
+    try:
+        os.environ["CITEWEAVE_ROUTE_PRIORITY_OVERRIDES"] = (
+            '{"graph-database": "vector", "graph database": "author", "pdf content": "pdf", "pdf_content": "pdf"}'
+        )
+
+        config = routing.active_route_configuration()
+
+        assert config["priority_overrides"] == {
+            "graph_database": routing.ROUTE_VECTOR_SEARCH,
+        }
+        assert config["ignored_priority_overrides"] == [
+            {"reason": "normalized_key_conflict", "key": "graph database", "route": "author"},
+            {"reason": "duplicate_normalized_key", "key": "pdf_content", "route": "pdf"},
+        ]
+    finally:
+        if original_priorities is None:
+            os.environ.pop("CITEWEAVE_ROUTE_PRIORITY_OVERRIDES", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_PRIORITY_OVERRIDES"] = original_priorities
+
+
 def test_next_required_route_returns_first_unfinished_or_none():
     routing = _load_routing_module()
     required_routes = ["graph", "vector_search", "author_collection"]
