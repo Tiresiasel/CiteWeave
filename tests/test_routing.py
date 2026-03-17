@@ -47,6 +47,23 @@ def test_route_for_priority_maps_known_and_defaults_unknown():
     assert routing.route_for_priority("unknown_priority") == routing.DEFAULT_ROUTE
 
 
+def test_route_for_priority_accepts_route_names_and_aliases():
+    routing = _load_routing_module()
+    original_aliases = os.environ.get("CITEWEAVE_ROUTE_ALIASES")
+
+    try:
+        os.environ["CITEWEAVE_ROUTE_ALIASES"] = '{"citation_map": "graph_analysis"}'
+
+        assert routing.route_for_priority("graph") == routing.ROUTE_GRAPH_ANALYSIS
+        assert routing.route_for_priority("vector") == routing.ROUTE_VECTOR_SEARCH
+        assert routing.route_for_priority("citation_map") == routing.ROUTE_GRAPH_ANALYSIS
+    finally:
+        if original_aliases is None:
+            os.environ.pop("CITEWEAVE_ROUTE_ALIASES", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_ALIASES"] = original_aliases
+
+
 def test_route_for_priority_honors_safe_env_overrides():
     routing = _load_routing_module()
     original = os.environ.get("CITEWEAVE_ROUTE_PRIORITY_OVERRIDES")

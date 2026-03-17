@@ -283,11 +283,18 @@ def normalize_routes(routes: Iterable[str]) -> List[str]:
 def route_for_priority(priority_value: str) -> str:
     """Map retrieval priority value to route with a safe default.
 
-    Supports flexible key formats (e.g., `graph-database`) and optional addon
-    overrides through `CITEWEAVE_ROUTE_PRIORITY_OVERRIDES`.
+    Supports flexible key formats (e.g., `graph-database`),
+    route aliases, and optional addon overrides through
+    `CITEWEAVE_ROUTE_PRIORITY_OVERRIDES`.
     """
+    registry = _current_route_registry()
     normalized_priority = _normalize_key(priority_value)
-    return _current_route_registry()["priority_map"].get(normalized_priority, DEFAULT_ROUTE)
+
+    if normalized_priority in registry["priority_map"]:
+        return registry["priority_map"][normalized_priority]
+
+    # Keep route_name resolution resilient when callers pass route aliases directly.
+    return registry["aliases"].get(normalized_priority, DEFAULT_ROUTE)
 
 
 def next_required_route(required_routes: Iterable[str], completed_routes: Iterable[str]) -> str | None:
