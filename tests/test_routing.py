@@ -1,6 +1,8 @@
 import importlib.util
 import os
 import uuid
+import json
+import tempfile
 from pathlib import Path
 
 
@@ -289,3 +291,106 @@ def test_next_required_route_returns_first_unfinished_or_none():
 
     assert routing.next_required_route(required_routes, [routing.ROUTE_GRAPH_ANALYSIS]) == routing.ROUTE_VECTOR_SEARCH
     assert routing.next_required_route(required_routes, required_routes) is None
+
+
+def test_active_route_configuration_loads_file_overrides():
+    routing = _load_routing_module()
+    original_path = os.environ.get("CITEWEAVE_ROUTE_ADDON_CONFIG")
+    original_aliases = os.environ.get("CITEWEAVE_ROUTE_ALIASES")
+    original_priorities = os.environ.get("CITEWEAVE_ROUTE_PRIORITY_OVERRIDES")
+
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as tmp:
+        json.dump(
+            {
+                "aliases": {"citation_map": "graph_analysis"},
+                "priority_overrides": {"author_index": "citation_map"},
+            },
+            tmp,
+        )
+        tmp_path = tmp.name
+
+    try:
+        os.environ["CITEWEAVE_ROUTE_ADDON_CONFIG"] = tmp_path
+
+        config = routing.active_route_configuration()
+
+        assert config["addon_config_path"] == tmp_path
+        assert config["addon_config_issues"] == []
+        assert config["addon_alias_overrides"] == {
+            "citation_map": routing.ROUTE_GRAPH_ANALYSIS
+        }
+        assert config["addon_priority_overrides"] == {
+            "author_index": routing.ROUTE_GRAPH_ANALYSIS
+        }
+        assert config["alias_overrides"]["citation_map"] == routing.ROUTE_GRAPH_ANALYSIS
+        assert config["priority_overrides"]["author_index"] == routing.ROUTE_GRAPH_ANALYSIS
+        assert routing.resolve_route("citation_map") == routing.ROUTE_GRAPH_ANALYSIS
+        assert routing.route_for_priority("author_index") == routing.ROUTE_GRAPH_ANALYSIS
+    finally:
+        if original_path is None:
+            os.environ.pop("CITEWEAVE_ROUTE_ADDON_CONFIG", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_ADDON_CONFIG"] = original_path
+        if original_aliases is None:
+            os.environ.pop("CITEWEAVE_ROUTE_ALIASES", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_ALIASES"] = original_aliases
+        if original_priorities is None:
+            os.environ.pop("CITEWEAVE_ROUTE_PRIORITY_OVERRIDES", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_PRIORITY_OVERRIDES"] = original_priorities
+        Path(tmp_path).unlink(missing_ok=True)
+
+
+def test_env_overrides_take_precedence_over_addon_file_overrides():
+    routing = _load_routing_module()
+    original_path = os.environ.get("CITEWEAVE_ROUTE_ADDON_CONFIG")
+    original_aliases = os.environ.get("CITEWEAVE_ROUTE_ALIASES")
+
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as tmp:
+        json.dump({"aliases": {"semantic": "vector"}}, tmp)
+        tmp_path = tmp.name
+
+    try:
+        os.environ["CITEWEAVE_ROUTE_ADDON_CONFIG"] = tmp_path
+        os.environ["CITEWEAVE_ROUTE_ALIASES"] = json.dumps({"semantic": "graph"})
+
+        config = routing.active_route_configuration()
+
+        assert config["addon_alias_overrides"] == {"semantic": routing.ROUTE_VECTOR_SEARCH}
+        assert config["env_alias_overrides"] == {"semantic": routing.ROUTE_GRAPH_ANALYSIS}
+        assert config["alias_overrides"] == {"semantic": routing.ROUTE_GRAPH_ANALYSIS}
+        assert routing.resolve_route("semantic") == routing.ROUTE_GRAPH_ANALYSIS
+    finally:
+        if original_path is None:
+            os.environ.pop("CITEWEAVE_ROUTE_ADDON_CONFIG", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_ADDON_CONFIG"] = original_path
+        if original_aliases is None:
+            os.environ.pop("CITEWEAVE_ROUTE_ALIASES", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_ALIASES"] = original_aliases
+        Path(tmp_path).unlink(missing_ok=True)
+
+
+def test_active_route_configuration_reports_missing_addon_config_file():
+    routing = _load_routing_module()
+    original_path = os.environ.get("CITEWEAVE_ROUTE_ADDON_CONFIG")
+
+    try:
+        os.environ["CITEWEAVE_ROUTE_ADDON_CONFIG"] = "/tmp/citeweave-missing-route-config.json"
+
+        config = routing.active_route_configuration()
+
+        assert config["addon_config_path"] == "/tmp/citeweave-missing-route-config.json"
+        assert config["addon_config_issues"] == [
+            {
+                "reason": "addon_config_not_found",
+                "path": "/tmp/citeweave-missing-route-config.json",
+            }
+        ]
+    finally:
+        if original_path is None:
+            os.environ.pop("CITEWEAVE_ROUTE_ADDON_CONFIG", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_ADDON_CONFIG"] = original_path

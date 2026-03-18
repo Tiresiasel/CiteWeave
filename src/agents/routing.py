@@ -4,11 +4,19 @@ This module centralizes route names and normalization logic so route updates
 can be made in one place.
 
 It also supports optional OpenClaw addon overrides via environment variables:
-`CITEWEAVE_ROUTE_PRIORITY_OVERRIDES` and `CITEWEAVE_ROUTE_ALIASES`.
+`CITEWEAVE_ROUTE_PRIORITY_OVERRIDES` and `CITEWEAVE_ROUTE_ALIASES`,
+and an optional config file via `CITEWEAVE_ROUTE_ADDON_CONFIG`.
 
 Expected formats:
     CITEWEAVE_ROUTE_PRIORITY_OVERRIDES = {"priority_key": "route_name"}
     CITEWEAVE_ROUTE_ALIASES = {"alias_name": "route_name"}
+    CITEWEAVE_ROUTE_ADDON_CONFIG = /path/to/route-config.json
+
+When a config file is present, it accepts:
+    {
+      "aliases": {"alias_name": "route_name"},
+      "priority_overrides": {"priority_key": "route_name"}
+    }
 
 Only known routes are accepted to keep routing safe.
 """
@@ -18,6 +26,7 @@ from __future__ import annotations
 import json
 import os
 from functools import lru_cache
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
 
 ROUTE_GRAPH_ANALYSIS = "graph_analysis"
@@ -76,7 +85,117 @@ def _invalid_override(reason: str, alias_or_key: Any, route_name: Any) -> Dict[s
     return entry
 
 
-def _parse_route_alias_overrides_with_diagnostics(raw_value: str | None) -> Tuple[Dict[str, str], List[Dict[str, Any]]]:
+def _addon_config_issue(reason: str, detail: Any = None, *, path: str | None = None) -> Dict[str, Any]:
+    """Create a stable diagnostic payload for addon config file parsing."""
+    entry: Dict[str, Any] = {"reason": reason}
+    if path is not None:
+        entry["path"] = path
+    if detail is not None:
+        entry["detail"] = detail
+    return entry
+
+
+def _coerce_mapping_payload(raw_value: Any) -> Tuple[Any | None, List[Dict[str, Any]]]:
+    """Normalize alias/priority override payloads from both strings and mappings."""
+    if not raw_value:
+        return None, []
+
+    if isinstance(raw_value, str):
+        text = raw_value.strip()
+        if not text:
+            return None, []
+        try:
+            parsed = json.loads(text)
+        except json.JSONDecodeError:
+            return None, [_invalid_override("invalid_json", None, None)]
+    else:
+        parsed = raw_value
+
+    if not isinstance(parsed, dict):
+        return None, [_invalid_override("non_object_payload", None, None)]
+
+    return parsed, []
+
+
+def _serialize_cache_payload(raw_value: Any) -> str | None:
+    """Serialize override payload consistently for cache keys."""
+    if raw_value is None:
+        return None
+    if isinstance(raw_value, str):
+        return raw_value.strip() if raw_value.strip() else None
+    return json.dumps(raw_value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
+def _load_addon_route_config() -> Tuple[str | None, str | None, List[Dict[str, Any]], str | None]:
+    """Load route overrides from optional addon JSON config file.
+
+    Returns:
+        - cached alias override payload string
+        - cached priority override payload string
+        - parsed issue list
+        - config file path
+    """
+    config_path = os.getenv("CITEWEAVE_ROUTE_ADDON_CONFIG")
+    if not config_path:
+        return None, None, [], None
+
+    expanded_path = str(Path(config_path).expanduser())
+    issues: List[Dict[str, Any]] = []
+
+    try:
+        raw_text = Path(expanded_path).read_text(encoding="utf-8")
+    except FileNotFoundError:
+        issues.append(_addon_config_issue("addon_config_not_found", path=expanded_path))
+        return None, None, issues, expanded_path
+    except OSError as exc:
+        issues.append(
+            _addon_config_issue(
+                "addon_config_unreadable",
+                str(exc),
+                path=expanded_path,
+            )
+        )
+        return None, None, issues, expanded_path
+
+    try:
+        payload = json.loads(raw_text)
+    except json.JSONDecodeError as exc:
+        issues.append(
+            _addon_config_issue(
+                "addon_config_invalid_json",
+                str(exc),
+                path=expanded_path,
+            )
+        )
+        return None, None, issues, expanded_path
+
+    if not isinstance(payload, dict):
+        issues.append(_addon_config_issue("addon_config_invalid_payload", "root_payload_not_object", path=expanded_path))
+        return None, None, issues, expanded_path
+
+    aliases_payload, alias_parse_issues = _coerce_mapping_payload(payload.get("aliases"))
+    issues.extend(
+        _addon_config_issue("addon_config_aliases_invalid", detail=str(issue))
+        for issue in alias_parse_issues
+    )
+
+    priorities_payload, priority_parse_issues = _coerce_mapping_payload(payload.get("priority_overrides"))
+    issues.extend(
+        _addon_config_issue("addon_config_priority_overrides_invalid", detail=str(issue))
+        for issue in priority_parse_issues
+    )
+
+    return (
+        _serialize_cache_payload(aliases_payload),
+        _serialize_cache_payload(priorities_payload),
+        issues,
+        expanded_path,
+    )
+
+
+def _parse_route_alias_overrides_with_diagnostics(
+    raw_value: str | Dict[str, Any] | None,
+) -> Tuple[Dict[str, str], List[Dict[str, Any]]]:
     """Parse and validate addon-provided route alias overrides.
 
     Safety constraints:
@@ -89,21 +208,16 @@ def _parse_route_alias_overrides_with_diagnostics(raw_value: str | None) -> Tupl
     - accepted alias overrides
     - ignored entries with reasons for addon diagnostics
     """
-    if not raw_value:
+    payload, parse_issues = _coerce_mapping_payload(raw_value)
+    if parse_issues:
+        return {}, parse_issues
+    if payload is None:
         return {}, []
-
-    try:
-        parsed = json.loads(raw_value)
-    except json.JSONDecodeError:
-        return {}, [_invalid_override("invalid_json", None, None)]
-
-    if not isinstance(parsed, dict):
-        return {}, [_invalid_override("non_object_payload", None, None)]
 
     overrides: Dict[str, str] = {}
     ignored: List[Dict[str, Any]] = []
 
-    for alias_name, route_name in parsed.items():
+    for alias_name, route_name in payload.items():
         if not isinstance(alias_name, str) or not isinstance(route_name, str):
             ignored.append(_invalid_override("non_string_entry", alias_name, route_name))
             continue
@@ -137,14 +251,14 @@ def _parse_route_alias_overrides_with_diagnostics(raw_value: str | None) -> Tupl
     return overrides, ignored
 
 
-def _parse_route_alias_overrides(raw_value: str | None) -> Dict[str, str]:
+def _parse_route_alias_overrides(raw_value: str | Dict[str, Any] | None) -> Dict[str, str]:
     """Backward-compatible alias override parser."""
     overrides, _ = _parse_route_alias_overrides_with_diagnostics(raw_value)
     return overrides
 
 
 def _parse_route_priority_overrides_with_diagnostics(
-    raw_value: str | None,
+    raw_value: str | Dict[str, Any] | None,
     alias_map: Dict[str, str],
 ) -> Tuple[Dict[str, str], List[Dict[str, Any]]]:
     """Parse and validate route priority overrides from environment.
@@ -155,21 +269,16 @@ def _parse_route_priority_overrides_with_diagnostics(
     - accepted priority overrides
     - ignored entries with reasons for addon diagnostics
     """
-    if not raw_value:
+    payload, parse_issues = _coerce_mapping_payload(raw_value)
+    if parse_issues:
+        return {}, parse_issues
+    if payload is None:
         return {}, []
-
-    try:
-        parsed = json.loads(raw_value)
-    except json.JSONDecodeError:
-        return {}, [_invalid_override("invalid_json", None, None)]
-
-    if not isinstance(parsed, dict):
-        return {}, [_invalid_override("non_object_payload", None, None)]
 
     overrides: Dict[str, str] = {}
     ignored: List[Dict[str, Any]] = []
 
-    for priority_key, route_name in parsed.items():
+    for priority_key, route_name in payload.items():
         if not isinstance(priority_key, str) or not isinstance(route_name, str):
             ignored.append(_invalid_override("non_string_entry", priority_key, route_name))
             continue
@@ -193,26 +302,58 @@ def _parse_route_priority_overrides_with_diagnostics(
     return overrides, ignored
 
 
-def _parse_route_priority_overrides(raw_value: str | None, alias_map: Dict[str, str]) -> Dict[str, str]:
+def _parse_route_priority_overrides(
+    raw_value: str | Dict[str, Any] | None,
+    alias_map: Dict[str, str],
+) -> Dict[str, str]:
     """Backward-compatible priority override parser."""
     overrides, _ = _parse_route_priority_overrides_with_diagnostics(raw_value, alias_map)
     return overrides
 
 
 @lru_cache(maxsize=8)
-def _build_route_registry(alias_override_raw: str | None, priority_override_raw: str | None) -> Dict[str, Any]:
+def _build_route_registry(
+    addon_alias_override_raw: str | None,
+    addon_priority_override_raw: str | None,
+    env_alias_override_raw: str | None,
+    env_priority_override_raw: str | None,
+) -> Dict[str, Any]:
     """Build a cached route registry for the current addon override snapshot."""
-    alias_overrides, ignored_alias_overrides = _parse_route_alias_overrides_with_diagnostics(alias_override_raw)
+    addon_alias_overrides, ignored_alias_overrides = _parse_route_alias_overrides_with_diagnostics(addon_alias_override_raw)
+    env_alias_overrides, env_ignored_alias_overrides = _parse_route_alias_overrides_with_diagnostics(env_alias_override_raw)
 
     alias_map = dict(BASE_ROUTE_ALIASES)
-    alias_map.update(alias_overrides)
+    alias_map.update(addon_alias_overrides)
+    alias_map.update(env_alias_overrides)
 
-    priority_override_map, ignored_priority_overrides = _parse_route_priority_overrides_with_diagnostics(
-        priority_override_raw,
+    ignored_alias_overrides.extend(env_ignored_alias_overrides)
+
+    addon_alias_map_for_priority = dict(BASE_ROUTE_ALIASES)
+    addon_alias_map_for_priority.update(addon_alias_overrides)
+
+    addon_priority_overrides, ignored_priority_overrides = _parse_route_priority_overrides_with_diagnostics(
+        addon_priority_override_raw,
+        addon_alias_map_for_priority,
+    )
+
+    env_priority_overrides, env_ignored_priority_overrides = _parse_route_priority_overrides_with_diagnostics(
+        env_priority_override_raw,
         alias_map,
     )
+    ignored_priority_overrides.extend(env_ignored_priority_overrides)
+
     priority_map = dict(PRIORITY_TO_ROUTE)
-    priority_map.update(priority_override_map)
+    priority_map.update(addon_priority_overrides)
+    priority_map.update(env_priority_overrides)
+
+    alias_overrides = dict(addon_alias_overrides)
+    alias_overrides.update(env_alias_overrides)
+
+    priority_overrides = {
+        key: value
+        for key, value in priority_map.items()
+        if PRIORITY_TO_ROUTE.get(key) != value
+    }
 
     return {
         "valid_routes": list(VALID_ROUTES),
@@ -220,23 +361,44 @@ def _build_route_registry(alias_override_raw: str | None, priority_override_raw:
         "aliases": alias_map,
         "base_aliases": dict(BASE_ROUTE_ALIASES),
         "alias_overrides": alias_overrides,
+        "addon_alias_overrides": dict(addon_alias_overrides),
+        "env_alias_overrides": dict(env_alias_overrides),
         "ignored_alias_overrides": ignored_alias_overrides,
         "priority_map": priority_map,
-        "priority_overrides": {
-            key: value
-            for key, value in priority_map.items()
-            if PRIORITY_TO_ROUTE.get(key) != value
-        },
+        "addon_priority_overrides": dict(addon_priority_overrides),
+        "env_priority_overrides": dict(env_priority_overrides),
+        "priority_overrides": priority_overrides,
         "ignored_priority_overrides": ignored_priority_overrides,
     }
 
 
 def _current_route_registry() -> Dict[str, Any]:
     """Return the active route registry for the current environment."""
-    return _build_route_registry(
+    addon_alias_raw, addon_priority_raw, addon_issues, addon_config_path = _load_addon_route_config()
+    registry = _build_route_registry(
+        addon_alias_raw,
+        addon_priority_raw,
         os.getenv("CITEWEAVE_ROUTE_ALIASES"),
         os.getenv("CITEWEAVE_ROUTE_PRIORITY_OVERRIDES"),
     )
+
+    return {
+        "valid_routes": list(registry["valid_routes"]),
+        "default_route": registry["default_route"],
+        "aliases": dict(registry["aliases"]),
+        "base_aliases": dict(registry["base_aliases"]),
+        "alias_overrides": dict(registry["alias_overrides"]),
+        "addon_alias_overrides": dict(registry["addon_alias_overrides"]),
+        "env_alias_overrides": dict(registry["env_alias_overrides"]),
+        "ignored_alias_overrides": list(registry["ignored_alias_overrides"]),
+        "priority_map": dict(registry["priority_map"]),
+        "addon_priority_overrides": dict(registry["addon_priority_overrides"]),
+        "env_priority_overrides": dict(registry["env_priority_overrides"]),
+        "priority_overrides": dict(registry["priority_overrides"]),
+        "ignored_priority_overrides": list(registry["ignored_priority_overrides"]),
+        "addon_config_path": addon_config_path,
+        "addon_config_issues": list(addon_issues),
+    }
 
 
 def active_route_configuration() -> Dict[str, Any]:
@@ -260,6 +422,12 @@ def active_route_configuration() -> Dict[str, Any]:
         "priority_map": dict(registry["priority_map"]),
         "priority_overrides": dict(registry["priority_overrides"]),
         "ignored_priority_overrides": list(registry["ignored_priority_overrides"]),
+        "addon_config_path": registry["addon_config_path"],
+        "addon_config_issues": list(registry["addon_config_issues"]),
+        "addon_alias_overrides": dict(registry["addon_alias_overrides"]),
+        "env_alias_overrides": dict(registry["env_alias_overrides"]),
+        "addon_priority_overrides": dict(registry["addon_priority_overrides"]),
+        "env_priority_overrides": dict(registry["env_priority_overrides"]),
     }
 
 
