@@ -173,13 +173,37 @@ def _load_addon_route_config() -> Tuple[str | None, str | None, List[Dict[str, A
         issues.append(_addon_config_issue("addon_config_invalid_payload", "root_payload_not_object", path=expanded_path))
         return None, None, issues, expanded_path
 
+    supported_top_level_keys = {"aliases", "priority_overrides", "priorityOverrides"}
+    unknown_top_level_keys = sorted(key for key in payload if key not in supported_top_level_keys)
+    if unknown_top_level_keys:
+        issues.append(
+            _addon_config_issue(
+                "addon_config_unknown_keys",
+                detail=unknown_top_level_keys,
+                path=expanded_path,
+            )
+        )
+
     aliases_payload, alias_parse_issues = _coerce_mapping_payload(payload.get("aliases"))
     issues.extend(
         _addon_config_issue("addon_config_aliases_invalid", detail=str(issue))
         for issue in alias_parse_issues
     )
 
-    priorities_payload, priority_parse_issues = _coerce_mapping_payload(payload.get("priority_overrides"))
+    priority_payload_source = payload.get("priority_overrides")
+    legacy_priority_payload_source = payload.get("priorityOverrides")
+    if priority_payload_source is None:
+        priority_payload_source = legacy_priority_payload_source
+    elif legacy_priority_payload_source is not None and priority_payload_source != legacy_priority_payload_source:
+        issues.append(
+            _addon_config_issue(
+                "addon_config_priority_key_conflict",
+                detail="both_priority_overrides_and_priorityOverrides_present_using_priority_overrides",
+                path=expanded_path,
+            )
+        )
+
+    priorities_payload, priority_parse_issues = _coerce_mapping_payload(priority_payload_source)
     issues.extend(
         _addon_config_issue("addon_config_priority_overrides_invalid", detail=str(issue))
         for issue in priority_parse_issues
