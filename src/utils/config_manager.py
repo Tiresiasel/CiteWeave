@@ -21,8 +21,12 @@ class ConfigManager:
     def load_json(self, filename: str) -> Dict[str, Any]:
         """
         Load a JSON configuration file from the config directory.
+        Prefers an ignored local override like `name.local.json` when present.
         """
-        path = os.path.join(self.config_dir, filename)
+        stem, ext = os.path.splitext(filename)
+        local_name = f"{stem}.local{ext}"
+        local_path = os.path.join(self.config_dir, local_name)
+        path = local_path if os.path.exists(local_path) else os.path.join(self.config_dir, filename)
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
 

@@ -13,7 +13,9 @@ CONFIG_DIR = os.path.join(os.path.dirname(__file__), '..', 'config')
 
 # --- Utility functions ---
 def load_json(path):
-    with open(path, 'r', encoding='utf-8') as f:
+    local_path = path.replace('.json', '.local.json')
+    actual = local_path if os.path.exists(local_path) else path
+    with open(actual, 'r', encoding='utf-8') as f:
         return json.load(f)
 
 def setup_neo4j(config):
