@@ -11,12 +11,16 @@ Expected formats:
     CITEWEAVE_ROUTE_PRIORITY_OVERRIDES = {"priority_key": "route_name"}
     CITEWEAVE_ROUTE_ALIASES = {"alias_name": "route_name"}
     CITEWEAVE_ROUTE_ADDON_CONFIG = /path/to/route-config.json
+    CITEWEAVE_ROUTE_ADDON_CONFIG = /path/base-route-config.json:/path/overlay-route-config.json
 
-When a config file is present, it accepts:
+When addon config file(s) are present, each accepts:
     {
       "aliases": {"alias_name": "route_name"},
       "priority_overrides": {"priority_key": "route_name"}
     }
+
+When multiple config files are provided via the platform path separator,
+files are loaded left-to-right and later files override earlier file entries.
 
 Only known routes are accepted to keep routing safe.
 """
@@ -126,19 +130,8 @@ def _serialize_cache_payload(raw_value: Any) -> str | None:
     return json.dumps(raw_value, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
 
 
-def _load_addon_route_config() -> Tuple[str | None, str | None, List[Dict[str, Any]], str | None]:
-    """Load route overrides from optional addon JSON config file.
-
-    Returns:
-        - cached alias override payload string
-        - cached priority override payload string
-        - parsed issue list
-        - config file path
-    """
-    config_path = os.getenv("CITEWEAVE_ROUTE_ADDON_CONFIG")
-    if not config_path:
-        return None, None, [], None
-
+def _load_single_addon_route_config(config_path: str) -> Tuple[Dict[str, Any] | None, Dict[str, Any] | None, List[Dict[str, Any]], str]:
+    """Load route overrides from a single optional addon JSON config file."""
     expanded_path = str(Path(config_path).expanduser())
     issues: List[Dict[str, Any]] = []
 
@@ -186,7 +179,7 @@ def _load_addon_route_config() -> Tuple[str | None, str | None, List[Dict[str, A
 
     aliases_payload, alias_parse_issues = _coerce_mapping_payload(payload.get("aliases"))
     issues.extend(
-        _addon_config_issue("addon_config_aliases_invalid", detail=str(issue))
+        _addon_config_issue("addon_config_aliases_invalid", detail=str(issue), path=expanded_path)
         for issue in alias_parse_issues
     )
 
@@ -205,15 +198,52 @@ def _load_addon_route_config() -> Tuple[str | None, str | None, List[Dict[str, A
 
     priorities_payload, priority_parse_issues = _coerce_mapping_payload(priority_payload_source)
     issues.extend(
-        _addon_config_issue("addon_config_priority_overrides_invalid", detail=str(issue))
+        _addon_config_issue("addon_config_priority_overrides_invalid", detail=str(issue), path=expanded_path)
         for issue in priority_parse_issues
     )
 
+    return aliases_payload, priorities_payload, issues, expanded_path
+
+
+def _load_addon_route_config() -> Tuple[str | None, str | None, List[Dict[str, Any]], str | None, List[str]]:
+    """Load route overrides from optional addon JSON config file(s).
+
+    Returns:
+        - cached merged alias override payload string
+        - cached merged priority override payload string
+        - parsed issue list across all config files
+        - raw config path env value
+        - expanded config path list in load order
+    """
+    config_path = os.getenv("CITEWEAVE_ROUTE_ADDON_CONFIG")
+    if not config_path:
+        return None, None, [], None, []
+
+    raw_paths = [segment.strip() for segment in config_path.split(os.pathsep) if segment.strip()]
+    if not raw_paths:
+        return None, None, [], config_path, []
+
+    merged_aliases: Dict[str, Any] = {}
+    merged_priorities: Dict[str, Any] = {}
+    issues: List[Dict[str, Any]] = []
+    expanded_paths: List[str] = []
+
+    for raw_path in raw_paths:
+        aliases_payload, priorities_payload, file_issues, expanded_path = _load_single_addon_route_config(raw_path)
+        expanded_paths.append(expanded_path)
+        issues.extend(file_issues)
+
+        if aliases_payload:
+            merged_aliases.update(aliases_payload)
+        if priorities_payload:
+            merged_priorities.update(priorities_payload)
+
     return (
-        _serialize_cache_payload(aliases_payload),
-        _serialize_cache_payload(priorities_payload),
+        _serialize_cache_payload(merged_aliases or None),
+        _serialize_cache_payload(merged_priorities or None),
         issues,
-        expanded_path,
+        config_path,
+        expanded_paths,
     )
 
 
@@ -398,7 +428,7 @@ def _build_route_registry(
 
 def _current_route_registry() -> Dict[str, Any]:
     """Return the active route registry for the current environment."""
-    addon_alias_raw, addon_priority_raw, addon_issues, addon_config_path = _load_addon_route_config()
+    addon_alias_raw, addon_priority_raw, addon_issues, addon_config_path, addon_config_paths = _load_addon_route_config()
     registry = _build_route_registry(
         addon_alias_raw,
         addon_priority_raw,
@@ -421,6 +451,7 @@ def _current_route_registry() -> Dict[str, Any]:
         "priority_overrides": dict(registry["priority_overrides"]),
         "ignored_priority_overrides": list(registry["ignored_priority_overrides"]),
         "addon_config_path": addon_config_path,
+        "addon_config_paths": list(addon_config_paths),
         "addon_config_issues": list(addon_issues),
     }
 
@@ -435,6 +466,7 @@ def active_route_configuration() -> Dict[str, Any]:
     - only the addon-provided alias/priority overrides that took effect
     - ignored addon override entries with stable diagnostic reasons
     - the final priority-to-route mapping
+    - raw/expanded addon config path metadata for layered config debugging
     """
     registry = _current_route_registry()
     return {
@@ -447,6 +479,7 @@ def active_route_configuration() -> Dict[str, Any]:
         "priority_overrides": dict(registry["priority_overrides"]),
         "ignored_priority_overrides": list(registry["ignored_priority_overrides"]),
         "addon_config_path": registry["addon_config_path"],
+        "addon_config_paths": list(registry["addon_config_paths"]),
         "addon_config_issues": list(registry["addon_config_issues"]),
         "addon_alias_overrides": dict(registry["addon_alias_overrides"]),
         "env_alias_overrides": dict(registry["env_alias_overrides"]),

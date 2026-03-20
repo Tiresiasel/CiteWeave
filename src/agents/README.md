@@ -168,6 +168,7 @@ print(result["response"])
 - Update route constants/helpers in `routing.py` first (single source of truth), then update smart router prompts/examples.
 - Use `active_route_configuration()` when an addon or diagnostic surface needs the effective alias / priority snapshot after safe environment overrides are applied.
 - `active_route_configuration()` also reports `ignored_alias_overrides` and `ignored_priority_overrides` so addon diagnostics can explain why a user-supplied override was rejected instead of silently failing.
+- `CITEWEAVE_ROUTE_ADDON_CONFIG` may point to one JSON file or a platform-path-separated stack of JSON files (loaded left-to-right, later files override earlier file entries). `active_route_configuration()` exposes both the raw env value and expanded file list for debugging layered addon configs.
 - Addons may add new aliases (for example `citation_map` → `graph_analysis`), but they cannot remap canonical route names or built-in short aliases such as `graph`, `vector`, `pdf`, and `author`.
 - Normalized-key collisions are rejected for diagnostics instead of silently overwriting earlier entries (for example `semantic-search` and `semantic search` are treated as the same key).
 - Ensure your agent returns results in the expected format for response synthesis.

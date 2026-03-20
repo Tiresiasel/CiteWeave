@@ -315,6 +315,7 @@ def test_active_route_configuration_loads_file_overrides():
         config = routing.active_route_configuration()
 
         assert config["addon_config_path"] == tmp_path
+        assert config["addon_config_paths"] == [tmp_path]
         assert config["addon_config_issues"] == []
         assert config["addon_alias_overrides"] == {
             "citation_map": routing.ROUTE_GRAPH_ANALYSIS
@@ -383,6 +384,7 @@ def test_active_route_configuration_reports_missing_addon_config_file():
         config = routing.active_route_configuration()
 
         assert config["addon_config_path"] == "/tmp/citeweave-missing-route-config.json"
+        assert config["addon_config_paths"] == ["/tmp/citeweave-missing-route-config.json"]
         assert config["addon_config_issues"] == [
             {
                 "reason": "addon_config_not_found",
@@ -412,6 +414,7 @@ def test_active_route_configuration_accepts_legacy_priority_overrides_key():
         assert config["addon_priority_overrides"] == {
             "author_index": routing.ROUTE_GRAPH_ANALYSIS
         }
+        assert config["addon_config_paths"] == [tmp_path]
         assert config["addon_config_issues"] == []
         assert routing.route_for_priority("author_index") == routing.ROUTE_GRAPH_ANALYSIS
     finally:
@@ -420,6 +423,58 @@ def test_active_route_configuration_accepts_legacy_priority_overrides_key():
         else:
             os.environ["CITEWEAVE_ROUTE_ADDON_CONFIG"] = original_path
         Path(tmp_path).unlink(missing_ok=True)
+
+
+def test_active_route_configuration_merges_layered_addon_configs():
+    routing = _load_routing_module()
+    original_path = os.environ.get("CITEWEAVE_ROUTE_ADDON_CONFIG")
+
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as base_tmp:
+        json.dump(
+            {
+                "aliases": {"citation_map": "graph", "semantic": "vector"},
+                "priority_overrides": {"author_index": "graph"},
+            },
+            base_tmp,
+        )
+        base_tmp_path = base_tmp.name
+
+    with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as overlay_tmp:
+        json.dump(
+            {
+                "aliases": {"semantic": "pdf"},
+                "priority_overrides": {"author_index": "semantic", "pdf_content": "semantic"},
+            },
+            overlay_tmp,
+        )
+        overlay_tmp_path = overlay_tmp.name
+
+    try:
+        os.environ["CITEWEAVE_ROUTE_ADDON_CONFIG"] = os.pathsep.join([base_tmp_path, overlay_tmp_path])
+
+        config = routing.active_route_configuration()
+
+        assert config["addon_config_path"] == os.pathsep.join([base_tmp_path, overlay_tmp_path])
+        assert config["addon_config_paths"] == [base_tmp_path, overlay_tmp_path]
+        assert config["addon_config_issues"] == []
+        assert config["addon_alias_overrides"] == {
+            "citation_map": routing.ROUTE_GRAPH_ANALYSIS,
+            "semantic": routing.ROUTE_PDF_ANALYSIS,
+        }
+        assert config["addon_priority_overrides"] == {
+            "author_index": routing.ROUTE_PDF_ANALYSIS,
+            "pdf_content": routing.ROUTE_PDF_ANALYSIS,
+        }
+        assert routing.resolve_route("semantic") == routing.ROUTE_PDF_ANALYSIS
+        assert routing.route_for_priority("author_index") == routing.ROUTE_PDF_ANALYSIS
+        assert routing.route_for_priority("pdf_content") == routing.ROUTE_PDF_ANALYSIS
+    finally:
+        if original_path is None:
+            os.environ.pop("CITEWEAVE_ROUTE_ADDON_CONFIG", None)
+        else:
+            os.environ["CITEWEAVE_ROUTE_ADDON_CONFIG"] = original_path
+        Path(base_tmp_path).unlink(missing_ok=True)
+        Path(overlay_tmp_path).unlink(missing_ok=True)
 
 
 def test_active_route_configuration_reports_unknown_addon_config_keys():
@@ -438,6 +493,7 @@ def test_active_route_configuration_reports_unknown_addon_config_keys():
         assert config["addon_alias_overrides"] == {
             "citation_map": routing.ROUTE_GRAPH_ANALYSIS
         }
+        assert config["addon_config_paths"] == [tmp_path]
         assert config["addon_config_issues"] == [
             {
                 "reason": "addon_config_unknown_keys",
