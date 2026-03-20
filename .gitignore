@@ -144,6 +144,10 @@ ENV/
 env.bak/
 venv.bak/
 
+# Local runtime config (keep examples tracked, keep real values local)
+config/*.local.json
+config/*_local.json
+
 # Spyder project settings
 .spyderproject
 .spyproject

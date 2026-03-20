@@ -45,7 +45,7 @@ services:
       - "7687:7687"  # Bolt protocol
       - "7474:7474"  # HTTP web UI
     environment:
-      - NEO4J_AUTH=neo4j/12345678
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-CHANGE_ME_LOCAL_ONLY}
       - NEO4J_dbms_security_auth__enabled=true
     volumes:
       - neo4j_data:/data
