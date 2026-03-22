@@ -15,11 +15,20 @@ CONTENT_PATTERNS = [
     (re.compile(r'\.secrets/|token file /home/', re.I), 'local secret/token path'),
     (re.compile(r'NEO4J_AUTH=neo4j/12345678'), 'hard-coded Neo4j password'),
     (re.compile(r'"password"\s*:\s*"12345678"'), 'hard-coded Neo4j password in config'),
+    (re.compile(r'ghp_[A-Za-z0-9]{36}\b'), 'GitHub personal access token'),
+    (re.compile(r'github_pat_[A-Za-z0-9_]{20,}\b'), 'GitHub fine-grained personal access token'),
+    (re.compile(r'sk-(?:proj-)?[A-Za-z0-9_-]{24,}\b'), 'OpenAI API key-like secret'),
+    (re.compile(r'-----BEGIN [A-Z0-9 ]*PRIVATE KEY-----'), 'private key material'),
 ]
 
 PATH_GUARDS = [
     ('*.local.json', 'tracked local override config'),
     ('*_local.json', 'tracked local override config'),
+    ('*.local.yaml', 'tracked local override config'),
+    ('*.local.yml', 'tracked local override config'),
+    ('*.local.toml', 'tracked local override config'),
+    ('*.local.ini', 'tracked local override config'),
+    ('*.local.env', 'tracked local override config'),
     ('.env', 'tracked local environment file'),
     ('.env.*', 'tracked local environment file'),
 ]

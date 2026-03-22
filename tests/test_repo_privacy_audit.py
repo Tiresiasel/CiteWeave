@@ -48,6 +48,15 @@ class RepoPrivacyAuditTests(unittest.TestCase):
 
         self.assertEqual(violations, [('config/neo4j_config.local.json', 'tracked local override config')])
 
+    def test_scan_repo_flags_tracked_local_yaml_override_file(self):
+        repo, tracked = self.make_repo(
+            {'config/runtime.local.yaml': 'model: local-only'},
+        )
+
+        violations = scan_repo(repo, tracked)
+
+        self.assertEqual(violations, [('config/runtime.local.yaml', 'tracked local override config')])
+
     def test_scan_repo_ignores_untracked_local_override_file(self):
         repo, tracked = self.make_repo(
             {
@@ -60,6 +69,34 @@ class RepoPrivacyAuditTests(unittest.TestCase):
         violations = scan_repo(repo, tracked)
 
         self.assertEqual(violations, [])
+
+    def test_scan_repo_flags_github_token(self):
+        repo, tracked = self.make_repo(
+            {'docs/example.md': 'token=ghp_' + 'A' * 36},
+        )
+
+        violations = scan_repo(repo, tracked)
+
+        self.assertEqual(violations, [('docs/example.md', 'GitHub personal access token')])
+
+    def test_scan_repo_flags_openai_key_like_secret(self):
+        repo, tracked = self.make_repo(
+            {'docs/example.md': 'OPENAI_API_KEY=sk-proj-' + 'abc123XYZ_' * 3},
+        )
+
+        violations = scan_repo(repo, tracked)
+
+        self.assertEqual(violations, [('docs/example.md', 'OpenAI API key-like secret')])
+
+    def test_scan_repo_flags_private_key_material(self):
+        private_key_block = '-----BEGIN ' + 'OPENSSH PRIVATE KEY-----\npretend\n-----END OPENSSH PRIVATE KEY-----'
+        repo, tracked = self.make_repo(
+            {'config/keys.txt': private_key_block},
+        )
+
+        violations = scan_repo(repo, tracked)
+
+        self.assertEqual(violations, [('config/keys.txt', 'private key material')])
 
     def test_emit_report_returns_success_for_clean_repo(self):
         self.assertEqual(emit_report([]), 0)
