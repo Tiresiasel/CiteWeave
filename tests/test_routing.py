@@ -507,3 +507,80 @@ def test_active_route_configuration_reports_unknown_addon_config_keys():
         else:
             os.environ["CITEWEAVE_ROUTE_ADDON_CONFIG"] = original_path
         Path(tmp_path).unlink(missing_ok=True)
+
+
+def test_active_route_configuration_expands_directory_entries_in_load_order():
+    routing = _load_routing_module()
+    original_path = os.environ.get("CITEWEAVE_ROUTE_ADDON_CONFIG")
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        base_path = Path(tmp_dir) / "00-base.json"
+        overlay_path = Path(tmp_dir) / "10-overlay.json"
+        ignored_path = Path(tmp_dir) / "README.txt"
+
+        base_path.write_text(
+            json.dumps(
+                {
+                    "aliases": {"semantic": "vector"},
+                    "priority_overrides": {"author_index": "graph"},
+                }
+            ),
+            encoding="utf-8",
+        )
+        overlay_path.write_text(
+            json.dumps(
+                {
+                    "aliases": {"semantic": "pdf", "citation_map": "graph"},
+                    "priority_overrides": {"author_index": "semantic"},
+                }
+            ),
+            encoding="utf-8",
+        )
+        ignored_path.write_text("not json", encoding="utf-8")
+
+        try:
+            os.environ["CITEWEAVE_ROUTE_ADDON_CONFIG"] = tmp_dir
+
+            config = routing.active_route_configuration()
+
+            assert config["addon_config_path"] == tmp_dir
+            assert config["addon_config_paths"] == [str(base_path), str(overlay_path)]
+            assert config["addon_config_issues"] == []
+            assert config["addon_alias_overrides"] == {
+                "semantic": routing.ROUTE_PDF_ANALYSIS,
+                "citation_map": routing.ROUTE_GRAPH_ANALYSIS,
+            }
+            assert config["addon_priority_overrides"] == {
+                "author_index": routing.ROUTE_PDF_ANALYSIS,
+            }
+            assert routing.resolve_route("semantic") == routing.ROUTE_PDF_ANALYSIS
+            assert routing.route_for_priority("author_index") == routing.ROUTE_PDF_ANALYSIS
+        finally:
+            if original_path is None:
+                os.environ.pop("CITEWEAVE_ROUTE_ADDON_CONFIG", None)
+            else:
+                os.environ["CITEWEAVE_ROUTE_ADDON_CONFIG"] = original_path
+
+
+def test_active_route_configuration_reports_empty_addon_config_directory():
+    routing = _load_routing_module()
+    original_path = os.environ.get("CITEWEAVE_ROUTE_ADDON_CONFIG")
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        try:
+            os.environ["CITEWEAVE_ROUTE_ADDON_CONFIG"] = tmp_dir
+
+            config = routing.active_route_configuration()
+
+            assert config["addon_config_paths"] == []
+            assert config["addon_config_issues"] == [
+                {
+                    "reason": "addon_config_dir_empty",
+                    "path": tmp_dir,
+                }
+            ]
+        finally:
+            if original_path is None:
+                os.environ.pop("CITEWEAVE_ROUTE_ADDON_CONFIG", None)
+            else:
+                os.environ["CITEWEAVE_ROUTE_ADDON_CONFIG"] = original_path

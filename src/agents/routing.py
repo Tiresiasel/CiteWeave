@@ -12,6 +12,7 @@ Expected formats:
     CITEWEAVE_ROUTE_ALIASES = {"alias_name": "route_name"}
     CITEWEAVE_ROUTE_ADDON_CONFIG = /path/to/route-config.json
     CITEWEAVE_ROUTE_ADDON_CONFIG = /path/base-route-config.json:/path/overlay-route-config.json
+    CITEWEAVE_ROUTE_ADDON_CONFIG = /path/base-route-config.json:/path/route-overrides.d
 
 When addon config file(s) are present, each accepts:
     {
@@ -21,6 +22,8 @@ When addon config file(s) are present, each accepts:
 
 When multiple config files are provided via the platform path separator,
 files are loaded left-to-right and later files override earlier file entries.
+Directory entries are also supported and expand to top-level `*.json` files in
+sorted order, making layered addon config bundles easier to manage.
 
 Only known routes are accepted to keep routing safe.
 """
@@ -205,6 +208,37 @@ def _load_single_addon_route_config(config_path: str) -> Tuple[Dict[str, Any] | 
     return aliases_payload, priorities_payload, issues, expanded_path
 
 
+def _expand_addon_route_config_paths(raw_paths: Iterable[str]) -> Tuple[List[str], List[Dict[str, Any]]]:
+    """Expand addon config path entries into an ordered list of JSON files.
+
+    File entries are kept as-is. Directory entries expand to top-level `*.json`
+    files in sorted order so addon bundles can be layered without listing every
+    file in the environment variable.
+    """
+    expanded_paths: List[str] = []
+    issues: List[Dict[str, Any]] = []
+
+    for raw_path in raw_paths:
+        expanded_path = str(Path(raw_path).expanduser())
+        path_obj = Path(expanded_path)
+
+        if path_obj.is_dir():
+            json_files = sorted(
+                str(candidate)
+                for candidate in path_obj.iterdir()
+                if candidate.is_file() and candidate.suffix.lower() == ".json"
+            )
+            if json_files:
+                expanded_paths.extend(json_files)
+            else:
+                issues.append(_addon_config_issue("addon_config_dir_empty", path=expanded_path))
+            continue
+
+        expanded_paths.append(expanded_path)
+
+    return expanded_paths, issues
+
+
 def _load_addon_route_config() -> Tuple[str | None, str | None, List[Dict[str, Any]], str | None, List[str]]:
     """Load route overrides from optional addon JSON config file(s).
 
@@ -223,14 +257,13 @@ def _load_addon_route_config() -> Tuple[str | None, str | None, List[Dict[str, A
     if not raw_paths:
         return None, None, [], config_path, []
 
+    expanded_paths, issues = _expand_addon_route_config_paths(raw_paths)
+
     merged_aliases: Dict[str, Any] = {}
     merged_priorities: Dict[str, Any] = {}
-    issues: List[Dict[str, Any]] = []
-    expanded_paths: List[str] = []
 
-    for raw_path in raw_paths:
-        aliases_payload, priorities_payload, file_issues, expanded_path = _load_single_addon_route_config(raw_path)
-        expanded_paths.append(expanded_path)
+    for expanded_path in expanded_paths:
+        aliases_payload, priorities_payload, file_issues, _ = _load_single_addon_route_config(expanded_path)
         issues.extend(file_issues)
 
         if aliases_payload:
