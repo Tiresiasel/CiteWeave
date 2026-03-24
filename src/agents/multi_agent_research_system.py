@@ -1428,20 +1428,37 @@ class QueryPlanningAgent:
                 })
                 step_counter += 1
         else:
-            # Special handling for paper search when we have a paper_id from fuzzy matching
-            if intent.query_type == QueryType.PAPER_SEARCH and target_entity.get("paper_id"):
-                # We have a specific paper, search its content directly
-                paper_id = target_entity["paper_id"]
-                plan["query_sequence"].append({
-                    "step": step_counter,
-                    "database": "vector_db",
-                    "method": "search_all_collections",
-                    "params": {"query": f"paper_id:{paper_id} {intent.original_question}", "limit_per_collection": 10},
-                    "expected_result": "search_results",
-                    "required": True,
-                    "reasoning": f"Found specific paper {paper_id}, searching its content"
-                })
-                step_counter += 1
+            # Special handling for paper search when we have a specific paper id/title
+            if intent.query_type == QueryType.PAPER_SEARCH and target_entity and (target_entity.get("paper_id") or target_entity.get("id") or target_entity.get("title")):
+                paper_id = target_entity.get("paper_id") or target_entity.get("id")
+                if paper_id:
+                    # First, try structured content fetch for this paper
+                    plan["query_sequence"].append({
+                        "step": step_counter,
+                        "database": "vector_db",
+                        "method": "get_full_pdf_content",
+                        "params": {"paper_id": paper_id},
+                        "expected_result": "full_pdf_content",
+                        "required": False,
+                        "reasoning": f"Found specific paper {paper_id}, fetch full content directly"
+                    })
+                    step_counter += 1
+                else:
+                    # Fallback: title-based content query when only title could be matched
+                    target_title = target_entity.get("title") or target_entity.get("name") or intent.target_entity
+                    plan["query_sequence"].append({
+                        "step": step_counter,
+                        "database": "vector_db",
+                        "method": "query_pdf_by_title_and_content",
+                        "params": {
+                            "title_query": target_title,
+                            "content_query": intent.original_question
+                        },
+                        "expected_result": "search_results",
+                        "required": True,
+                        "reasoning": f"Found candidate title '{target_title}', searching paper content by title"
+                    })
+                    step_counter += 1
             else:
                 # Use mapping table for other cases
                 key = (intent.query_type, intent.entity_type)
@@ -2419,6 +2436,12 @@ Please create a comprehensive summary that highlights these specific numbers and
                 if result.get("found"):
                     count = 1
                     stats["collection_stats"]["papers"] += 1
+                    # Also count extracted structured sections if available
+                    section_count = len(result.get("section_summaries", [])) or result.get("sections_count", 0) or len(result.get("data", {}).get("sections", []))
+                    stats["collection_stats"]["sections"] += section_count
+                    stats["collection_stats"]["paragraphs"] += 0
+                    stats["collection_stats"]["sentences"] += result.get("data", {}).get("sentence_count", 0)
+                    stats["collection_stats"]["citations"] += 0
                     pdf_title = result.get("metadata", {}).get("title", "PDF Content")
                     pdf_authors = result.get("metadata", {}).get("authors", [])
                     author_str = ", ".join(pdf_authors[:2]) if pdf_authors else "Unknown"
@@ -3682,7 +3705,7 @@ Please respond with: CONTINUE or EXPAND
                         return state
                     
                     # Determine what type of analysis is needed based on the question
-                    content_keywords = ["summarize", "findings", "content", "arguments", "main points"]
+                    content_keywords = ["summarize", "summary", "findings", "content", "argument", "arguments", "main argument", "main points", "claim", "claims", "conclusion", "hypothesis"]
                     is_content_query = any(keyword in question.lower() for keyword in content_keywords)
                     
                     if is_content_query:
@@ -4064,7 +4087,7 @@ Given the following conversation history, answer the new user question as best a
             pdf_content_result = collected_data.get("results", {}).get("get_full_pdf_content", {})
             has_pdf_content = pdf_content_result.get("found") and pdf_content_result.get("full_text")
             
-            if has_pdf_content and any(word in original_question.lower() for word in ['summarize', 'findings', 'content', 'main points', 'arguments']):
+            if has_pdf_content and any(word in original_question.lower() for word in ['summarize', 'summary', 'findings', 'content', 'main point', 'main points', 'argument', 'arguments', 'main argument', 'claim', 'claims', 'conclusion', 'conclusions', 'hypothesis', 'hypotheses']):
                 # For content queries with PDF available, use the full PDF text directly
                 pdf_text = pdf_content_result.get("full_text", "")
                 pdf_title = pdf_content_result.get("metadata", {}).get("title", "Unknown Paper")
