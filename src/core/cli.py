@@ -232,6 +232,11 @@ def main():
     # Query command  
     query_parser = subparsers.add_parser("query", help="Query the argument graph.")
     query_parser.add_argument("question", type=str, help="Question to ask.")
+    query_parser.add_argument(
+        "--confirmation",
+        default="continue",
+        help="User confirmation mode to pass into the research workflow (default: continue)."
+    )
 
     # Chat command
     chat_parser = subparsers.add_parser("chat", help="Start an interactive chat with the multi-agent research system.")
@@ -333,9 +338,18 @@ def handle_upload_command(args):
 
 def handle_query_command(args):
     """Handle the query command."""
-    print(f"Querying: {args.question}")
-    # TODO: Implement query functionality
-    print("Query functionality not yet implemented.")
+    confirmation = getattr(args, "confirmation", "continue") or "continue"
+
+    try:
+        system = LangGraphResearchSystem()
+        print(f"Querying: {args.question}")
+        response = system.research_question(args.question, confirmation)
+        print()
+        print(response)
+    except Exception as e:
+        print(f"Error querying argument graph: {e}")
+        logging.exception("Query command failed")
+        sys.exit(1)
 
 def handle_diagnose_command(args):
     """Handle the diagnose command."""
