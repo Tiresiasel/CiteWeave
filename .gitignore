@@ -231,6 +231,9 @@ training_args.bin
 # OpenClaw local artifacts
 .openclaw/
 
+# Test artifacts
+tests/_artifacts/
+
 # Runtime data should stay out of git (code/data separation)
 data/*
 !data/.gitkeep

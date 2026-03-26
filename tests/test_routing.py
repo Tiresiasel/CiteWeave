@@ -584,3 +584,41 @@ def test_active_route_configuration_reports_empty_addon_config_directory():
                 os.environ.pop("CITEWEAVE_ROUTE_ADDON_CONFIG", None)
             else:
                 os.environ["CITEWEAVE_ROUTE_ADDON_CONFIG"] = original_path
+
+
+def test_active_route_configuration_ignores_subdirectories_in_addon_config_path():
+    """Subdirectories within an addon config directory path should be silently skipped."""
+    routing = _load_routing_module()
+    original_path = os.environ.get("CITEWEAVE_ROUTE_ADDON_CONFIG")
+
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        json_path = Path(tmp_dir) / "00-valid.json"
+        json_path.write_text(
+            json.dumps({"aliases": {"semantic": "vector"}}),
+            encoding="utf-8",
+        )
+        # Nested subdirectory should be ignored (not walked recursively)
+        nested_dir = Path(tmp_dir) / "subdir"
+        nested_dir.mkdir()
+        (nested_dir / "nested.json").write_text(
+            json.dumps({"aliases": {"nested_alias": "author_collection"}}),
+            encoding="utf-8",
+        )
+
+        try:
+            os.environ["CITEWEAVE_ROUTE_ADDON_CONFIG"] = tmp_dir
+
+            config = routing.active_route_configuration()
+
+            # Only the top-level JSON should be picked up; nested files ignored
+            assert config["addon_config_paths"] == [str(json_path)]
+            assert config["addon_config_issues"] == []
+            assert config["addon_alias_overrides"] == {"semantic": routing.ROUTE_VECTOR_SEARCH}
+            # Nested alias should NOT appear
+            assert "nested_alias" not in config["addon_alias_overrides"]
+            assert routing.resolve_route("nested_alias") is None
+        finally:
+            if original_path is None:
+                os.environ.pop("CITEWEAVE_ROUTE_ADDON_CONFIG", None)
+            else:
+                os.environ["CITEWEAVE_ROUTE_ADDON_CONFIG"] = original_path
