@@ -14,23 +14,22 @@
 # 1. 克隆并配置
 git clone https://github.com/Tiresiasel/CiteWeave.git
 cd CiteWeave
-cp .env_template .env
 
-# 2. 创建 Python 虚拟环境并安装依赖
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python -m nltk.downloader punkt
+# 2. 一键完成本地 CLI 部署
+bash scripts/bootstrap_local.sh
 
-# 3. 启动依赖服务（Neo4j + Qdrant + GROBID）
-docker-compose up -d
-
-# 4. 验证部署
-bash scripts/deployment_check.sh
-
-# 5. 使用 CLI
+# 3. 使用 CLI
 .venv/bin/python -m src.core.cli upload path/to/paper.pdf
+.venv/bin/python -m src.core.cli query "哪些论文讨论了 X？"
+.venv/bin/python -m src.core.cli routes
 .venv/bin/python -m src.core.cli chat
+
+# 4. 或切换到 OpenClaw 模式
+bash scripts/bootstrap_openclaw.sh
+# 然后验证：
+.venv/bin/python -m src.core.cli routes
+bash scripts/deployment_check.sh
+# 再从 OpenClaw 会话里调用 CiteWeave。
 ```
 
 ---
@@ -47,7 +46,8 @@ bash scripts/deployment_check.sh
 - `batch-upload`
 - `progress`
 - `chat`
-- `query` *（命令入口已存在，但当前分支仍在完善；真实问答请优先使用 `chat`）*
+- `query`
+- `routes`
 
 ### 本地 CLI 模式（无需 OpenClaw）
 
@@ -64,6 +64,8 @@ OPENAI_API_KEY=sk-...yourkey...
 .venv/bin/python -m src.core.cli upload path/to/paper.pdf
 .venv/bin/python -m src.core.cli diagnose path/to/paper.pdf
 .venv/bin/python -m src.core.cli batch-upload ./papers --resume
+.venv/bin/python -m src.core.cli query "哪些论文讨论了 X？"
+.venv/bin/python -m src.core.cli routes
 .venv/bin/python -m src.core.cli chat
 ```
 
@@ -134,19 +136,26 @@ bash scripts/deployment_check.sh
 
 ### `chat` — 交互式多轮对话
 
-当前分支上，这才是实际可用于研究交互的主路径。
-
 ```bash
 .venv/bin/python -m src.core.cli chat
 ```
 
 ### `query "<问题>"` — 单轮查询入口
 
-这个命令在 CLI 解析器里已经存在，但当前分支仍是占位实现，运行后会打印
-`Query functionality not yet implemented.`。在单轮查询完全合并前，请优先使用 `chat`。
+单轮进入 LangGraph research workflow。
+当你希望控制信息摘要之后的流程时，可以使用 `--confirmation`。
 
 ```bash
 .venv/bin/python -m src.core.cli query "哪些论文讨论了带宽与定价的关系？"
+.venv/bin/python -m src.core.cli query "总结一下 Michael Porter 1980" --confirmation continue
+```
+
+### `routes` — 路由配置诊断
+
+查看当前生效的 route 配置，包括 alias、priority 映射，以及 addon / env 覆盖。
+
+```bash
+.venv/bin/python -m src.core.cli routes
 ```
 
 ---
@@ -186,8 +195,15 @@ OpenClaw Agent (Atlas)
 
 ### 具体接入流程
 
-1. 先完成上面的 **本地 CLI / Docker 部署**。
-2. 然后把 `.env` 切换到 OpenClaw 模式：
+1. 先完成上面的 **本地 CLI / Docker 部署**，或者直接运行：
+
+```bash
+bash scripts/bootstrap_openclaw.sh
+```
+
+这个脚本会准备 `.env`、创建虚拟环境、安装依赖、启动 Docker 服务，并让项目保持在 OpenClaw 模式。
+
+2. 如果你想手动设置，`.env` 至少应包含：
 
 ```bash
 CITEWEAVE_LLM_PROVIDER=openclaw

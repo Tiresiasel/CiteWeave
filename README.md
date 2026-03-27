@@ -14,23 +14,22 @@ CiteWeave extracts sentence-level citation relationships from PDFs, builds a cit
 # 1. Clone & configure
 git clone https://github.com/Tiresiasel/CiteWeave.git
 cd CiteWeave
-cp .env_template .env
 
-# 2. Create a Python environment and install dependencies
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python -m nltk.downloader punkt
+# 2. Bootstrap the local CLI deployment
+bash scripts/bootstrap_local.sh
 
-# 3. Start backing services
-docker-compose up -d
-
-# 4. Verify deployment
-bash scripts/deployment_check.sh
-
-# 5. Use the CLI
+# 3. Use the CLI
 .venv/bin/python -m src.core.cli upload path/to/paper.pdf
+.venv/bin/python -m src.core.cli query "Which papers discuss X?"
+.venv/bin/python -m src.core.cli routes
 .venv/bin/python -m src.core.cli chat
+
+# 4. Or switch to OpenClaw mode
+bash scripts/bootstrap_openclaw.sh
+# then verify:
+.venv/bin/python -m src.core.cli routes
+bash scripts/deployment_check.sh
+# and call CiteWeave from your OpenClaw session.
 ```
 
 ---
@@ -50,7 +49,8 @@ Current CLI commands available on this branch:
 - `batch-upload`
 - `progress`
 - `chat`
-- `query` *(command exists, but is still being completed; prefer `chat` for real querying on this branch)*
+- `query`
+- `routes`
 
 ### Local CLI mode (no OpenClaw needed)
 
@@ -67,6 +67,8 @@ Then run CiteWeave through the project virtualenv:
 .venv/bin/python -m src.core.cli upload path/to/paper.pdf
 .venv/bin/python -m src.core.cli diagnose path/to/paper.pdf
 .venv/bin/python -m src.core.cli batch-upload ./papers --resume
+.venv/bin/python -m src.core.cli query "Which papers discuss X?"
+.venv/bin/python -m src.core.cli routes
 .venv/bin/python -m src.core.cli chat
 ```
 
@@ -146,8 +148,7 @@ Inspect or clear batch-upload progress tracking.
 
 ### `chat`
 
-Interactive multi-turn chat with the research system. On the current branch,
-this is the main path for real research interaction.
+Interactive multi-turn chat with the research system.
 
 ```bash
 .venv/bin/python -m src.core.cli chat
@@ -155,12 +156,22 @@ this is the main path for real research interaction.
 
 ### `query "<question>"`
 
-This command exists in the CLI parser, but on the current branch it is still a
-placeholder and prints `Query functionality not yet implemented.` Prefer
-`chat` until the single-shot query path is fully merged.
+Single-shot query path into the LangGraph research workflow.
+Use `--confirmation` when you want to control how the workflow proceeds after
+an information summary step.
 
 ```bash
 .venv/bin/python -m src.core.cli query "Which papers discuss bandwidth vs. pricing?"
+.venv/bin/python -m src.core.cli query "Summarize Michael Porter 1980" --confirmation continue
+```
+
+### `routes`
+
+Inspect the active route configuration, including aliases, priority mappings,
+and addon/env overrides.
+
+```bash
+.venv/bin/python -m src.core.cli routes
 ```
 
 ---
@@ -200,8 +211,16 @@ OpenClaw Agent (Atlas / any agent)
 
 ### Concrete setup flow
 
-1. First finish the **local CLI deployment** above.
-2. Then switch `.env` into OpenClaw mode:
+1. First finish the **local CLI deployment** above, or simply run:
+
+```bash
+bash scripts/bootstrap_openclaw.sh
+```
+
+That script prepares `.env`, ensures the virtualenv exists, installs
+requirements, starts Docker services, and keeps the project in OpenClaw mode.
+
+2. If you prefer to set values manually, `.env` should contain:
 
 ```bash
 CITEWEAVE_LLM_PROVIDER=openclaw
