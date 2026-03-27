@@ -57,6 +57,14 @@ else:
 
 from src.processing.pdf.document_processor import DocumentProcessor
 from src.agents.multi_agent_research_system import LangGraphResearchSystem
+from src.agents.routing import (
+    active_route_configuration,
+    ROUTE_GRAPH_ANALYSIS,
+    ROUTE_VECTOR_SEARCH,
+    ROUTE_PDF_ANALYSIS,
+    ROUTE_AUTHOR_COLLECTION,
+    DEFAULT_ROUTE,
+)
 
 class BatchUploadTracker:
     """Tracks batch upload progress to enable resuming interrupted uploads."""
@@ -264,6 +272,9 @@ def main():
     progress_parser.add_argument("directory", type=str, help="Path to the directory to check progress for.")
     progress_parser.add_argument("--clear", action="store_true", help="Clear progress for this directory.")
 
+    # Routes command
+    routes_parser = subparsers.add_parser("routes", help="Show active route configuration.")
+
     args = parser.parse_args()
 
     if args.command == "upload":
@@ -278,6 +289,8 @@ def main():
         handle_batch_upload_command(args)
     elif args.command == "progress":
         handle_progress_command(args)
+    elif args.command == "routes":
+        handle_routes_command(args)
     else:
         parser.print_help()
 
@@ -689,6 +702,70 @@ def handle_progress_command(args):
             print(f"{i}. {os.path.basename(pdf_path)}")
     else:
         print("No files pending processing.")
+
+def handle_routes_command(args):
+    """Handle the routes command to display the active routing configuration."""
+    config = active_route_configuration()
+
+    print("\n=== CiteWeave Route Configuration ===\n")
+    print(f"Default route: {config['default_route']}")
+
+    print(f"\nValid routes:")
+    for route in sorted(config["valid_routes"]):
+        marker = " (default)" if route == config["default_route"] else ""
+        print(f"  {route}{marker}")
+
+    # Aliases section
+    if config["aliases"]:
+        print(f"\nRoute aliases ({len(config['aliases'])} active):")
+        for alias, canonical in sorted(config["aliases"].items()):
+            if alias != canonical:
+                print(f"  {alias} → {canonical}")
+
+    # Priority map
+    if config["priority_map"]:
+        print(f"\nPriority → Route mapping:")
+        for priority, route in sorted(config["priority_map"].items()):
+            print(f"  {priority} → {route}")
+
+    # Active overrides
+    if config["alias_overrides"]:
+        print(f"\nAlias overrides ({len(config['alias_overrides'])} active):")
+        for alias, canonical in sorted(config["alias_overrides"].items()):
+            source = "addon" if alias in config.get("addon_alias_overrides", {}) else "env"
+            print(f"  {alias} → {canonical} [{source}]")
+
+    if config["priority_overrides"]:
+        print(f"\nPriority overrides ({len(config['priority_overrides'])} active):")
+        for priority, route in sorted(config["priority_overrides"].items()):
+            source = "addon" if priority in config.get("addon_priority_overrides", {}) else "env"
+            print(f"  {priority} → {route} [{source}]")
+
+    # Ignored overrides
+    if config["ignored_alias_overrides"]:
+        print(f"\nIgnored alias overrides ({len(config['ignored_alias_overrides'])}):")
+        for entry in config["ignored_alias_overrides"]:
+            print(f"  {entry['key']} → {entry['route']}  [{entry['reason']}]")
+
+    if config["ignored_priority_overrides"]:
+        print(f"\nIgnored priority overrides ({len(config['ignored_priority_overrides'])}):")
+        for entry in config["ignored_priority_overrides"]:
+            print(f"  {entry['key']} → {entry['route']}  [{entry['reason']}]")
+
+    # Config sources
+    if config["addon_config_paths"]:
+        print(f"\nAddon config sources ({len(config['addon_config_paths'])}):")
+        for path in config["addon_config_paths"]:
+            print(f"  {path}")
+
+    if config["addon_config_issues"]:
+        print(f"\nAddon config issues ({len(config['addon_config_issues'])}):")
+        for issue in config["addon_config_issues"]:
+            loc = f" ({issue.get('path', '')})" if issue.get("path") else ""
+            detail = f": {issue.get('detail')}" if issue.get("detail") else ""
+            print(f"  {issue['reason']}{loc}{detail}")
+
+    print()
 
 if __name__ == "__main__":
     main() 
