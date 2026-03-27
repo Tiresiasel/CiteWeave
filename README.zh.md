@@ -8,55 +8,68 @@
 
 ---
 
-## 5 分钟快速启动
+## 5 分钟快速启动（先走 CLI / Docker）
 
 ```bash
 # 1. 克隆并配置
 git clone https://github.com/Tiresiasel/CiteWeave.git
 cd CiteWeave
-cp .env_template .env          # 编辑 .env — 见下方「选择 LLM 模式」
+cp .env_template .env
 
-# 2. 启动依赖服务（Neo4j + Qdrant + GROBID）
+# 2. 创建 Python 虚拟环境并安装依赖
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m nltk.downloader punkt
+
+# 3. 启动依赖服务（Neo4j + Qdrant + GROBID）
 docker-compose up -d
 
-# 3. 验证部署
+# 4. 验证部署
 bash scripts/deployment_check.sh
 
-# 4. 上传论文并查询
-python -m src.core.cli upload path/to/paper.pdf
-python -m src.core.cli query "哪些论文讨论了 X？"
+# 5. 使用 CLI
+.venv/bin/python -m src.core.cli upload path/to/paper.pdf
+.venv/bin/python -m src.core.cli chat
 ```
 
 ---
 
-## 两种运行模式
+## 第一部分：作为 CLI 应用使用 CiteWeave
 
-### 模式 A — 本地 CLI（无需 OpenClaw）
+这是最基础、也最重要的部署方式。即便你之后接入 OpenClaw，底层依然是
+这套本地 CLI + Docker 服务。
+
+### 当前代码分支上实际可用的命令
+
+- `upload`
+- `diagnose`
+- `batch-upload`
+- `progress`
+- `chat`
+- `query` *（命令入口已存在，但当前分支仍在完善；真实问答请优先使用 `chat`）*
+
+### 本地 CLI 模式（无需 OpenClaw）
+
+在 `.env` 中设置：
 
 ```bash
-# 在 .env 中设置
 CITEWEAVE_LLM_PROVIDER=openai
 OPENAI_API_KEY=sk-...yourkey...
 ```
 
-### 模式 B — OpenClaw 集成（推荐给 OpenClaw 用户）
+然后通过项目虚拟环境运行：
 
 ```bash
-# 在 .env 中设置
-CITEWEAVE_LLM_PROVIDER=openclaw
-# CITEWEAVE_LLM_MODEL 默认: openai-codex/gpt-5.4
-# CITEWEAVE_LLM_API_BASE 默认: http://localhost:18789/v1
+.venv/bin/python -m src.core.cli upload path/to/paper.pdf
+.venv/bin/python -m src.core.cli diagnose path/to/paper.pdf
+.venv/bin/python -m src.core.cli batch-upload ./papers --resume
+.venv/bin/python -m src.core.cli chat
 ```
 
-设置为 `openclaw` 后，所有 LLM 调用（包括 `language_processor`、`query_analyzer`、
-`response_generator` 等所有 Agent）都会自动路由到本地 OpenClaw gateway，
-**无需单独配置 OpenAI API Key**。OpenClaw 通过会话认证，不需要额外的 API Key。
-
-OpenClaw Agent 可直接通过 CLI 调用 CiteWeave：
-
-```
-Atlas，帮我上传这些 PDF，然后回答哪些论文讨论了 X。
-```
+> 为什么推荐 `.venv/bin/python`？
+> 因为 CLI 在启动时就会 import 项目依赖。对一台全新的机器来说，
+> 如果当前环境没有装齐依赖，直接 `python -m src.core.cli` 会失败。
 
 ---
 
@@ -84,64 +97,76 @@ bash scripts/deployment_check.sh
 
 ## CLI 命令参考
 
-所有操作均通过 `python -m src.core.cli`：
+所有操作建议通过项目虚拟环境执行：
 
 ```
-python -m src.core.cli <命令> [选项]
+.venv/bin/python -m src.core.cli <命令> [选项]
 ```
 
 ### `upload <pdf_path>` — 上传并解析论文
 
 ```bash
-python -m src.core.cli upload path/to/paper.pdf        # 解析并入库
-python -m src.core.cli upload path/to/paper.pdf --diagnose  # 仅质量诊断
-python -m src.core.cli upload path/to/paper.pdf --force     # 强制重新处理
-```
-
-### `query "<问题>"` — 学术问答
-
-```bash
-python -m src.core.cli query "哪些论文讨论了带宽与定价的关系？"
-```
-
-### `chat` — 交互式多轮对话
-
-```bash
-python -m src.core.cli chat
-```
-
-### `batch-upload <目录>` — 批量上传
-
-```bash
-python -m src.core.cli batch-upload path/to/papers/           # 4 并行
-python -m src.core.cli batch-upload path/to/papers/ --resume  # 跳过已完成
-python -m src.core.cli batch-upload path/to/papers/ --sequential  # 顺序处理
+.venv/bin/python -m src.core.cli upload path/to/paper.pdf
+.venv/bin/python -m src.core.cli upload path/to/paper.pdf --diagnose
+.venv/bin/python -m src.core.cli upload path/to/paper.pdf --force
 ```
 
 ### `diagnose <pdf_path>` — PDF 质量诊断
 
 ```bash
-python -m src.core.cli diagnose path/to/paper.pdf
+.venv/bin/python -m src.core.cli diagnose path/to/paper.pdf
 ```
 
-### `routes` — 路由配置诊断
-
-打印当前生效的路由配置（addon 配置文件优先级、环境变量覆盖等）。
+### `batch-upload <目录>` — 批量上传
 
 ```bash
-python -m src.core.cli routes
+.venv/bin/python -m src.core.cli batch-upload path/to/papers/
+.venv/bin/python -m src.core.cli batch-upload path/to/papers/ --resume
+.venv/bin/python -m src.core.cli batch-upload path/to/papers/ --sequential
 ```
 
-### `papers [--all | --limit N]` — 列出数据库中的论文
+### `progress <目录>` — 查看/清理批量处理进度
 
 ```bash
-python -m src.core.cli papers --limit 20   # 前 20 篇
-python -m src.core.cli papers --all          # 全部
+.venv/bin/python -m src.core.cli progress path/to/papers/
+.venv/bin/python -m src.core.cli progress path/to/papers/ --clear
+```
+
+### `chat` — 交互式多轮对话
+
+当前分支上，这才是实际可用于研究交互的主路径。
+
+```bash
+.venv/bin/python -m src.core.cli chat
+```
+
+### `query "<问题>"` — 单轮查询入口
+
+这个命令在 CLI 解析器里已经存在，但当前分支仍是占位实现，运行后会打印
+`Query functionality not yet implemented.`。在单轮查询完全合并前，请优先使用 `chat`。
+
+```bash
+.venv/bin/python -m src.core.cli query "哪些论文讨论了带宽与定价的关系？"
 ```
 
 ---
 
-## OpenClaw 集成
+## 第二部分：将 CiteWeave 接入 OpenClaw
+
+### OpenClaw 模式到底改变了什么
+
+OpenClaw 不会替代 CiteWeave 的存储或解析层，它只是接管 CiteWeave 的
+LLM 后端。
+
+底层部署并没有变：
+
+- Neo4j 仍然存 citation graph
+- Qdrant 仍然存语义向量
+- GROBID 仍然负责 PDF 解析
+- CiteWeave 的 CLI / Python 代码仍然负责 ingestion 和 chat 逻辑
+
+变化只是：CiteWeave 不再自己直连 OpenAI，而是把所有 LLM 调用改为发往
+**本地 OpenClaw gateway**。
 
 ### 工作原理
 
@@ -149,38 +174,53 @@ python -m src.core.cli papers --all          # 全部
 OpenClaw Agent (Atlas)
     │
     │  CITEWEAVE_LLM_PROVIDER=openclaw
-    │  所有 LLM 调用 → http://localhost:18789/v1 (OpenClaw gateway)
+    │  所有 LLM 调用 → http://localhost:18789/v1
     │
-    ├──→ CLI: python -m src.core.cli query "..."
+    ├──→ .venv/bin/python -m src.core.cli chat
     │       │
-    │       └── Neo4j + Qdrant + GROBID（Docker 服务）
+    │       └── Neo4j + Qdrant + GROBID
     │
     └──（可选）直接 import Python API
-            from src.agents.multi_agent_research_system import LangGraphResearchSystem
+            LangGraphResearchSystem()
 ```
 
-### 配置步骤
+### 具体接入流程
 
-1. 编辑 `.env`：
+1. 先完成上面的 **本地 CLI / Docker 部署**。
+2. 然后把 `.env` 切换到 OpenClaw 模式：
 
 ```bash
 CITEWEAVE_LLM_PROVIDER=openclaw
-CITEWEAVE_LLM_MODEL=openai-codex/gpt-5.4          # 可选
-CITEWEAVE_LLM_API_BASE=http://localhost:18789/v1  # 默认值，可选
-CITEWEAVE_NEO4J_PASSWORD=0xC1735                   # 生产环境请修改
+CITEWEAVE_LLM_MODEL=openai-codex/gpt-5.4
+CITEWEAVE_LLM_API_BASE=http://localhost:18789/v1
+CITEWEAVE_NEO4J_PASSWORD=0xC1735
 ```
 
-2. 确认 OpenClaw gateway 正在运行：
+3. 确认本地 OpenClaw gateway 正在运行：
 
 ```bash
 openclaw gateway status
 ```
 
-3. 验证 CiteWeave 正确检测到 gateway：
+4. 再跑一次部署检查：
 
 ```bash
 bash scripts/deployment_check.sh
 ```
+
+如果配置正确，你会看到 gateway 连通性检查通过。
+
+5. 然后就可以在 OpenClaw 会话里调用 CiteWeave，例如：
+
+```text
+Atlas，帮我用 CiteWeave 上传这些 PDF，然后用 chat 模式带我检查 citation graph。
+```
+
+### 关键安全 / 行为说明
+
+在 `openclaw` 模式下，CiteWeave **不会**把你真实的 OpenAI API key 传给
+gateway。代码会把它替换成一个无害占位符，真正的认证由 OpenClaw 自己的
+本地会话 / gateway 流程处理。
 
 ---
 

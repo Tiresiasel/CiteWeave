@@ -8,62 +8,76 @@ CiteWeave extracts sentence-level citation relationships from PDFs, builds a cit
 
 ---
 
-## TL;DR — Up in 5 minutes
+## TL;DR — Local CLI first
 
 ```bash
 # 1. Clone & configure
 git clone https://github.com/Tiresiasel/CiteWeave.git
 cd CiteWeave
-cp .env_template .env          # edit .env — see "Choose your LLM mode" below
+cp .env_template .env
 
-# 2. Start services
+# 2. Create a Python environment and install dependencies
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m nltk.downloader punkt
+
+# 3. Start backing services
 docker-compose up -d
 
-# 3. Verify deployment
+# 4. Verify deployment
 bash scripts/deployment_check.sh
 
-# 4. Upload papers and query
-python -m src.core.cli upload path/to/paper.pdf
-python -m src.core.cli query "Which papers discuss X?"
+# 5. Use the CLI
+.venv/bin/python -m src.core.cli upload path/to/paper.pdf
+.venv/bin/python -m src.core.cli chat
 ```
 
 ---
 
-## Two ways to run
+## Part 1 — Use CiteWeave as a CLI application
 
-### Mode A — Local CLI (no OpenClaw needed)
+This is the primary deployment path. Even if you later integrate CiteWeave with
+OpenClaw, the base system is still a local CLI application backed by Docker
+services.
+
+### What works on the current codebase
+
+Current CLI commands available on this branch:
+
+- `upload`
+- `diagnose`
+- `batch-upload`
+- `progress`
+- `chat`
+- `query` *(command exists, but is still being completed; prefer `chat` for real querying on this branch)*
+
+### Local CLI mode (no OpenClaw needed)
+
+Edit `.env`:
 
 ```bash
-# Set LLM provider to OpenAI in .env
 CITEWEAVE_LLM_PROVIDER=openai
 OPENAI_API_KEY=sk-...yourkey...
-
-# All features work via CLI; OpenAI handles all LLM calls
-python -m src.core.cli upload path/to/paper.pdf
-python -m src.core.cli query "Who argues that X?"
-python -m src.core.cli chat              # interactive multi-turn chat
 ```
 
-### Mode B — OpenClaw integration (recommended for OpenClaw users)
+Then run CiteWeave through the project virtualenv:
 
 ```bash
-# Set LLM provider to openclaw in .env
-CITEWEAVE_LLM_PROVIDER=openclaw
-# CITEWEAVE_LLM_MODEL defaults to openai-codex/gpt-5.4
-# CITEWEAVE_LLM_API_BASE defaults to http://localhost:18789/v1
-
-# CiteWeave routes all LLM calls through your local OpenClaw gateway.
-# No separate OpenAI key needed — OpenClaw handles auth via session.
+.venv/bin/python -m src.core.cli upload path/to/paper.pdf
+.venv/bin/python -m src.core.cli diagnose path/to/paper.pdf
+.venv/bin/python -m src.core.cli batch-upload ./papers --resume
+.venv/bin/python -m src.core.cli chat
 ```
 
-When `CITEWEAVE_LLM_PROVIDER=openclaw`, every agent in the multi-agent system
-(`language_processor`, `query_analyzer`, `response_generator`, …) connects to
-`http://localhost:18789/v1` automatically. The gateway must be running on the
-same host. See [OpenClaw Integration](#openclaw-integration) for details.
+> Why `.venv/bin/python` instead of plain `python`?
+> Because the CLI imports project dependencies at startup. In a clean machine,
+> `python -m src.core.cli` will fail unless you installed the requirements in
+> the active environment.
 
 ---
 
-## Services
+## Backing services
 
 CiteWeave depends on three backing services. Start them all at once:
 
@@ -87,10 +101,10 @@ bash scripts/deployment_check.sh
 
 ## CLI reference
 
-All interaction with CiteWeave goes through `python -m src.core.cli`.
+All interaction with CiteWeave goes through the project environment:
 
 ```
-python -m src.core.cli <command> [options]
+.venv/bin/python -m src.core.cli <command> [options]
 ```
 
 ### `upload <pdf_path>`
@@ -98,36 +112,9 @@ python -m src.core.cli <command> [options]
 Parse a PDF and ingest it into the citation graph.
 
 ```bash
-python -m src.core.cli upload path/to/paper.pdf
-python -m src.core.cli upload path/to/paper.pdf --diagnose   # quality report
-python -m src.core.cli upload path/to/paper.pdf --force       # re-process even if cached
-```
-
-### `query "<question>"`
-
-Ask the citation graph a research question. The multi-agent system plans the
-query, retrieves from Neo4j + Qdrant, and returns a structured answer.
-
-```bash
-python -m src.core.cli query "Which papers discuss bandwidth vs. pricing?"
-```
-
-### `chat`
-
-Interactive multi-turn chat with the research system.
-
-```bash
-python -m src.core.cli chat
-```
-
-### `batch-upload <directory>`
-
-Upload and process all PDFs in a directory.
-
-```bash
-python -m src.core.cli batch-upload path/to/papers/           # 4 parallel workers
-python -m src.core.cli batch-upload path/to/papers/ --resume   # skip already done
-python -m src.core.cli batch-upload path/to/papers/ --sequential  # one at a time
+.venv/bin/python -m src.core.cli upload path/to/paper.pdf
+.venv/bin/python -m src.core.cli upload path/to/paper.pdf --diagnose
+.venv/bin/python -m src.core.cli upload path/to/paper.pdf --force
 ```
 
 ### `diagnose <pdf_path>`
@@ -135,30 +122,65 @@ python -m src.core.cli batch-upload path/to/papers/ --sequential  # one at a tim
 Run a quality diagnosis on a PDF without ingesting it.
 
 ```bash
-python -m src.core.cli diagnose path/to/paper.pdf
+.venv/bin/python -m src.core.cli diagnose path/to/paper.pdf
 ```
 
-### `routes`
+### `batch-upload <directory>`
 
-Print the active routing configuration (which addon configs and environment
-variables are loaded, in priority order).
+Upload and process all PDFs in a directory.
 
 ```bash
-python -m src.core.cli routes
+.venv/bin/python -m src.core.cli batch-upload path/to/papers/
+.venv/bin/python -m src.core.cli batch-upload path/to/papers/ --resume
+.venv/bin/python -m src.core.cli batch-upload path/to/papers/ --sequential
 ```
 
-### `papers [--all | --limit N]`
+### `progress <directory>`
 
-List all papers currently in the citation database.
+Inspect or clear batch-upload progress tracking.
 
 ```bash
-python -m src.core.cli papers --limit 20    # first 20 papers
-python -m src.core.cli papers --all          # entire database
+.venv/bin/python -m src.core.cli progress path/to/papers/
+.venv/bin/python -m src.core.cli progress path/to/papers/ --clear
+```
+
+### `chat`
+
+Interactive multi-turn chat with the research system. On the current branch,
+this is the main path for real research interaction.
+
+```bash
+.venv/bin/python -m src.core.cli chat
+```
+
+### `query "<question>"`
+
+This command exists in the CLI parser, but on the current branch it is still a
+placeholder and prints `Query functionality not yet implemented.` Prefer
+`chat` until the single-shot query path is fully merged.
+
+```bash
+.venv/bin/python -m src.core.cli query "Which papers discuss bandwidth vs. pricing?"
 ```
 
 ---
 
-## OpenClaw integration
+## Part 2 — Integrate CiteWeave with OpenClaw
+
+### What changes in OpenClaw mode
+
+OpenClaw does not replace CiteWeave's storage or parsing stack. It only becomes
+CiteWeave's LLM backend.
+
+The underlying deployment is still the same:
+
+- Neo4j stores the citation graph
+- Qdrant stores semantic vectors
+- GROBID parses PDFs
+- CiteWeave CLI / Python code handles ingestion and chat logic
+
+What changes is that CiteWeave sends LLM calls to the **local OpenClaw
+gateway** instead of directly calling OpenAI.
 
 ### Architecture
 
@@ -166,50 +188,59 @@ python -m src.core.cli papers --all          # entire database
 OpenClaw Agent (Atlas / any agent)
     │
     │  CITEWEAVE_LLM_PROVIDER=openclaw
-    │  All LLM calls → http://localhost:18789/v1 (OpenClaw gateway)
+    │  All LLM calls → http://localhost:18789/v1
     │
-    ├──→ CLI: python -m src.core.cli query "..."
+    ├──→ .venv/bin/python -m src.core.cli chat
     │       │
-    │       └── Neo4j + Qdrant + GROBID (Docker services)
+    │       └── Neo4j + Qdrant + GROBID
     │
-    └── (optional) Direct Python API import
-            from src.agents.multi_agent_research_system import LangGraphResearchSystem
-            # uses same EnhancedLLMManager with OpenClaw gateway
+    └──→ (optional) direct Python import
+            LangGraphResearchSystem()
 ```
 
-### Setup
+### Concrete setup flow
 
-1. Edit `.env`:
+1. First finish the **local CLI deployment** above.
+2. Then switch `.env` into OpenClaw mode:
 
 ```bash
 CITEWEAVE_LLM_PROVIDER=openclaw
-CITEWEAVE_LLM_MODEL=openai-codex/gpt-5.4          # optional override
-CITEWEAVE_LLM_API_BASE=http://localhost:18789/v1  # optional; default is this
-CITEWEAVE_NEO4J_PASSWORD=0xC1735                   # change in production
+CITEWEAVE_LLM_MODEL=openai-codex/gpt-5.4
+CITEWEAVE_LLM_API_BASE=http://localhost:18789/v1
+CITEWEAVE_NEO4J_PASSWORD=0xC1735
 ```
 
-2. Ensure the OpenClaw gateway is running:
+3. Ensure the local OpenClaw gateway is running:
 
 ```bash
 openclaw gateway status
 ```
 
-3. Verify CiteWeave detects the gateway:
+4. Re-run the deployment check:
 
 ```bash
 bash scripts/deployment_check.sh
 ```
 
-4. Start using it from any OpenClaw agent session:
+You should see the gateway connectivity check succeed.
 
+5. Then call CiteWeave from an OpenClaw session. Example:
+
+```text
+Atlas, upload these PDFs with CiteWeave and then use chat mode to help me inspect the citation graph.
 ```
-Atlas, please upload these PDFs and then help me find papers that discuss X.
-```
 
-### For OpenClaw agents doing autonomous iteration
+### Important security / behavior note
 
-The `citeweave:daily-iteration-and-push` cron job uses OpenClaw mode
-automatically — no OpenAI key is needed for any automated workflow.
+In `openclaw` mode, CiteWeave does **not** forward your real OpenAI API key to
+the gateway. The code replaces it with a harmless placeholder, and OpenClaw
+handles authentication through its own local session / gateway flow.
+
+### For autonomous OpenClaw jobs
+
+The `citeweave:daily-iteration-and-push` cron workflow uses the same
+OpenClaw-backed mode, so automated iteration does not require a separate
+OpenAI key either.
 
 ---
 
