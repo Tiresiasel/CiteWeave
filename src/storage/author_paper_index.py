@@ -356,6 +356,44 @@ class AuthorPaperIndex:
                 for row in cursor.fetchall()
             ]
     
+    def get_all_papers(self, limit: Optional[int] = None) -> List[Dict]:
+        """
+        Get all papers in the index, optionally limited.
+
+        Args:
+            limit: Maximum number of papers to return (None for all).
+
+        Returns:
+            List of paper dictionaries with authors and metadata.
+        """
+        with sqlite3.connect(self.index_db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT p.paper_id, p.title, p.year, p.journal, p.pdf_path, p.processed_date,
+                       GROUP_CONCAT(a.name, ', ') AS authors
+                FROM papers p
+                LEFT JOIN author_papers ap ON p.paper_id = ap.paper_id
+                LEFT JOIN authors a ON ap.author_id = a.id
+                GROUP BY p.paper_id
+                ORDER BY p.year DESC, p.title
+            """)
+            rows = cursor.fetchall()
+            if limit:
+                rows = rows[:limit]
+            return [
+                {
+                    "paper_id": row["paper_id"],
+                    "title": row["title"],
+                    "year": row["year"],
+                    "journal": row["journal"],
+                    "pdf_path": row["pdf_path"],
+                    "processed_date": row["processed_date"],
+                    "authors": row["authors"] or "(unknown)",
+                }
+                for row in rows
+            ]
+
     def get_statistics(self) -> Dict:
         """
         Get index statistics.
@@ -410,6 +448,11 @@ def main():
     
     # Statistics
     subparsers.add_parser("stats", help="Show index statistics")
+
+    # List all papers
+    papers_parser = subparsers.add_parser("papers", help="List all papers in the index")
+    papers_parser.add_argument("--limit", type=int, default=50, help="Max papers to show (default: 50, use 0 for all)")
+    papers_parser.add_argument("--all", action="store_true", help="Show all papers (overrides --limit)")
     
     # Get PDF path
     pdf_parser = subparsers.add_parser("pdf", help="Get PDF path for paper")
@@ -462,6 +505,32 @@ def main():
         logging.info(f"Authors with papers: {stats['authors_with_papers']}")
         logging.info(f"PDF availability: {stats['pdf_availability_rate']:.1%}")
         
+    elif args.command == "papers":
+        limit = 0 if getattr(args, 'all', False) else args.limit
+        papers = index.get_all_papers(limit=None if limit == 0 else limit)
+        stats = index.get_statistics()
+        total = stats["total_papers"]
+
+        if not papers:
+            logging.warning("No papers in index. Upload PDFs first.")
+            return
+
+        header = f"📚 All Papers in Index ({len(papers)}/{total})"
+        if limit and len(papers) == limit:
+            header += f" (showing first {limit}, use --all for full list)"
+        logging.info(header)
+        logging.info("-" * 60)
+
+        for i, p in enumerate(papers, 1):
+            pdf_icon = "📄" if p["pdf_path"] else "❌"
+            year_str = str(p["year"]) if p["year"] else "?"
+            title = p["title"][:55] + ("..." if len(p["title"]) > 55 else "")
+            logging.info(f"{i:3}. {pdf_icon} {year_str} | {title}")
+            logging.info(f"     Authors: {p['authors']}")
+            logging.info(f"     ID: {p['paper_id']}")
+            if p["journal"]:
+                logging.info(f"     Journal: {p['journal']}")
+
     elif args.command == "pdf":
         pdf_path = index.get_paper_pdf_path(args.paper_id)
         if pdf_path:
