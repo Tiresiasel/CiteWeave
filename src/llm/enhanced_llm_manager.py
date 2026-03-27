@@ -12,6 +12,7 @@ from datetime import datetime, timedelta
 import hashlib
 
 from langchain_openai import ChatOpenAI
+from src.utils.env_config import is_openclaw_mode, chatopenai_kwargs, get_llm_api_key
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.output_parsers import StrOutputParser
@@ -103,29 +104,79 @@ class EnhancedLLMManager:
             raise
 
     def _initialize_agent_models(self):
-        """Initialize LLM models for each agent"""
+        """Initialize LLM models for each agent.
+        
+        Provider resolution order:
+          1. CITEWEAVE_LLM_PROVIDER env var  (openclaw | openai | ollama)
+          2. provider in agent's config block
+          3. 'openai' as final fallback
+        
+        When openclaw mode is active, all agents use the OpenClaw gateway
+        regardless of their individual config (model can still be overridden
+        per-agent via CITEWEAVE_LLM_MODEL).
+        """
+        openclaw_mode = is_openclaw_mode()
+        if openclaw_mode:
+            logger.info(
+                "OpenClaw gateway mode active — all LLM calls will be routed "
+                "to %s",
+                chatopenai_kwargs().get("openai_api_base", "http://localhost:18789/v1"),
+            )
+
         for agent_name, agent_config in self.config["llm"]["agents"].items():
             try:
-                if agent_config["provider"] == "openai":
+                provider = (
+                    os.environ.get("CITEWEAVE_LLM_PROVIDER", "").lower()
+                    or agent_config.get("provider", "openai")
+                )
+                temperature = agent_config.get("temperature", 0.1)
+                max_tokens = agent_config.get("max_tokens", 1000)
+
+                if provider == "openclaw" or openclaw_mode:
+                    kwargs = chatopenai_kwargs(agent_name)
+                    kwargs["temperature"] = temperature
+                    kwargs["max_tokens"] = max_tokens
+                    model = ChatOpenAI(**kwargs)
+                    logger.info(
+                        "Agent '%s' using OpenClaw gateway → model=%s @ %s",
+                        agent_name,
+                        kwargs.get("model"),
+                        kwargs.get("openai_api_base", "http://localhost:18789/v1"),
+                    )
+                elif provider == "openai":
+                    api_key = get_llm_api_key()
                     model = ChatOpenAI(
                         model=agent_config["model"],
-                        temperature=agent_config.get("temperature", 0.1),
-                        max_tokens=agent_config.get("max_tokens", 1000)
+                        temperature=temperature,
+                        max_tokens=max_tokens,
+                        **( {"openai_api_key": api_key} if api_key and api_key != "not-set" else {} ),
                     )
-                elif agent_config["provider"] == "ollama":
+                    logger.info(
+                        "Agent '%s' using OpenAI API → model=%s",
+                        agent_name,
+                        agent_config["model"],
+                    )
+                elif provider == "ollama":
                     from langchain_ollama import Ollama
+                    api_base = os.environ.get("CITEWEAVE_LLM_API_BASE", "http://localhost:11434").rstrip("/")
                     model = Ollama(
                         model=agent_config["model"],
-                        temperature=agent_config.get("temperature", 0.1)
+                        temperature=temperature,
+                        base_url=api_base,
+                    )
+                    logger.info(
+                        "Agent '%s' using Ollama → model=%s @ %s",
+                        agent_name,
+                        agent_config["model"],
+                        api_base,
                     )
                 else:
-                    raise ValueError(f"Unsupported provider: {agent_config['provider']}")
-                
+                    raise ValueError(f"Unsupported provider: {provider}")
+
                 self.models[agent_name] = model
-                logger.info(f"Initialized {agent_name} with {agent_config['model']}")
-                
+
             except Exception as e:
-                logger.error(f"Failed to initialize model for {agent_name}: {e}")
+                logger.error("Failed to initialize model for %s: %s", agent_name, e)
                 raise
 
     def get_agent_model(self, agent_name: str):

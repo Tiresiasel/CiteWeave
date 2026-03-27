@@ -44,8 +44,10 @@ services:
     ports:
       - "7687:7687"  # Bolt protocol
       - "7474:7474"  # HTTP web UI
+    env_file:
+      - .env
     environment:
-      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-CHANGE_ME_LOCAL_ONLY}
+      - NEO4J_AUTH=neo4j/${CITEWEAVE_NEO4J_PASSWORD:-0xC1735}
       - NEO4J_dbms_security_auth__enabled=true
     volumes:
       - neo4j_data:/data
