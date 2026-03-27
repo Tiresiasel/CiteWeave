@@ -233,10 +233,12 @@ training_args.bin
 
 # Runtime data should stay out of git (code/data separation)
 data/*
-!data/.gitkeep
 !data/README.md
 
 # Local test PDFs should stay out of git
 test_files/*
-!test_files/.gitkeep
 !test_files/README.md
+
+# Test artifacts (runtime output, not source)
+tests/data/
+tests/_artifacts/
