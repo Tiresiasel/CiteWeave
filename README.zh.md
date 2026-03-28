@@ -1,354 +1,320 @@
-# CiteWeave - 高级学术引用分析系统
+# CiteWeave
 
-![演示](docs/images/demo.gif)
+**句子级引用图谱 + 语义检索，面向学术论文的 RAG 系统。**
 
-[🇺🇸 Switch to English README](README.md)
+将 PDF 解析为句子级引用关系，构建引用图谱，通过多智能体系统对论文库进行学术问答。专为社会科学研究者设计——追踪论点如何在文献间流动；其他领域亦可使用。
 
-> **本项目遵循 Apache License 2.0 许可证。详情见 LICENSE 文件。**
-
----
-
-## 适用人群
-
-- **社会科学研究者**：需要进行文献综述、引用网络分析和论点映射的高级工具（如政治学、社会学、经济学等）。本系统主要针对社会科学论文，但其他领域如有兴趣也欢迎使用！
-- **各领域学者**：希望构建可语义检索的论文与引用数据库。
-- **需要句子级引用关系的研究者**：适用于深度研究、知识图谱构建或RAG应用。
+[![Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 ---
 
-## 🚀 项目简介
-
-CiteWeave 帮助你真正理解学术论文：
-- 不仅展示论文之间的引用关系，还能精确到**被引用的论点或句子**，追踪思想流动。
-- 支持**与PDF库对话**：可提出复杂学术问题，获得结构化、聚合的信息答案。
-- 构建独特的句子级（argument-level）引用网络，适合深度文献综述和发现新关联。
-- 让社会科学及跨学科研究者轻松梳理、检索和可视化学术争论。
-- 目前为命令行界面（CLI），未来将支持图形界面（GUI）。
-
----
-
-## ⭐ 主要特性与架构
-
-- **多智能体系统**：采用模块化多智能体架构，涵盖问题分析、查询规划、模糊匹配、用户澄清、数据检索、反思与答案生成。
-- **句子级引用图谱**：首个开源项目实现句子级（argument-level）引用关系，支持跨论文追踪论点、证据和引用链条。
-- **其他亮点**：
-  - 支持高级文献综述、论点映射和深层引用网络分析。
-  - 适合社会科学及需要理解论证流的跨学科研究。
-  - 支持语义检索、RAG、知识图谱等学术PDF应用。
-
-### 多智能体系统架构
-
-```mermaid
-graph TD
-    A[用户提问] --> B[问题分析智能体]
-    B --> C[查询规划智能体]
-    C --> D[模糊匹配智能体]
-    D --> E{歧义检测}
-    E -->|有歧义| F[用户澄清智能体]
-    E -->|无歧义| G[数据检索协调器]
-    F --> H[用户输入]
-    H --> G
-    G --> I[图数据库智能体]
-    G --> J[向量数据库智能体]
-    G --> K[PDF内容智能体]
-    I --> L[反思智能体]
-    J --> L
-    K --> L
-    L --> M{信息是否充分?}
-    M -->|否| N[补充查询生成]
-    N --> G
-    M -->|是| O[答案生成智能体]
-    O --> P[最终答案]
-```
-
----
-
-## ⚡ 快速开始：环境搭建
-
-1. **配置Python环境**
-   - 推荐 Python 3.12。
-   - 安装依赖：`pip install -r requirements.txt`
-   - **首次使用**：下载 NLTK punkt 分词器（用于句子切分）：
-     ```bash
-     python -m nltk.downloader punkt
-     ```
-
-2. **配置环境变量**
-   - 复制模板：`cp .env_template .env`
-   - 编辑 `.env`，填写 OpenAI API Key、Neo4j 密码等信息。
-
-3. **启动核心服务（Qdrant, GROBID, Neo4j）**
-   - 未安装 Docker Desktop 请先下载：https://www.docker.com/products/docker-desktop/
-   - 未安装 Docker Compose 请先下载：https://docs.docker.com/compose/install/
-   - 启动服务：
-     ```bash
-     docker-compose up -d
-     ```
-
-     检查服务状态：
-     ```bash
-     python scripts/start_services.py
-     ```
-
-4. **等待服务就绪**
-   - 看到服务URL后即可使用 CiteWeave！
-
-> **注意：** 必须先启动这些服务，才能用CLI上传PDF或提问。
-
----
-
-## 🖥️ CLI 用法（所有交互均通过命令行）
-
-**工作流程概览：**
-1. **上传PDF文件**（必需，提供数据基础）
-   - 单文件用 `upload`，批量用 `batch-upload`
-2. **（可选）诊断PDF质量**
-3. **与多智能体系统对话**，提出学术问题
-
-所有交互均通过CLI完成。请勿直接调用Python API或导入函数。
-
-### 1. 上传与处理PDF（第一步，必需）
-
-上传并处理PDF后，系统才有数据可用于分析和对话。
-
-**单文件上传：**
-```bash
-python -m src.core.cli upload 路径/文件.pdf
-```
-- 加 `--diagnose` 可先做质量检查。
-- 加 `--force` 可强制重新处理。
-
-**示例：**
-```
-python -m src.core.cli upload test_files/Porter\ -\ Competitive\ Strategy.pdf --diagnose
-```
-
-**批量上传（处理目录下所有PDF）：**
-```bash
-python -m src.core.cli batch-upload 路径/pdf文件夹
-```
-- 会递归处理目录及子目录下所有 `.pdf` 文件。
-- 处理进度和结果会在终端显示。
-
-如果你使用 Zotero，可以用以下命令上传所有论文，便于后续提问：
+## 5 分钟快速启动（先走 CLI / Docker）
 
 ```bash
-python -m src.core.cli batch-upload /path/to/zotero/library --processors 8
+# 1. 克隆并配置
+git clone https://github.com/Tiresiasel/CiteWeave.git
+cd CiteWeave
+
+# 2. 一键完成本地 CLI 部署
+bash scripts/bootstrap_local.sh
+
+# 3. 使用 CLI
+.venv/bin/python -m src.core.cli upload path/to/paper.pdf
+.venv/bin/python -m src.core.cli query "哪些论文讨论了 X？"
+.venv/bin/python -m src.core.cli routes
+.venv/bin/python -m src.core.cli chat
+
+# 4. 或切换到 OpenClaw 模式
+bash scripts/bootstrap_openclaw.sh
+# 然后验证：
+.venv/bin/python -m src.core.cli routes
+bash scripts/deployment_check.sh
+# 再从 OpenClaw 会话里调用 CiteWeave。
 ```
-
-**多进程批量上传（推荐大批量处理）：**
-```bash
-# 默认4进程
-python -m src.core.cli batch-upload 路径/pdf文件夹
-
-# 自定义进程数
-python -m src.core.cli batch-upload 路径/pdf文件夹 --processors 8
-
-# 顺序处理（调试用）
-python -m src.core.cli batch-upload 路径/pdf文件夹 --sequential
-```
-
-**断点续传（处理中断时使用）：**
-```bash
-# 默认自动续传
-python -m src.core.cli batch-upload 路径/pdf文件夹
-
-# 显式续传
-python -m src.core.cli batch-upload 路径/pdf文件夹 --resume
-
-# 强制重头处理
-python -m src.core.cli batch-upload 路径/pdf文件夹 --force-restart
-
-# 清除进度重新开始
-python -m src.core.cli batch-upload 路径/pdf文件夹 --clear-progress
-
-# 查看进度
-python -m src.core.cli progress 路径/pdf文件夹
-```
-
-**性能优势：**
-- **3-4倍加速**
-- **实时进度**
-- **错误隔离**
-- **断点续传**
-
-
-### 2. 启动交互式学术对话（上传后）
-
-上传并处理PDF后，可启动多轮对话：
-
-```bash
-python -m src.core.cli chat
-```
-- 在 `You:` 提示符下输入问题。
-- AI会基于已上传文件回答。
-- 输入 `exit` 或 `quit` 结束对话。
-
-**示例：**
-```
-$ python -m src.core.cli chat
-🤖 CiteWeave 多智能体学术系统（对话模式）
-============================================================
-输入 'exit' 或 'quit' 退出。
-============================================================
-You: 哪些论文引用了Porter的1980年著作？
-AI: [答案]
-You: exit
-Exiting chat.
-```
-
-
-
-## 📄 PDF处理与质量诊断
-
-- **处理**：`upload` 命令会提取句子、引用、参考文献，并将结果存储到数据目录。
-- **诊断**：用 `--diagnose` 或 `diagnose` 命令检查PDF是否适合处理，CLI会输出质量等级、可处理性和建议。
-- **输出**：处理后会显示统计信息（句子数、引用数、参考文献数）及引用示例。
 
 ---
 
-## 💬 引用分析与学术对话
+## 第一部分：作为 CLI 应用使用 CiteWeave
 
-- **启动对话**：`python -m src.core.cli chat`
-- **可提问示例**：
-  - “哪些论文引用了Rivkin的战略研究？”
-  - “列出Michael Porter写的所有论文。”
-  - “Porter 1980年著作的主要观点是什么？”
-- **支持查询**：引用关系、作者论文、论文内容、概念解释等。
-- **系统响应**：AI会分析问题，检索数据库，返回结构化答案。
+这是最基础、也最重要的部署方式。即便你之后接入 OpenClaw，底层依然是
+这套本地 CLI + Docker 服务。
 
-### 可提问示例
+### 当前代码分支上实际可用的命令
 
-你可以提出各种学术问题，例如：
+- `upload`
+- `diagnose`
+- `batch-upload`
+- `progress`
+- `chat`
+- `query`
+- `routes`
 
-**引用查询：**
-- “哪些论文引用了Porter的战略理论？”
-- “谁引用了Porter的《竞争战略》？”
-- “列出所有引用Rivkin 2000年文章的论文。”
+### 本地 CLI 模式（无需 OpenClaw）
 
+在 `.env` 中设置：
 
-**作者查询：**
-- “列出Michael Porter写的所有论文。”
-- “Rivkin的主要著作有哪些？”
-- “Porter与哪些作者合作过？”
-
-**论文内容与摘要：**（需先上传论文）
-- “Porter 1980年著作的主要观点是什么？”
-- “总结Rivkin 2000年文章的发现。”
-- “Imitation of Complex Strategies 这篇论文的核心论点是什么？”
-
-**概念与主题查询：**
-- “解释 business model innovation 的概念。”
-- “什么是 competitive advantage？”
-- “哪些论文讨论了战略模仿？”
-
-**按内容查找论文：**
-- "查找关于组织建议持有高地位可能导致不安全感的研究论文。"
-- "识别使用LDA概率结果来评估Airbnb相似性描述的论文。"
-- "查找使用IMDB数据集的论文。"
-
-欢迎自由提问——只要与你上传的PDF内容、引用关系或学术概念相关，系统都会尝试回答！
-
----
-
-## 🛠️ 高级功能
-
-### 多进程批量上传
-
-处理大量PDF时，CiteWeave支持多进程批量处理，大幅提升效率：
-
-**主要特性：**
-- **可配置进程数**（默认4，可用 `--processors` 指定）
-- **自动检测CPU核心数**
-- **实时进度追踪**（✅/❌）
-- **详细日志**（START/FINISH）
-- **错误隔离**（单文件失败不影响整体）
-
-**用法示例：**
 ```bash
-# 使用所有CPU核心
-python -m src.core.cli batch-upload /papers/ --processors $(nproc)
-
-# 保守处理（2核）
-python -m src.core.cli batch-upload /papers/ --processors 2
-
-# 调试模式（详细错误信息）
-python -m src.core.cli batch-upload /papers/ --sequential
+CITEWEAVE_LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-...yourkey...
 ```
 
-**性能对比：**
-- **顺序处理**：10个文件 × 2分钟 ≈ 20分钟
-- **多进程（4核）**：约5-6分钟（**3-4倍加速**）
+然后通过项目虚拟环境运行：
 
-### 断点续传
-
-批量上传中断时可自动续传：
-
-**主要特性：**
-- **自动续传**（默认）
-- **进度追踪**（`data/batch_upload_tracker.json`）
-- **灵活控制**（显式续传、强制重头、清除进度）
-- **进度监控**（`progress` 命令）
-- **错误恢复**（中断可恢复）
-
-**用法示例：**
 ```bash
-# 查看进度
-python -m src.core.cli progress /papers/
-
-# 续传
-python -m src.core.cli batch-upload /papers/ --resume
-
-# 修复后强制重头
-python -m src.core.cli batch-upload /papers/ --force-restart
-
-# 清除进度重新开始
-python -m src.core.cli progress /papers/ --clear
+.venv/bin/python -m src.core.cli upload path/to/paper.pdf
+.venv/bin/python -m src.core.cli diagnose path/to/paper.pdf
+.venv/bin/python -m src.core.cli batch-upload ./papers --resume
+.venv/bin/python -m src.core.cli query "哪些论文讨论了 X？"
+.venv/bin/python -m src.core.cli routes
+.venv/bin/python -m src.core.cli chat
 ```
 
-**续传场景：**
-- **系统关机** - 下次自动续传
-- **处理错误** - 跳过已完成，重试失败
-- **手动中断** - 从中断点继续
-- **文件变更** - 用 `--force-restart` 重新处理
+> 为什么推荐 `.venv/bin/python`？
+> 因为 CLI 在启动时就会 import 项目依赖。对一台全新的机器来说，
+> 如果当前环境没有装齐依赖，直接 `python -m src.core.cli` 会失败。
 
 ---
 
-## ❓ 常见问题与FAQ
+## 依赖服务
 
-- **依赖缺失？**
-  - 请确保已在虚拟环境中运行 `pip install -r requirements.txt`。
-- **PDF处理效果不好？**
-  - 试试 `--diagnose` 查看建议。
-- **数据库连接错误？**
-  - 检查 `config/` 下的配置文件路径和凭据。
-- **对话/AI功能异常？**
-  - 请确保已设置 OpenAI API Key（`OPENAI_API_KEY`）。
-  - 检查密钥是否正确、未过期。
-  - 设置后重启终端。
-- **其他问题？**
-  - 查看终端日志。
-  - 进阶帮助见 `docs/` 文件夹，或在 GitHub 提 issue。
-- **批量上传问题？**
-  - 多进程失败时可用 `--sequential` 查看详细错误。
-  - 系统卡顿可降低进程数：`--processors 2`
-  - 大批量处理时注意系统资源。
-- **续传/中断问题？**
-  - 修复后用 `--force-restart` 重新处理。
-  - 用 `python -m src.core.cli progress /your/directory/` 查看进度。
-  - 用 `--clear-progress` 清除进度。
-  - 进度存储在 `data/batch_upload_tracker.json`，可删除重置。
+通过 Docker Compose 一键启动三个依赖服务：
+
+```bash
+docker-compose up -d
+```
+
+| 服务 | 端口 | 用途 |
+|------|------|------|
+| **Neo4j** | 7474 / 7687 | 引用图谱存储（支持 Cypher 查询） |
+| **Qdrant** | 6333 / 6334 | 语义向量索引（ANN 检索） |
+| **GROBID** | 8070 | PDF 结构化解析（提取作者、标题、章节） |
+
+验证部署健康状态：
+
+```bash
+bash scripts/deployment_check.sh
+```
 
 ---
 
-## 📜 许可证
+## CLI 命令参考
 
-本项目遵循 Apache License 2.0 许可证。详情见 LICENSE 文件。
+所有操作建议通过项目虚拟环境执行：
+
+```
+.venv/bin/python -m src.core.cli <命令> [选项]
+```
+
+### `upload <pdf_path>` — 上传并解析论文
+
+```bash
+.venv/bin/python -m src.core.cli upload path/to/paper.pdf
+.venv/bin/python -m src.core.cli upload path/to/paper.pdf --diagnose
+.venv/bin/python -m src.core.cli upload path/to/paper.pdf --force
+```
+
+### `diagnose <pdf_path>` — PDF 质量诊断
+
+```bash
+.venv/bin/python -m src.core.cli diagnose path/to/paper.pdf
+```
+
+### `batch-upload <目录>` — 批量上传
+
+```bash
+.venv/bin/python -m src.core.cli batch-upload path/to/papers/
+.venv/bin/python -m src.core.cli batch-upload path/to/papers/ --resume
+.venv/bin/python -m src.core.cli batch-upload path/to/papers/ --sequential
+```
+
+### `progress <目录>` — 查看/清理批量处理进度
+
+```bash
+.venv/bin/python -m src.core.cli progress path/to/papers/
+.venv/bin/python -m src.core.cli progress path/to/papers/ --clear
+```
+
+### `chat` — 交互式多轮对话
+
+```bash
+.venv/bin/python -m src.core.cli chat
+```
+
+### `query "<问题>"` — 单轮查询入口
+
+单轮进入 LangGraph research workflow。
+当你希望控制信息摘要之后的流程时，可以使用 `--confirmation`。
+
+```bash
+.venv/bin/python -m src.core.cli query "哪些论文讨论了带宽与定价的关系？"
+.venv/bin/python -m src.core.cli query "总结一下 Michael Porter 1980" --confirmation continue
+```
+
+### `routes` — 路由配置诊断
+
+查看当前生效的 route 配置，包括 alias、priority 映射，以及 addon / env 覆盖。
+
+```bash
+.venv/bin/python -m src.core.cli routes
+```
 
 ---
 
-## 🚧 项目状态与反馈
+## 第二部分：将 CiteWeave 接入 OpenClaw
 
-CiteWeave 仍处于早期开发阶段，可能存在bug或功能不全。如遇到问题，欢迎[提交 issue](https://github.com/Tiresiasel/CiteWeave/issues)或PR，您的反馈和贡献非常宝贵！
+### OpenClaw 模式到底改变了什么
 
-如果你觉得本项目有趣或希望合作，欢迎直接在仓库中提交 issue 或 discussion。
+OpenClaw 不会替代 CiteWeave 的存储或解析层，它只是接管 CiteWeave 的
+LLM 后端。
+
+底层部署并没有变：
+
+- Neo4j 仍然存 citation graph
+- Qdrant 仍然存语义向量
+- GROBID 仍然负责 PDF 解析
+- CiteWeave 的 CLI / Python 代码仍然负责 ingestion 和 chat 逻辑
+
+变化只是：CiteWeave 不再自己直连 OpenAI，而是把所有 LLM 调用改为发往
+**本地 OpenClaw gateway**。
+
+### 工作原理
+
+```
+OpenClaw Agent (Atlas)
+    │
+    │  CITEWEAVE_LLM_PROVIDER=openclaw
+    │  所有 LLM 调用 → http://localhost:18789/v1
+    │
+    ├──→ .venv/bin/python -m src.core.cli chat
+    │       │
+    │       └── Neo4j + Qdrant + GROBID
+    │
+    └──（可选）直接 import Python API
+            LangGraphResearchSystem()
+```
+
+### 具体接入流程
+
+1. 先完成上面的 **本地 CLI / Docker 部署**，或者直接运行：
+
+```bash
+bash scripts/bootstrap_openclaw.sh
+```
+
+这个脚本会准备 `.env`、创建虚拟环境、安装依赖、启动 Docker 服务，并让项目保持在 OpenClaw 模式。
+
+2. 如果你想手动设置，`.env` 至少应包含：
+
+```bash
+CITEWEAVE_LLM_PROVIDER=openclaw
+CITEWEAVE_LLM_MODEL=openai-codex/gpt-5.4
+CITEWEAVE_LLM_API_BASE=http://localhost:18789/v1
+CITEWEAVE_NEO4J_PASSWORD=0xC1735
+```
+
+3. 确认本地 OpenClaw gateway 正在运行：
+
+```bash
+openclaw gateway status
+```
+
+4. 再跑一次部署检查：
+
+```bash
+bash scripts/deployment_check.sh
+```
+
+如果配置正确，你会看到 gateway 连通性检查通过。
+
+5. 然后就可以在 OpenClaw 会话里调用 CiteWeave，例如：
+
+```text
+Atlas，帮我用 CiteWeave 上传这些 PDF，然后用 chat 模式带我检查 citation graph。
+```
+
+### 关键安全 / 行为说明
+
+在 `openclaw` 模式下，CiteWeave **不会**把你真实的 OpenAI API key 传给
+gateway。代码会把它替换成一个无害占位符，真正的认证由 OpenClaw 自己的
+本地会话 / gateway 流程处理。
+
+---
+
+## 配置说明
+
+### 环境变量（优先级高于 JSON 配置文件）
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `CITEWEAVE_LLM_PROVIDER` | `openai` | `openclaw` · `openai` · `ollama` |
+| `CITEWEAVE_LLM_MODEL` | — | 模型名称 |
+| `CITEWEAVE_LLM_API_BASE` | — | openclaw / ollama 模式的 API 地址 |
+| `CITEWEAVE_LLM_API_KEY` | — | API Key（openclaw 模式可填任意值） |
+| `CITEWEAVE_NEO4J_PASSWORD` | `0xC1735` | Neo4j 密码 |
+| `CITEWEAVE_ENV` | `production` | `production` · `development`（详细日志） |
+
+### Neo4j 默认密码
+
+默认密码 `0xC1735` 是有意为之，方便本地开发记忆。
+**生产部署前务必修改：**
+
+```bash
+CITEWEAVE_NEO4J_PASSWORD=your-secure-password
+```
+
+---
+
+## 开发
+
+### Python 环境
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python -m nltk.downloader punkt          # 句子切分依赖
+```
+
+### 运行测试
+
+```bash
+python -m unittest discover -s tests
+python -m unittest discover -s tests -p 'test_routing.py'
+```
+
+### 隐私审计（提交前必须通过）
+
+```bash
+python3 scripts/repo_privacy_audit.py
+```
+
+任何隐私审计失败都会阻止提交。检查项包括：
+- 绝对本地路径（`/home/tiresias`、`.openclaw/workspace`）
+- Token / 密钥写入 tracked 文件
+- `data/` 或 `test_files/` 中的运行时数据被 tracked
+
+---
+
+## 引用类型分类
+
+CiteWeave 对论文中的每个句子进行分类：
+
+| 类型 | 说明 |
+|------|------|
+| `CLAIM_MAIN` | 核心论点 / 主要主张 |
+| `CLAIM_SUPPORTING` | 次要支撑论点 |
+| `EVIDENCE_EMPIRICAL` | 实证数据 / 结论 |
+| `EVIDENCE_THEORETICAL` | 理论支撑 |
+| `EVIDENCE_LITERATURE` | 引用支撑 |
+| `COUNTERARGUMENT` | 反论点 / 假设 |
+| `METHODOLOGY` | 方法描述 |
+| `REBUTTAL` | 明确反驳 |
+| `QUESTION_MOTIVATION` | 研究问题 / 动机 |
+| `FUTURE_WORK` | 未来方向 |
+| `NON_ARGUMENT` | 中立 / 过渡性文字 |
+
+---
+
+## License
+
+Apache License 2.0 — 见 [LICENSE](LICENSE)。

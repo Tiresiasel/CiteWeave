@@ -8,6 +8,7 @@ from typing import Optional, List
 import logging
 import re
 from src.utils.config_manager import llm_config_selector
+from src.utils.env_config import is_openclaw_mode, chatopenai_kwargs, get_llm_api_key
 
 logger = logging.getLogger(__name__)
 
@@ -38,15 +39,30 @@ def build_llm_chain(prompt_name: str, model_config=None, input_variables: Option
     prompt_str = load_prompt_template(prompt_name)
     input_variables = input_variables or ["input"]
 
-    if model_config["provider"] == "openai":
-        logger.info(f"Using OpenAI model: {model_config['model']}")
-        llm = ChatOpenAI(model=model_config["model"])
-    elif model_config["provider"] == "ollama":
-        logger.info(f"Using Ollama model: {model_config['model']}")
+    provider = (
+        os.environ.get("CITEWEAVE_LLM_PROVIDER", "").lower()
+        or model_config.get("provider", "openai")
+    )
+
+    if provider == "openclaw" or is_openclaw_mode():
+        kwargs = chatopenai_kwargs()
+        kwargs.setdefault("temperature", model_config.get("temperature", 0.1))
+        llm = ChatOpenAI(**kwargs)
+        logger.info("build_llm_chain: using OpenClaw gateway → %s", kwargs)
+    elif provider == "openai":
+        api_key = get_llm_api_key()
+        llm = ChatOpenAI(
+            model=model_config["model"],
+            **( {"openai_api_key": api_key} if api_key and api_key != "not-set" else {} ),
+        )
+        logger.info("build_llm_chain: using OpenAI → %s", model_config["model"])
+    elif provider == "ollama":
         from langchain_ollama import Ollama
-        llm = Ollama(model=model_config["model"])
+        api_base = os.environ.get("CITEWEAVE_LLM_API_BASE", "http://localhost:11434").rstrip("/")
+        llm = Ollama(model=model_config["model"], base_url=api_base)
+        logger.info("build_llm_chain: using Ollama → %s @ %s", model_config["model"], api_base)
     else:
-        raise ValueError(f"Unsupported LLM provider: {model_config['provider']}")
+        raise ValueError(f"Unsupported LLM provider: {provider}")
 
     prompt = PromptTemplate(template=prompt_str, input_variables=input_variables)
     return LLMChain(llm=llm, prompt=prompt)
