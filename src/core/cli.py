@@ -57,6 +57,7 @@ else:
 
 from src.processing.pdf.document_processor import DocumentProcessor
 from src.agents.multi_agent_research_system import LangGraphResearchSystem
+from src.agents.routing import active_route_configuration
 
 class BatchUploadTracker:
     """Tracks batch upload progress to enable resuming interrupted uploads."""
@@ -232,6 +233,11 @@ def main():
     # Query command  
     query_parser = subparsers.add_parser("query", help="Query the argument graph.")
     query_parser.add_argument("question", type=str, help="Question to ask.")
+    query_parser.add_argument(
+        "--confirmation",
+        default="continue",
+        help="User confirmation mode to pass into the research workflow (default: continue)."
+    )
 
     # Chat command
     chat_parser = subparsers.add_parser("chat", help="Start an interactive chat with the multi-agent research system.")
@@ -259,6 +265,10 @@ def main():
     progress_parser.add_argument("directory", type=str, help="Path to the directory to check progress for.")
     progress_parser.add_argument("--clear", action="store_true", help="Clear progress for this directory.")
 
+    # Routes command
+    routes_parser = subparsers.add_parser("routes", help="Show active route configuration.")
+    routes_parser.add_argument("--json", action="store_true", help="Print machine-readable route configuration as JSON.")
+
     args = parser.parse_args()
 
     if args.command == "upload":
@@ -273,6 +283,8 @@ def main():
         handle_batch_upload_command(args)
     elif args.command == "progress":
         handle_progress_command(args)
+    elif args.command == "routes":
+        handle_routes_command(args)
     else:
         parser.print_help()
 
@@ -332,10 +344,19 @@ def handle_upload_command(args):
         sys.exit(1)
 
 def handle_query_command(args):
-    """Handle the query command."""
-    print(f"Querying: {args.question}")
-    # TODO: Implement query functionality
-    print("Query functionality not yet implemented.")
+    """Handle the query command via the LangGraph research workflow."""
+    confirmation = getattr(args, "confirmation", "continue") or "continue"
+
+    try:
+        system = LangGraphResearchSystem()
+        print(f"Querying: {args.question}")
+        response = system.research_question(args.question, confirmation)
+        print()
+        print(response)
+    except Exception as e:
+        print(f"Error querying argument graph: {e}")
+        logging.exception("Query command failed")
+        sys.exit(1)
 
 def handle_diagnose_command(args):
     """Handle the diagnose command."""
@@ -675,6 +696,71 @@ def handle_progress_command(args):
             print(f"{i}. {os.path.basename(pdf_path)}")
     else:
         print("No files pending processing.")
+
+
+def handle_routes_command(args):
+    """Display the active route configuration for diagnostics."""
+    config = active_route_configuration()
+
+    if getattr(args, "json", False):
+        print(json.dumps(config, indent=2, ensure_ascii=False, sort_keys=True))
+        return
+
+    print("\n=== CiteWeave Route Configuration ===\n")
+    print(f"Default route: {config['default_route']}")
+
+    print("\nValid routes:")
+    for route in sorted(config["valid_routes"]):
+        marker = " (default)" if route == config["default_route"] else ""
+        print(f"  {route}{marker}")
+
+    if config["aliases"]:
+        print(f"\nRoute aliases ({len(config['aliases'])} active):")
+        for alias, canonical in sorted(config["aliases"].items()):
+            if alias != canonical:
+                print(f"  {alias} → {canonical}")
+
+    if config["priority_map"]:
+        print("\nPriority → Route mapping:")
+        for priority, route in sorted(config["priority_map"].items()):
+            print(f"  {priority} → {route}")
+
+    if config["alias_overrides"]:
+        print(f"\nAlias overrides ({len(config['alias_overrides'])} active):")
+        for alias, canonical in sorted(config["alias_overrides"].items()):
+            source = "addon" if alias in config.get("addon_alias_overrides", {}) else "env"
+            print(f"  {alias} → {canonical} [{source}]")
+
+    if config["priority_overrides"]:
+        print(f"\nPriority overrides ({len(config['priority_overrides'])} active):")
+        for priority, route in sorted(config["priority_overrides"].items()):
+            source = "addon" if priority in config.get("addon_priority_overrides", {}) else "env"
+            print(f"  {priority} → {route} [{source}]")
+
+    if config["ignored_alias_overrides"]:
+        print(f"\nIgnored alias overrides ({len(config['ignored_alias_overrides'])}):")
+        for entry in config["ignored_alias_overrides"]:
+            print(f"  {entry['key']} → {entry['route']}  [{entry['reason']}]")
+
+    if config["ignored_priority_overrides"]:
+        print(f"\nIgnored priority overrides ({len(config['ignored_priority_overrides'])}):")
+        for entry in config["ignored_priority_overrides"]:
+            print(f"  {entry['key']} → {entry['route']}  [{entry['reason']}]")
+
+    if config["addon_config_paths"]:
+        print(f"\nAddon config sources ({len(config['addon_config_paths'])}):")
+        for path in config["addon_config_paths"]:
+            print(f"  {path}")
+
+    if config["addon_config_issues"]:
+        print(f"\nAddon config issues ({len(config['addon_config_issues'])}):")
+        for issue in config["addon_config_issues"]:
+            loc = f" ({issue.get('path', '')})" if issue.get("path") else ""
+            detail = f": {issue.get('detail')}" if issue.get("detail") else ""
+            print(f"  {issue['reason']}{loc}{detail}")
+
+    print()
+
 
 if __name__ == "__main__":
     main() 
