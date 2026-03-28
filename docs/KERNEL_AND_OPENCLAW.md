@@ -66,8 +66,12 @@ Current facade methods:
 - `upload_pdf(pdf_path)`
 - `diagnose_pdf(pdf_path)`
 - `query(question, confirmation='continue')`
+- `chat_turn(user_input, history=None, menu_choice=None, collected_data=None)`
 - `routes()`
 - `progress(directory, clear=False)`
+- `batch_upload(directory, resume=True, force_restart=False, clear_progress=False)`
+- `health()`
+- `bootstrap_plan()`
 
 ## Recommended future OpenClaw Skill design
 
