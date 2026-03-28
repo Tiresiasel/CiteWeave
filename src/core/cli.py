@@ -266,7 +266,8 @@ def main():
     progress_parser.add_argument("--clear", action="store_true", help="Clear progress for this directory.")
 
     # Routes command
-    subparsers.add_parser("routes", help="Show active route configuration.")
+    routes_parser = subparsers.add_parser("routes", help="Show active route configuration.")
+    routes_parser.add_argument("--json", action="store_true", help="Print machine-readable route configuration as JSON.")
 
     args = parser.parse_args()
 
@@ -700,6 +701,10 @@ def handle_progress_command(args):
 def handle_routes_command(args):
     """Display the active route configuration for diagnostics."""
     config = active_route_configuration()
+
+    if getattr(args, "json", False):
+        print(json.dumps(config, indent=2, ensure_ascii=False, sort_keys=True))
+        return
 
     print("\n=== CiteWeave Route Configuration ===\n")
     print(f"Default route: {config['default_route']}")

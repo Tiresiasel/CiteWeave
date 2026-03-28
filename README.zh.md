@@ -289,7 +289,7 @@ python3 scripts/repo_privacy_audit.py
 ```
 
 任何隐私审计失败都会阻止提交。检查项包括：
-- 绝对本地路径（`/home/tiresias`、`.openclaw/workspace`）
+- 绝对本地机器路径（例如用户主目录或私有工作区根路径）
 - Token / 密钥写入 tracked 文件
 - `data/` 或 `test_files/` 中的运行时数据被 tracked
 

@@ -328,7 +328,7 @@ python3 scripts/repo_privacy_audit.py
 ```
 
 Any privacy audit failure blocks commit. This checks for:
-- Absolute local paths (`/home/tiresias`, `.openclaw/workspace`)
+- Absolute local machine paths (for example, user home directories or private workspace roots)
 - Token / secret values in tracked files
 - Runtime data tracked in `data/` or `test_files/`
 
