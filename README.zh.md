@@ -162,6 +162,9 @@ bash scripts/deployment_check.sh
 
 ## 第二部分：将 CiteWeave 接入 OpenClaw
 
+关于这种分层方式背后的架构约定，可继续看：
+`docs/KERNEL_AND_OPENCLAW.md`
+
 ### OpenClaw 模式到底改变了什么
 
 OpenClaw 不会替代 CiteWeave 的存储或解析层，它只是接管 CiteWeave 的

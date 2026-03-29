@@ -1,8 +1,8 @@
-# This file makes 'src' a Python package for Poetry and Python imports.
+"""Top-level package for CiteWeave.
 
-# Main modules for the argument graph project
-from src.processing.pdf.document_processor import DocumentProcessor
-from src.processing.pdf.pdf_processor import PDFProcessor  
-from src.processing.citation_parser import CitationParser
+Keep package import side effects minimal.
+Heavy runtime objects (PDF processors, agent systems) should be imported from
+specific modules or through the kernel/adapters layer, not from `src` itself.
+"""
 
-__all__ = ['DocumentProcessor', 'PDFProcessor', 'CitationParser'] 
+__all__ = []

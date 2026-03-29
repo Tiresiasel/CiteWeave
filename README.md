@@ -178,6 +178,9 @@ and addon/env overrides.
 
 ## Part 2 — Integrate CiteWeave with OpenClaw
 
+For the architectural contract behind this split, see:
+`docs/KERNEL_AND_OPENCLAW.md`
+
 ### What changes in OpenClaw mode
 
 OpenClaw does not replace CiteWeave's storage or parsing stack. It only becomes

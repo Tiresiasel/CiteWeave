@@ -56,129 +56,7 @@ else:
         logging.getLogger(noisy_logger).setLevel(logging.WARNING)
 
 from src.processing.pdf.document_processor import DocumentProcessor
-from src.agents.multi_agent_research_system import LangGraphResearchSystem
-from src.agents.routing import active_route_configuration
-
-class BatchUploadTracker:
-    """Tracks batch upload progress to enable resuming interrupted uploads."""
-    
-    def __init__(self, directory, tracker_file=None):
-        self.directory = directory
-        if tracker_file is None:
-            # Create tracker file in data folder
-            data_dir = Path("data")
-            data_dir.mkdir(exist_ok=True)
-            self.tracker_file = data_dir / "batch_upload_tracker.json"
-        else:
-            self.tracker_file = Path(tracker_file)
-        
-        self.progress_data = self._load_progress()
-    
-    def _load_progress(self):
-        """Load existing progress from tracker file."""
-        if self.tracker_file.exists():
-            try:
-                with open(self.tracker_file, 'r', encoding='utf-8') as f:
-                    data = json.load(f)
-                    # Filter to only include entries for current directory
-                    return {k: v for k, v in data.items() if v.get('directory') == self.directory}
-            except (json.JSONDecodeError, IOError) as e:
-                logging.warning(f"Could not load progress tracker: {e}")
-                return {}
-        return {}
-    
-    def _save_progress(self):
-        """Save progress to tracker file."""
-        try:
-            # Load existing data to preserve other directories
-            existing_data = {}
-            if self.tracker_file.exists():
-                try:
-                    with open(self.tracker_file, 'r', encoding='utf-8') as f:
-                        existing_data = json.load(f)
-                except (json.JSONDecodeError, IOError):
-                    existing_data = {}
-            
-            # Update with current directory data
-            existing_data.update(self.progress_data)
-            
-            # Save back to file
-            with open(self.tracker_file, 'w', encoding='utf-8') as f:
-                json.dump(existing_data, f, indent=2, ensure_ascii=False)
-                
-        except IOError as e:
-            logging.error(f"Could not save progress tracker: {e}")
-    
-    def mark_file_completed(self, pdf_path, result):
-        """Mark a file as successfully processed."""
-        self.progress_data[pdf_path] = {
-            'status': 'completed',
-            'directory': self.directory,
-            'paper_id': result.get('paper_id', 'unknown'),
-            'total_sentences': result.get('total_sentences', 0),
-            'total_citations': result.get('total_citations', 0),
-            'completed_at': time.strftime('%Y-%m-%d %H:%M:%S'),
-            'error': None
-        }
-        self._save_progress()
-    
-    def mark_file_failed(self, pdf_path, error):
-        """Mark a file as failed."""
-        self.progress_data[pdf_path] = {
-            'status': 'failed',
-            'directory': self.directory,
-            'paper_id': None,
-            'total_sentences': 0,
-            'total_citations': 0,
-            'completed_at': time.strftime('%Y-%m-%d %H:%M:%S'),
-            'error': str(error)
-        }
-        self._save_progress()
-    
-    def is_file_completed(self, pdf_path):
-        """Check if a file has been successfully processed."""
-        return pdf_path in self.progress_data and self.progress_data[pdf_path]['status'] == 'completed'
-    
-    def is_file_failed(self, pdf_path):
-        """Check if a file has failed processing."""
-        return pdf_path in self.progress_data and self.progress_data[pdf_path]['status'] == 'failed'
-    
-    def get_pending_files(self, all_files, force_restart=False):
-        """Get list of files that need processing."""
-        if force_restart:
-            return all_files
-        
-        pending = []
-        for pdf_path in all_files:
-            if not self.is_file_completed(pdf_path):
-                pending.append(pdf_path)
-        
-        return pending
-    
-    def get_progress_summary(self):
-        """Get summary of current progress."""
-        total = len(self.progress_data)
-        completed = sum(1 for v in self.progress_data.values() if v['status'] == 'completed')
-        failed = sum(1 for v in self.progress_data.values() if v['status'] == 'failed')
-        
-        return {
-            'total_tracked': total,
-            'completed': completed,
-            'failed': failed,
-            'success_rate': (completed / total * 100) if total > 0 else 0
-        }
-    
-    def clear_progress(self, directory=None):
-        """Clear progress for a specific directory or all progress."""
-        if directory:
-            # Remove entries for specific directory
-            self.progress_data = {k: v for k, v in self.progress_data.items() 
-                                if v.get('directory') != directory}
-        else:
-            # Clear all progress
-            self.progress_data = {}
-        
-        self._save_progress()
+from src.kernel import CiteWeaveKernel, BatchUploadTracker
 
 def process_single_pdf_worker(pdf_path, diagnose=False, force=False):
     """
@@ -264,6 +142,8 @@ def main():
     progress_parser = subparsers.add_parser("progress", help="View batch upload progress status.")
     progress_parser.add_argument("directory", type=str, help="Path to the directory to check progress for.")
     progress_parser.add_argument("--clear", action="store_true", help="Clear progress for this directory.")
+    progress_parser.add_argument("--json", action="store_true", help="Print machine-readable progress information as JSON.")
+    progress_parser.add_argument("--show-completed", action="store_true", help="Also list completed files in text output.")
 
     # Routes command
     routes_parser = subparsers.add_parser("routes", help="Show active route configuration.")
@@ -289,33 +169,30 @@ def main():
         parser.print_help()
 
 def handle_upload_command(args):
-    """Handle the upload command with integrated PDF and citation processing."""
+    """Handle the upload command through the kernel service."""
     try:
-        # Initialize the unified document processor
-        doc_processor = DocumentProcessor()
-        
-        # Run diagnosis if requested
+        kernel = CiteWeaveKernel()
+
         if args.diagnose:
             print("Running quality diagnosis...")
-            diagnosis = doc_processor.diagnose_document_processing(args.pdf_path)
-            
+            diagnosis = kernel.diagnose_document(args.pdf_path)
+
             print(f"Quality Level: {diagnosis['overall_assessment']['quality_level']}")
             print(f"Is Processable: {diagnosis['overall_assessment']['is_processable']}")
-            
+
             if diagnosis['overall_assessment']['recommendations']:
                 print("Recommendations:")
                 for rec in diagnosis['overall_assessment']['recommendations']:
                     print(f"  - {rec}")
-            
+
             if not diagnosis['overall_assessment']['is_processable']:
                 print("Warning: Document may not process well. Continue anyway? (y/n)")
                 response = input().strip().lower()
                 if response != 'y':
                     sys.exit(1)
-        
-        # Process the document
+
         print(f"Processing document: {args.pdf_path}")
-        results = doc_processor.process_document(args.pdf_path, save_results=True)
+        results = kernel.upload_document(args.pdf_path, save_results=True)
         
         # Display results
         stats = results['processing_stats']
@@ -344,13 +221,13 @@ def handle_upload_command(args):
         sys.exit(1)
 
 def handle_query_command(args):
-    """Handle the query command via the LangGraph research workflow."""
+    """Handle the query command via the kernel service."""
     confirmation = getattr(args, "confirmation", "continue") or "continue"
 
     try:
-        system = LangGraphResearchSystem()
+        kernel = CiteWeaveKernel()
         print(f"Querying: {args.question}")
-        response = system.research_question(args.question, confirmation)
+        response = kernel.query(args.question, confirmation)
         print()
         print(response)
     except Exception as e:
@@ -361,8 +238,8 @@ def handle_query_command(args):
 def handle_diagnose_command(args):
     """Handle the diagnose command."""
     try:
-        doc_processor = DocumentProcessor()
-        diagnosis = doc_processor.diagnose_document_processing(args.pdf_path)
+        kernel = CiteWeaveKernel()
+        diagnosis = kernel.diagnose_document(args.pdf_path)
         
         print(f"=== Document Processing Diagnosis ===")
         print(f"File: {args.pdf_path}")
@@ -398,7 +275,8 @@ def handle_diagnose_command(args):
 def handle_chat_command(args):
     """Handle the chat command for interactive multi-turn conversation (stateless AI version)."""
     try:
-        system = LangGraphResearchSystem()
+        kernel = CiteWeaveKernel()
+        system = kernel.start_chat_system()
         print("🤖 CiteWeave Multi-Agent Research System (Chat Mode)")
         print("=" * 60)
         print("Type 'exit' or 'quit' to end the chat.")
@@ -664,43 +542,54 @@ def process_files_parallel(pdf_files, num_processors, tracker):
 def handle_progress_command(args):
     """Handle the progress command to view batch upload progress status."""
     directory = args.directory
-    clear_progress = args.clear
 
     if not os.path.isdir(directory):
         print(f"Error: {directory} is not a valid directory.")
         sys.exit(1)
 
-    tracker = BatchUploadTracker(directory)
+    kernel = CiteWeaveKernel()
+    progress = kernel.progress_summary(directory, clear=args.clear)
+
+    if getattr(args, "json", False):
+        print(json.dumps(progress, indent=2, ensure_ascii=False, sort_keys=True))
+        return
 
     print(f"\n=== Batch Upload Progress for {directory} ===")
-    summary = tracker.get_progress_summary()
+    if progress["cleared"]:
+        print("Progress cleared before reporting.")
+
+    summary = progress["summary"]
+    print(f"Total PDF files discovered: {progress['total_pdf_files']}")
     print(f"Total files tracked: {summary['total_tracked']}")
-    print(f"Completed: {summary['completed']}")
-    print(f"Failed: {summary['failed']}")
+    print(f"Completed: {progress['completed_count']}")
+    print(f"Failed: {progress['failed_count']}")
+    print(f"Pending: {progress['pending_count']}")
     print(f"Success rate: {summary['success_rate']:.1f}%")
 
-    if clear_progress:
-        print("\nClearing progress for this directory...")
-        tracker.clear_progress(directory)
-        print("Progress cleared.")
-        summary = tracker.get_progress_summary()
-        print(f"Total files tracked after clearing: {summary['total_tracked']}")
-        print(f"Completed after clearing: {summary['completed']}")
-        print(f"Failed after clearing: {summary['failed']}")
-        print(f"Success rate after clearing: {summary['success_rate']:.1f}%")
+    if progress["failed_files"]:
+        print("\n--- Failed Files ---")
+        for idx, (pdf_path, error_msg) in enumerate(progress["failed_files"].items(), 1):
+            print(f"{idx}. {os.path.basename(pdf_path)}")
+            if error_msg:
+                print(f"   Error: {error_msg}")
 
     print("\n--- Pending Files ---")
-    pending_files = tracker.get_pending_files(glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True), force_restart=False)
-    if pending_files:
-        for i, pdf_path in enumerate(pending_files, 1):
+    if progress["pending_files"]:
+        for i, pdf_path in enumerate(progress["pending_files"], 1):
             print(f"{i}. {os.path.basename(pdf_path)}")
     else:
         print("No files pending processing.")
 
+    if getattr(args, "show_completed", False) and progress["completed_files"]:
+        print("\n--- Completed Files ---")
+        for i, pdf_path in enumerate(progress["completed_files"], 1):
+            print(f"{i}. {os.path.basename(pdf_path)}")
+
 
 def handle_routes_command(args):
     """Display the active route configuration for diagnostics."""
-    config = active_route_configuration()
+    kernel = CiteWeaveKernel()
+    config = kernel.routes_snapshot()
 
     if getattr(args, "json", False):
         print(json.dumps(config, indent=2, ensure_ascii=False, sort_keys=True))
