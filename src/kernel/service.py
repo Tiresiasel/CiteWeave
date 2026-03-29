@@ -154,16 +154,22 @@ class CiteWeaveKernel:
 
     def progress_summary(self, directory: str, clear: bool = False) -> Dict[str, Any]:
         tracker = BatchUploadTracker(directory)
-        summary_before = tracker.get_progress_summary()
         if clear:
             tracker.clear_progress(directory)
-        pending_files = tracker.get_pending_files(
-            glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True),
-            force_restart=False,
-        )
+
+        all_files = glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True)
+        summary = tracker.get_progress_summary()
+        pending_files = tracker.get_pending_files(all_files, force_restart=False)
+
         return {
             "directory": directory,
-            "summary": tracker.get_progress_summary() if clear else summary_before,
-            "pending_files": pending_files,
             "cleared": clear,
+            "total_pdf_files": len(all_files),
+            "summary": summary,
+            "pending_count": len(pending_files),
+            "pending_files": sorted(pending_files),
+            "completed_count": summary["completed"],
+            "completed_files": summary["completed_files"],
+            "failed_count": summary["failed"],
+            "failed_files": summary["failed_files"],
         }

@@ -142,6 +142,8 @@ def main():
     progress_parser = subparsers.add_parser("progress", help="View batch upload progress status.")
     progress_parser.add_argument("directory", type=str, help="Path to the directory to check progress for.")
     progress_parser.add_argument("--clear", action="store_true", help="Clear progress for this directory.")
+    progress_parser.add_argument("--json", action="store_true", help="Print machine-readable progress information as JSON.")
+    progress_parser.add_argument("--show-completed", action="store_true", help="Also list completed files in text output.")
 
     # Routes command
     routes_parser = subparsers.add_parser("routes", help="Show active route configuration.")
@@ -540,38 +542,48 @@ def process_files_parallel(pdf_files, num_processors, tracker):
 def handle_progress_command(args):
     """Handle the progress command to view batch upload progress status."""
     directory = args.directory
-    clear_progress = args.clear
 
     if not os.path.isdir(directory):
         print(f"Error: {directory} is not a valid directory.")
         sys.exit(1)
 
-    tracker = BatchUploadTracker(directory)
+    kernel = CiteWeaveKernel()
+    progress = kernel.progress_summary(directory, clear=args.clear)
+
+    if getattr(args, "json", False):
+        print(json.dumps(progress, indent=2, ensure_ascii=False, sort_keys=True))
+        return
 
     print(f"\n=== Batch Upload Progress for {directory} ===")
-    summary = tracker.get_progress_summary()
+    if progress["cleared"]:
+        print("Progress cleared before reporting.")
+
+    summary = progress["summary"]
+    print(f"Total PDF files discovered: {progress['total_pdf_files']}")
     print(f"Total files tracked: {summary['total_tracked']}")
-    print(f"Completed: {summary['completed']}")
-    print(f"Failed: {summary['failed']}")
+    print(f"Completed: {progress['completed_count']}")
+    print(f"Failed: {progress['failed_count']}")
+    print(f"Pending: {progress['pending_count']}")
     print(f"Success rate: {summary['success_rate']:.1f}%")
 
-    if clear_progress:
-        print("\nClearing progress for this directory...")
-        tracker.clear_progress(directory)
-        print("Progress cleared.")
-        summary = tracker.get_progress_summary()
-        print(f"Total files tracked after clearing: {summary['total_tracked']}")
-        print(f"Completed after clearing: {summary['completed']}")
-        print(f"Failed after clearing: {summary['failed']}")
-        print(f"Success rate after clearing: {summary['success_rate']:.1f}%")
+    if progress["failed_files"]:
+        print("\n--- Failed Files ---")
+        for idx, (pdf_path, error_msg) in enumerate(progress["failed_files"].items(), 1):
+            print(f"{idx}. {os.path.basename(pdf_path)}")
+            if error_msg:
+                print(f"   Error: {error_msg}")
 
     print("\n--- Pending Files ---")
-    pending_files = tracker.get_pending_files(glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True), force_restart=False)
-    if pending_files:
-        for i, pdf_path in enumerate(pending_files, 1):
+    if progress["pending_files"]:
+        for i, pdf_path in enumerate(progress["pending_files"], 1):
             print(f"{i}. {os.path.basename(pdf_path)}")
     else:
         print("No files pending processing.")
+
+    if getattr(args, "show_completed", False) and progress["completed_files"]:
+        print("\n--- Completed Files ---")
+        for i, pdf_path in enumerate(progress["completed_files"], 1):
+            print(f"{i}. {os.path.basename(pdf_path)}")
 
 
 def handle_routes_command(args):

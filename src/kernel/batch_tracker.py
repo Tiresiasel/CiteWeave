@@ -12,6 +12,10 @@ from pathlib import Path
 from typing import Dict, Any
 
 
+_STATUS_COMPLETED = "completed"
+_STATUS_FAILED = "failed"
+
+
 class BatchUploadTracker:
     """Tracks batch upload progress to enable resuming interrupted uploads."""
 
@@ -52,7 +56,7 @@ class BatchUploadTracker:
 
     def mark_file_completed(self, pdf_path: str, result_data: Dict[str, Any]) -> None:
         self.progress_data[pdf_path] = {
-            "status": "completed",
+            "status": _STATUS_COMPLETED,
             "directory": self.directory,
             "paper_id": result_data.get("paper_id"),
             "processed_at": result_data.get("processing_time"),
@@ -67,32 +71,53 @@ class BatchUploadTracker:
 
     def mark_file_failed(self, pdf_path: str, error_msg: str) -> None:
         self.progress_data[pdf_path] = {
-            "status": "failed",
+            "status": _STATUS_FAILED,
             "directory": self.directory,
             "error": error_msg,
         }
         self._save_progress()
 
     def is_file_completed(self, pdf_path: str) -> bool:
-        return pdf_path in self.progress_data and self.progress_data[pdf_path]["status"] == "completed"
+        return pdf_path in self.progress_data and self.progress_data[pdf_path]["status"] == _STATUS_COMPLETED
 
     def is_file_failed(self, pdf_path: str) -> bool:
-        return pdf_path in self.progress_data and self.progress_data[pdf_path]["status"] == "failed"
+        return pdf_path in self.progress_data and self.progress_data[pdf_path]["status"] == _STATUS_FAILED
 
     def get_pending_files(self, all_files, force_restart: bool = False):
         if force_restart:
             return all_files
         return [pdf_path for pdf_path in all_files if not self.is_file_completed(pdf_path)]
 
+    def completed_entries(self) -> Dict[str, Any]:
+        return {
+            path: entry
+            for path, entry in self.progress_data.items()
+            if entry.get("status") == _STATUS_COMPLETED
+        }
+
+    def failed_entries(self) -> Dict[str, Any]:
+        return {
+            path: entry
+            for path, entry in self.progress_data.items()
+            if entry.get("status") == _STATUS_FAILED
+        }
+
     def get_progress_summary(self):
+        completed_entries = self.completed_entries()
+        failed_entries = self.failed_entries()
         total = len(self.progress_data)
-        completed = sum(1 for v in self.progress_data.values() if v["status"] == "completed")
-        failed = sum(1 for v in self.progress_data.values() if v["status"] == "failed")
+        completed = len(completed_entries)
+        failed = len(failed_entries)
         return {
             "total_tracked": total,
             "completed": completed,
             "failed": failed,
             "success_rate": (completed / total * 100) if total > 0 else 0,
+            "completed_files": sorted(completed_entries.keys()),
+            "failed_files": {
+                path: entry.get("error", "")
+                for path, entry in sorted(failed_entries.items())
+            },
         }
 
     def clear_progress(self, directory: str | None = None) -> None:
