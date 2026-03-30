@@ -566,6 +566,26 @@ def handle_progress_command(args):
     print(f"Pending: {progress['pending_count']}")
     print(f"Success rate: {summary['success_rate']:.1f}%")
 
+    aggregate_stats = summary.get("aggregate_stats", {})
+    if aggregate_stats:
+        print("\n--- Completed Workload ---")
+        print(f"Total sentences processed: {aggregate_stats.get('total_sentences', 0)}")
+        print(f"Sentences with citations: {aggregate_stats.get('sentences_with_citations', 0)}")
+        print(f"Total citations found: {aggregate_stats.get('total_citations', 0)}")
+        print(f"Total references found: {aggregate_stats.get('total_references', 0)}")
+
+    last_completed = summary.get("last_completed")
+    if last_completed:
+        print("\n--- Last Completed File ---")
+        print(f"File: {os.path.basename(last_completed['pdf_path'])}")
+        if last_completed.get("paper_id"):
+            print(f"Paper ID: {last_completed['paper_id']}")
+
+    if summary.get("failure_reasons"):
+        print("\n--- Failure Reasons ---")
+        for item in summary["failure_reasons"]:
+            print(f"- {item['count']} × {item['error']}")
+
     if progress["failed_files"]:
         print("\n--- Failed Files ---")
         for idx, (pdf_path, error_msg) in enumerate(progress["failed_files"].items(), 1):

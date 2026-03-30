@@ -55,6 +55,15 @@ def test_batch_tracker_summary_includes_completed_and_failed_files():
         assert summary["failed"] == 1
         assert summary["completed_files"] == ["/papers/ok.pdf"]
         assert summary["failed_files"] == {"/papers/bad.pdf": "grobid timeout"}
+        assert summary["aggregate_stats"] == {
+            "total_sentences": 20,
+            "sentences_with_citations": 5,
+            "total_citations": 8,
+            "total_references": 10,
+        }
+        assert summary["last_completed"]["pdf_path"] == "/papers/ok.pdf"
+        assert summary["last_completed"]["paper_id"] == "paper-1"
+        assert summary["failure_reasons"] == [{"error": "grobid timeout", "count": 1}]
 
         persisted = json.loads(tracker_file.read_text(encoding="utf-8"))
         assert persisted["/papers/ok.pdf"]["paper_id"] == "paper-1"
@@ -84,7 +93,11 @@ def test_kernel_progress_summary_returns_actionable_breakdown():
     _stub_module("src.kernel", __path__=[])
     sys.modules["src.kernel.batch_tracker"] = batch_tracker
 
-    service = _load_module(SERVICE_PATH, "kernel_service")
+    service = _load_module(
+        SERVICE_PATH,
+        "kernel_service",
+        module_name=f"src.kernel.service_test_{uuid.uuid4().hex}",
+    )
 
     with tempfile.TemporaryDirectory() as tmpdir:
         pdf_dir = Path(tmpdir) / "papers"
@@ -124,3 +137,11 @@ def test_kernel_progress_summary_returns_actionable_breakdown():
             str(pdf_dir / "bad.pdf"),
             str(pdf_dir / "pending.pdf"),
         ])
+        assert progress["summary"]["aggregate_stats"] == {
+            "total_sentences": 10,
+            "sentences_with_citations": 0,
+            "total_citations": 2,
+            "total_references": 0,
+        }
+        assert progress["summary"]["last_completed"]["pdf_path"] == str(pdf_dir / "ok.pdf")
+        assert progress["summary"]["failure_reasons"] == [{"error": "parse error", "count": 1}]

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections import Counter
 from pathlib import Path
 from typing import Dict, Any
 
@@ -73,7 +74,7 @@ class BatchUploadTracker:
         self.progress_data[pdf_path] = {
             "status": _STATUS_FAILED,
             "directory": self.directory,
-            "error": error_msg,
+            "error": str(error_msg),
         }
         self._save_progress()
 
@@ -108,6 +109,37 @@ class BatchUploadTracker:
         total = len(self.progress_data)
         completed = len(completed_entries)
         failed = len(failed_entries)
+
+        aggregate_stats = {
+            "total_sentences": 0,
+            "sentences_with_citations": 0,
+            "total_citations": 0,
+            "total_references": 0,
+        }
+        last_completed = None
+        for path, entry in completed_entries.items():
+            stats = entry.get("stats", {})
+            aggregate_stats["total_sentences"] += int(stats.get("total_sentences", 0) or 0)
+            aggregate_stats["sentences_with_citations"] += int(stats.get("sentences_with_citations", 0) or 0)
+            aggregate_stats["total_citations"] += int(stats.get("total_citations", 0) or 0)
+            aggregate_stats["total_references"] += int(stats.get("total_references", 0) or 0)
+
+            processed_at = entry.get("processed_at")
+            if processed_at is None:
+                continue
+            if last_completed is None or processed_at > last_completed["processed_at"]:
+                last_completed = {
+                    "pdf_path": path,
+                    "paper_id": entry.get("paper_id"),
+                    "processed_at": processed_at,
+                    "stats": stats,
+                }
+
+        error_counter = Counter(
+            entry.get("error", "") or "unknown error"
+            for entry in failed_entries.values()
+        )
+
         return {
             "total_tracked": total,
             "completed": completed,
@@ -118,6 +150,12 @@ class BatchUploadTracker:
                 path: entry.get("error", "")
                 for path, entry in sorted(failed_entries.items())
             },
+            "aggregate_stats": aggregate_stats,
+            "last_completed": last_completed,
+            "failure_reasons": [
+                {"error": error, "count": count}
+                for error, count in error_counter.most_common()
+            ],
         }
 
     def clear_progress(self, directory: str | None = None) -> None:
