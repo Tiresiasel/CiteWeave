@@ -70,6 +70,71 @@ def test_batch_tracker_summary_includes_completed_and_failed_files():
         assert persisted["/papers/bad.pdf"]["error"] == "grobid timeout"
 
 
+def test_kernel_batch_upload_preserves_tracker_aggregate_stats():
+    batch_tracker = _load_module(
+        BATCH_TRACKER_PATH,
+        "batch_tracker",
+        module_name=f"src.kernel.batch_tracker_upload_{uuid.uuid4().hex}",
+    )
+
+    class DummyDocumentProcessor:
+        def process_document(self, pdf_path, save_results=True):
+            return {
+                "paper_id": "paper-1",
+                "processing_stats": {
+                    "total_sentences": 14,
+                    "sentences_with_citations": 6,
+                    "total_citations": 11,
+                    "total_references": 13,
+                },
+            }
+
+    class DummyResearchSystem:
+        pass
+
+    _stub_module("src", __path__=[])
+    _stub_module("src.processing", __path__=[])
+    _stub_module("src.processing.pdf", __path__=[])
+    _stub_module("src.processing.pdf.document_processor", DocumentProcessor=DummyDocumentProcessor)
+    _stub_module("src.agents", __path__=[])
+    _stub_module("src.agents.multi_agent_research_system", LangGraphResearchSystem=DummyResearchSystem)
+    _stub_module("src.agents.routing", active_route_configuration=lambda: {"default_route": "vector_search"})
+    _stub_module("src.kernel", __path__=[])
+    sys.modules["src.kernel.batch_tracker"] = batch_tracker
+
+    service = _load_module(
+        SERVICE_PATH,
+        "kernel_service_upload",
+        module_name=f"src.kernel.service_upload_{uuid.uuid4().hex}",
+    )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdf_dir = Path(tmpdir) / "papers"
+        pdf_dir.mkdir()
+        (pdf_dir / "ok.pdf").write_bytes(b"%PDF-1.4 ok")
+
+        tracker_file = Path(tmpdir) / "tracker.json"
+        original_tracker_cls = service.BatchUploadTracker
+
+        service.BatchUploadTracker = lambda directory: batch_tracker.BatchUploadTracker(directory, tracker_file=str(tracker_file))
+        try:
+            kernel = service.CiteWeaveKernel()
+            result = kernel.batch_upload(str(pdf_dir), resume=False, force_restart=True)
+        finally:
+            service.BatchUploadTracker = original_tracker_cls
+
+        summary = result["summary"]
+        assert result["processed_count"] == 1
+        assert result["failed_count"] == 0
+        assert summary["aggregate_stats"] == {
+            "total_sentences": 14,
+            "sentences_with_citations": 6,
+            "total_citations": 11,
+            "total_references": 13,
+        }
+        assert summary["last_completed"]["paper_id"] == "paper-1"
+
+
 def test_kernel_progress_summary_returns_actionable_breakdown():
     batch_tracker = _load_module(
         BATCH_TRACKER_PATH,

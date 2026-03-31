@@ -30,6 +30,21 @@ def _load_cli_module():
     class DummyLangGraphResearchSystem:
         pass
 
+    class FakeKernel:
+        def routes_snapshot(self):
+            return {
+                "default_route": "vector_search",
+                "valid_routes": [],
+                "aliases": {},
+                "priority_map": {},
+                "alias_overrides": {},
+                "priority_overrides": {},
+                "ignored_alias_overrides": [],
+                "ignored_priority_overrides": [],
+                "addon_config_paths": [],
+                "addon_config_issues": [],
+            }
+
     _stub_module("prompt_toolkit", prompt=lambda *args, **kwargs: "")
     _stub_module("src", __path__=[])
     _stub_module("src.processing", __path__=[])
@@ -52,6 +67,7 @@ def _load_cli_module():
             "addon_config_issues": [],
         },
     )
+    _stub_module("src.kernel", CiteWeaveKernel=FakeKernel, BatchUploadTracker=object)
 
     spec = importlib.util.spec_from_file_location(module_name, CLI_PATH)
     module = importlib.util.module_from_spec(spec)
@@ -76,7 +92,11 @@ class CliRoutesCommandTests(unittest.TestCase):
             "addon_config_issues": [],
         }
 
-        cli.active_route_configuration = lambda: expected
+        class ExpectedKernel:
+            def routes_snapshot(self):
+                return expected
+
+        cli.CiteWeaveKernel = ExpectedKernel
 
         buf = io.StringIO()
         with redirect_stdout(buf):

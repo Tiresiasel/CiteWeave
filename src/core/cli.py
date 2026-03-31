@@ -448,36 +448,57 @@ def handle_batch_upload_command(args):
     logging.info("FINISH: Batch upload command completed")
 
 def process_files_sequentially(pdf_files, tracker):
-    """Process files sequentially (original behavior)."""
+    """Process files sequentially while preserving real tracker statistics."""
     print("Starting sequential batch upload...")
     success_count = 0
     fail_count = 0
-    
+    kernel = CiteWeaveKernel()
+
     for idx, pdf_path in enumerate(pdf_files, 1):
         print(f"\n[{idx}/{len(pdf_files)}] Processing: {pdf_path}")
         try:
-            class Args:
-                pass
-            file_args = Args()
-            file_args.pdf_path = pdf_path
-            file_args.diagnose = False
-            file_args.force = False
-            handle_upload_command(file_args)
+            print(f"Processing document: {pdf_path}")
+            results = kernel.upload_document(pdf_path, save_results=True)
+            stats = results.get('processing_stats', {})
+
+            print(f"\nProcessing completed successfully!")
+            print(f"Paper ID: {results['paper_id']}")
+            print(f"Total sentences: {stats.get('total_sentences', 0)}")
+            print(f"Sentences with citations: {stats.get('sentences_with_citations', 0)}")
+            print(f"Total citations found: {stats.get('total_citations', 0)}")
+            print(f"Total references: {stats.get('total_references', 0)}")
+
+            sentences_with_cites = [
+                s for s in results.get('sentences_with_citations', []) if s.get('citations')
+            ]
+            if not results.get('sentences_with_citations'):
+                print("Warning: No 'sentences_with_citations' found in results. This document may not contain any extracted citation sentences.")
+            if sentences_with_cites:
+                print(f"\nExample sentences with citations:")
+                for i, sentence in enumerate(sentences_with_cites[:3]):
+                    print(f"\n{i+1}. {sentence.get('sentence_text', '')[:100]}...")
+                    for cite in sentence.get('citations', []):
+                        ref = cite.get('reference', {})
+                        print(f"   → {cite.get('intext', '')} → {ref.get('title', 'Unknown')[:50]}... ({ref.get('year', 'Unknown')})")
+
+            tracker.mark_file_completed(
+                pdf_path,
+                {
+                    'paper_id': results.get('paper_id'),
+                    'processing_time': time.time(),
+                    'total_sentences': stats.get('total_sentences', 0),
+                    'sentences_with_citations': stats.get('sentences_with_citations', 0),
+                    'total_citations': stats.get('total_citations', 0),
+                    'total_references': stats.get('total_references', 0),
+                },
+            )
             success_count += 1
-            
-            # Mark as completed in tracker
-            result = {
-                'paper_id': 'unknown',  # We don't have detailed results from handle_upload_command
-                'total_sentences': 0,
-                'total_citations': 0
-            }
-            tracker.mark_file_completed(pdf_path, result)
-            
+
         except Exception as e:
             print(f"Failed to process {pdf_path}: {e}")
             fail_count += 1
             tracker.mark_file_failed(pdf_path, e)
-    
+
     print(f"\nBatch upload complete. Success: {success_count}, Failed: {fail_count}")
 
 def process_files_parallel(pdf_files, num_processors, tracker):

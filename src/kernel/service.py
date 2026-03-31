@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import glob
 import os
+import time
 from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib import request, error
@@ -79,8 +80,11 @@ class CiteWeaveKernel:
                 compact = {
                     "pdf_path": pdf_path,
                     "paper_id": result.get("paper_id"),
+                    "processing_time": time.time(),
                     "total_sentences": stats.get("total_sentences", 0),
+                    "sentences_with_citations": stats.get("sentences_with_citations", 0),
                     "total_citations": stats.get("total_citations", 0),
+                    "total_references": stats.get("total_references", 0),
                 }
                 tracker.mark_file_completed(pdf_path, compact)
                 processed.append(compact)
