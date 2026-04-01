@@ -106,5 +106,5 @@ points to evolve independently.
 
 - add a local HTTP adapter (likely FastAPI)
 - make batch upload callable through the OpenClaw facade
-- add machine-readable health/status commands beyond current CLI output
+- expand machine-readable health/status coverage beyond the current CLI `health` / `bootstrap-plan` commands
 - add integration tests that exercise kernel methods directly

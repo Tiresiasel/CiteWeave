@@ -51,6 +51,8 @@ Current CLI commands available on this branch:
 - `chat`
 - `query`
 - `routes`
+- `health`
+- `bootstrap-plan`
 
 ### Local CLI mode (no OpenClaw needed)
 
@@ -69,6 +71,8 @@ Then run CiteWeave through the project virtualenv:
 .venv/bin/python -m src.core.cli batch-upload ./papers --resume
 .venv/bin/python -m src.core.cli query "Which papers discuss X?"
 .venv/bin/python -m src.core.cli routes
+.venv/bin/python -m src.core.cli health
+.venv/bin/python -m src.core.cli bootstrap-plan
 .venv/bin/python -m src.core.cli chat
 ```
 
@@ -172,6 +176,26 @@ and addon/env overrides.
 
 ```bash
 .venv/bin/python -m src.core.cli routes
+```
+
+### `health`
+
+Inspect machine-readable environment and service health, including local
+backend probes and configuration file presence.
+
+```bash
+.venv/bin/python -m src.core.cli health
+.venv/bin/python -m src.core.cli health --json
+```
+
+### `bootstrap-plan`
+
+Print the recommended local CLI and OpenClaw bootstrap steps without scraping
+other docs.
+
+```bash
+.venv/bin/python -m src.core.cli bootstrap-plan
+.venv/bin/python -m src.core.cli bootstrap-plan --json
 ```
 
 ---

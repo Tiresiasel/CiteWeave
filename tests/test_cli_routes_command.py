@@ -105,5 +105,60 @@ class CliRoutesCommandTests(unittest.TestCase):
         self.assertEqual(json.loads(buf.getvalue()), expected)
 
 
+class CliHealthAndBootstrapCommandTests(unittest.TestCase):
+    def test_handle_health_command_supports_json_output(self):
+        cli = _load_cli_module()
+        expected = {
+            "project_root": "/repo",
+            "env": {
+                "llm_provider": "openclaw",
+                "llm_model": "gpt-test",
+                "gateway_base": "http://localhost:18789/v1",
+            },
+            "files": {".env": True, "docker_compose": False},
+            "services": {
+                "qdrant": {"ok": True, "status": 200, "url": "http://localhost:6333/collections"},
+                "openclaw_gateway": {"ok": False, "status": 503, "url": "http://localhost:18789/v1/models", "error": "unavailable"},
+            },
+        }
+
+        class ExpectedKernel:
+            def health_snapshot(self):
+                return expected
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            cli.handle_health_command(Namespace(json=True))
+
+        self.assertEqual(json.loads(buf.getvalue()), expected)
+
+    def test_handle_bootstrap_plan_command_supports_json_output(self):
+        cli = _load_cli_module()
+        expected = {
+            "local_cli": {
+                "script": "bash scripts/bootstrap_local.sh",
+                "next_steps": [".venv/bin/python -m src.core.cli upload path/to/paper.pdf"],
+            },
+            "openclaw": {
+                "script": "bash scripts/bootstrap_openclaw.sh",
+                "next_steps": ["openclaw gateway status"],
+            },
+        }
+
+        class ExpectedKernel:
+            def bootstrap_plan(self):
+                return expected
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            cli.handle_bootstrap_plan_command(Namespace(json=True))
+
+        self.assertEqual(json.loads(buf.getvalue()), expected)
+
+
 if __name__ == "__main__":
     unittest.main()

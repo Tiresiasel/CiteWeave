@@ -149,6 +149,14 @@ def main():
     routes_parser = subparsers.add_parser("routes", help="Show active route configuration.")
     routes_parser.add_argument("--json", action="store_true", help="Print machine-readable route configuration as JSON.")
 
+    # Health command
+    health_parser = subparsers.add_parser("health", help="Show machine-readable service and environment health.")
+    health_parser.add_argument("--json", action="store_true", help="Print machine-readable health information as JSON.")
+
+    # Bootstrap plan command
+    bootstrap_parser = subparsers.add_parser("bootstrap-plan", help="Show the recommended local and OpenClaw bootstrap steps.")
+    bootstrap_parser.add_argument("--json", action="store_true", help="Print machine-readable bootstrap plan as JSON.")
+
     args = parser.parse_args()
 
     if args.command == "upload":
@@ -165,6 +173,10 @@ def main():
         handle_progress_command(args)
     elif args.command == "routes":
         handle_routes_command(args)
+    elif args.command == "health":
+        handle_health_command(args)
+    elif args.command == "bootstrap-plan":
+        handle_bootstrap_plan_command(args)
     else:
         parser.print_help()
 
@@ -689,6 +701,68 @@ def handle_routes_command(args):
             detail = f": {issue.get('detail')}" if issue.get("detail") else ""
             print(f"  {issue['reason']}{loc}{detail}")
 
+    print()
+
+
+def handle_health_command(args):
+    """Display machine-readable CiteWeave service and environment health."""
+    kernel = CiteWeaveKernel()
+    snapshot = kernel.health_snapshot()
+
+    if getattr(args, "json", False):
+        print(json.dumps(snapshot, indent=2, ensure_ascii=False, sort_keys=True))
+        return
+
+    env = snapshot.get("env", {})
+    files = snapshot.get("files", {})
+    services = snapshot.get("services", {})
+
+    print("\n=== CiteWeave Health Snapshot ===\n")
+    print(f"Project root: {snapshot.get('project_root', '')}")
+    print(f"LLM provider: {env.get('llm_provider') or 'unknown'}")
+    if env.get("llm_model"):
+        print(f"LLM model: {env['llm_model']}")
+    if env.get("gateway_base"):
+        print(f"Gateway base: {env['gateway_base']}")
+
+    if files:
+        print("\nFiles:")
+        for name, exists in files.items():
+            status = "present" if exists else "missing"
+            print(f"  {name}: {status}")
+
+    if services:
+        print("\nServices:")
+        for name, result in services.items():
+            if result is None:
+                continue
+            state = "ok" if result.get("ok") else "down"
+            status = result.get("status")
+            status_text = f"status={status}" if status is not None else "status=unavailable"
+            detail = f" error={result['error']}" if result.get("error") else ""
+            print(f"  {name}: {state} ({status_text}){detail}")
+
+    print()
+
+
+def handle_bootstrap_plan_command(args):
+    """Display recommended local and OpenClaw bootstrap steps."""
+    kernel = CiteWeaveKernel()
+    plan = kernel.bootstrap_plan()
+
+    if getattr(args, "json", False):
+        print(json.dumps(plan, indent=2, ensure_ascii=False, sort_keys=True))
+        return
+
+    print("\n=== CiteWeave Bootstrap Plan ===")
+    for section_name, section in plan.items():
+        print(f"\n[{section_name}]")
+        print(f"script: {section.get('script', '')}")
+        next_steps = section.get("next_steps", [])
+        if next_steps:
+            print("next steps:")
+            for step in next_steps:
+                print(f"  - {step}")
     print()
 
 
