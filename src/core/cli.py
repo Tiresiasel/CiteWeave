@@ -713,17 +713,25 @@ def handle_health_command(args):
         print(json.dumps(snapshot, indent=2, ensure_ascii=False, sort_keys=True))
         return
 
+    summary = snapshot.get("summary", {})
     env = snapshot.get("env", {})
     files = snapshot.get("files", {})
     services = snapshot.get("services", {})
 
     print("\n=== CiteWeave Health Snapshot ===\n")
+    print(f"Overall status: {summary.get('overall_status', 'unknown')}")
     print(f"Project root: {snapshot.get('project_root', '')}")
     print(f"LLM provider: {env.get('llm_provider') or 'unknown'}")
     if env.get("llm_model"):
         print(f"LLM model: {env['llm_model']}")
     if env.get("gateway_base"):
         print(f"Gateway base: {env['gateway_base']}")
+
+    action_items = summary.get("action_items", [])
+    if action_items:
+        print("\nRecommended next actions:")
+        for item in action_items:
+            print(f"  - {item}")
 
     if files:
         print("\nFiles:")

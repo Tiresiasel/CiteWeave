@@ -110,6 +110,15 @@ class CliHealthAndBootstrapCommandTests(unittest.TestCase):
         cli = _load_cli_module()
         expected = {
             "project_root": "/repo",
+            "summary": {
+                "overall_status": "degraded",
+                "missing_files": ["docker_compose"],
+                "down_services": ["openclaw_gateway"],
+                "action_items": [
+                    "Create or restore required config files: docker_compose",
+                    "Start or fix backend services: openclaw_gateway",
+                ],
+            },
             "env": {
                 "llm_provider": "openclaw",
                 "llm_model": "gpt-test",
@@ -133,6 +142,47 @@ class CliHealthAndBootstrapCommandTests(unittest.TestCase):
             cli.handle_health_command(Namespace(json=True))
 
         self.assertEqual(json.loads(buf.getvalue()), expected)
+
+    def test_handle_health_command_text_output_leads_with_status_and_actions(self):
+        cli = _load_cli_module()
+        expected = {
+            "project_root": "/repo",
+            "summary": {
+                "overall_status": "degraded",
+                "missing_files": ["docker_compose"],
+                "down_services": ["openclaw_gateway"],
+                "action_items": [
+                    "Create or restore required config files: docker_compose",
+                    "Start or fix backend services: openclaw_gateway",
+                ],
+            },
+            "env": {
+                "llm_provider": "openclaw",
+                "llm_model": "gpt-test",
+                "gateway_base": "http://localhost:18789/v1",
+            },
+            "files": {".env": True, "docker_compose": False},
+            "services": {
+                "qdrant": {"ok": True, "status": 200, "url": "http://localhost:6333/collections"},
+                "openclaw_gateway": {"ok": False, "status": 503, "url": "http://localhost:18789/v1/models", "error": "unavailable"},
+            },
+        }
+
+        class ExpectedKernel:
+            def health_snapshot(self):
+                return expected
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            cli.handle_health_command(Namespace(json=False))
+
+        output = buf.getvalue()
+        self.assertIn("Overall status: degraded", output)
+        self.assertIn("Recommended next actions:", output)
+        self.assertIn("Create or restore required config files: docker_compose", output)
+        self.assertIn("Start or fix backend services: openclaw_gateway", output)
 
     def test_handle_bootstrap_plan_command_supports_json_output(self):
         cli = _load_cli_module()

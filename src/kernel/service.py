@@ -115,25 +115,50 @@ class CiteWeaveKernel:
         env_mode = os.environ.get("CITEWEAVE_LLM_PROVIDER", "openai")
         gateway_url = os.environ.get("CITEWEAVE_LLM_API_BASE", "http://localhost:18789/v1").rstrip("/")
 
+        files = {
+            ".env": Path('.env').exists(),
+            "docker_compose": Path('docker-compose.yml').exists(),
+            "model_config": Path('config/model_config.json').exists(),
+            "neo4j_config": Path('config/neo4j_config.json').exists(),
+        }
+        services = {
+            "qdrant": probe("http://localhost:6333/collections"),
+            "grobid": probe("http://localhost:8070/api/isalive"),
+            "neo4j_http": probe("http://localhost:7474"),
+            "openclaw_gateway": probe(gateway_url + "/models") if env_mode == "openclaw" else None,
+        }
+
+        missing_files = [name for name, exists in files.items() if not exists]
+        down_services = [name for name, result in services.items() if result is not None and not result.get("ok")]
+
+        action_items = []
+        if missing_files:
+            action_items.append(f"Create or restore required config files: {', '.join(missing_files)}")
+        if down_services:
+            action_items.append(f"Start or fix backend services: {', '.join(down_services)}")
+        if not action_items:
+            action_items.append("System looks healthy. Continue with upload/query/chat commands.")
+
+        if missing_files or down_services:
+            overall_status = "degraded"
+        else:
+            overall_status = "ok"
+
         return {
             "project_root": str(Path.cwd()),
+            "summary": {
+                "overall_status": overall_status,
+                "missing_files": missing_files,
+                "down_services": down_services,
+                "action_items": action_items,
+            },
             "env": {
                 "llm_provider": env_mode,
                 "llm_model": os.environ.get("CITEWEAVE_LLM_MODEL", ""),
                 "gateway_base": gateway_url if env_mode == "openclaw" else None,
             },
-            "files": {
-                ".env": Path('.env').exists(),
-                "docker_compose": Path('docker-compose.yml').exists(),
-                "model_config": Path('config/model_config.json').exists(),
-                "neo4j_config": Path('config/neo4j_config.json').exists(),
-            },
-            "services": {
-                "qdrant": probe("http://localhost:6333/collections"),
-                "grobid": probe("http://localhost:8070/api/isalive"),
-                "neo4j_http": probe("http://localhost:7474"),
-                "openclaw_gateway": probe(gateway_url + "/models") if env_mode == "openclaw" else None,
-            },
+            "files": files,
+            "services": services,
         }
 
     def bootstrap_plan(self) -> Dict[str, Any]:

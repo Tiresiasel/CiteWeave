@@ -180,8 +180,9 @@ and addon/env overrides.
 
 ### `health`
 
-Inspect machine-readable environment and service health, including local
-backend probes and configuration file presence.
+Inspect environment and service health. The human-readable output now leads
+with an overall verdict and recommended next actions; use `--json` when you
+want the raw machine-readable snapshot.
 
 ```bash
 .venv/bin/python -m src.core.cli health
