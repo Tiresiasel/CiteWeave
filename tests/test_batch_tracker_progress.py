@@ -196,8 +196,12 @@ def test_kernel_progress_summary_returns_actionable_breakdown():
         assert progress["completed_count"] == 1
         assert progress["failed_count"] == 1
         assert progress["pending_count"] == 2
+        assert progress["not_started_count"] == 1
+        assert progress["retryable_failed_count"] == 1
         assert str(pdf_dir / "ok.pdf") in progress["completed_files"]
         assert progress["failed_files"] == {str(pdf_dir / "bad.pdf"): "parse error"}
+        assert progress["retryable_failed_files"] == [str(pdf_dir / "bad.pdf")]
+        assert progress["not_started_files"] == [str(pdf_dir / "pending.pdf")]
         assert progress["pending_files"] == sorted([
             str(pdf_dir / "bad.pdf"),
             str(pdf_dir / "pending.pdf"),

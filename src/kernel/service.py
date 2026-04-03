@@ -189,6 +189,10 @@ class CiteWeaveKernel:
         all_files = glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True)
         summary = tracker.get_progress_summary()
         pending_files = tracker.get_pending_files(all_files, force_restart=False)
+        failed_files = summary["failed_files"]
+        failed_paths = set(failed_files.keys())
+        not_started_files = sorted(pdf_path for pdf_path in all_files if pdf_path not in tracker.progress_data)
+        retryable_failed_files = sorted(pdf_path for pdf_path in all_files if pdf_path in failed_paths)
 
         return {
             "directory": directory,
@@ -197,8 +201,12 @@ class CiteWeaveKernel:
             "summary": summary,
             "pending_count": len(pending_files),
             "pending_files": sorted(pending_files),
+            "not_started_count": len(not_started_files),
+            "not_started_files": not_started_files,
+            "retryable_failed_count": len(retryable_failed_files),
+            "retryable_failed_files": retryable_failed_files,
             "completed_count": summary["completed"],
             "completed_files": summary["completed_files"],
             "failed_count": summary["failed"],
-            "failed_files": summary["failed_files"],
+            "failed_files": failed_files,
         }

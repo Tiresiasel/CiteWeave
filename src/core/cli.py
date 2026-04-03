@@ -596,7 +596,9 @@ def handle_progress_command(args):
     print(f"Total files tracked: {summary['total_tracked']}")
     print(f"Completed: {progress['completed_count']}")
     print(f"Failed: {progress['failed_count']}")
-    print(f"Pending: {progress['pending_count']}")
+    print(f"Pending / resumable: {progress['pending_count']}")
+    print(f"  • Not started yet: {progress['not_started_count']}")
+    print(f"  • Retryable failed files: {progress['retryable_failed_count']}")
     print(f"Success rate: {summary['success_rate']:.1f}%")
 
     aggregate_stats = summary.get("aggregate_stats", {})
@@ -626,12 +628,29 @@ def handle_progress_command(args):
             if error_msg:
                 print(f"   Error: {error_msg}")
 
+    print("\n--- Retryable Failed Files ---")
+    if progress["retryable_failed_files"]:
+        for i, pdf_path in enumerate(progress["retryable_failed_files"], 1):
+            print(f"{i}. {os.path.basename(pdf_path)}")
+    else:
+        print("No failed files need a retry.")
+
+    print("\n--- Not Started Yet ---")
+    if progress["not_started_files"]:
+        for i, pdf_path in enumerate(progress["not_started_files"], 1):
+            print(f"{i}. {os.path.basename(pdf_path)}")
+    else:
+        print("No untouched files remain.")
+
     print("\n--- Pending Files ---")
     if progress["pending_files"]:
         for i, pdf_path in enumerate(progress["pending_files"], 1):
             print(f"{i}. {os.path.basename(pdf_path)}")
     else:
         print("No files pending processing.")
+
+    if progress["pending_count"] > 0:
+        print("\nTip: run batch-upload --resume to continue remaining files, including retries for previous failures.")
 
     if getattr(args, "show_completed", False) and progress["completed_files"]:
         print("\n--- Completed Files ---")

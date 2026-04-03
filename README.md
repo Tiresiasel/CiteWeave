@@ -143,12 +143,17 @@ Upload and process all PDFs in a directory.
 
 ### `progress <directory>`
 
-Inspect or clear batch-upload progress tracking.
+Inspect or clear batch-upload progress tracking. The report distinguishes between retryable failed files and PDFs that have not been attempted yet, so resume decisions are less guesswork and more engineering.
 
 ```bash
 .venv/bin/python -m src.core.cli progress path/to/papers/
 .venv/bin/python -m src.core.cli progress path/to/papers/ --clear
 ```
+
+The text output now breaks remaining work into:
+- **Retryable failed files**: attempted previously, failed, and will be retried by `batch-upload --resume`
+- **Not started yet**: discovered PDFs with no tracker entry yet
+- **Pending files**: the union of both groups above
 
 ### `chat`
 
