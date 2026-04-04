@@ -105,6 +105,128 @@ class CliRoutesCommandTests(unittest.TestCase):
         self.assertEqual(json.loads(buf.getvalue()), expected)
 
 
+class CliProgressCommandTests(unittest.TestCase):
+    def test_handle_progress_command_supports_json_output(self):
+        cli = _load_cli_module()
+        expected = {
+            "directory": "/papers",
+            "cleared": False,
+            "total_pdf_files": 3,
+            "summary": {
+                "total_tracked": 2,
+                "completed": 1,
+                "failed": 1,
+                "success_rate": 50.0,
+                "completed_files": ["/papers/ok.pdf"],
+                "failed_files": {"/papers/bad.pdf": "parse error"},
+                "aggregate_stats": {
+                    "total_sentences": 10,
+                    "sentences_with_citations": 4,
+                    "total_citations": 7,
+                    "total_references": 8,
+                },
+                "last_completed": {
+                    "pdf_path": "/papers/ok.pdf",
+                    "paper_id": "paper-1",
+                    "processed_at": 123,
+                    "stats": {"total_sentences": 10},
+                },
+                "failure_reasons": [{"error": "parse error", "count": 1}],
+            },
+            "pending_count": 2,
+            "pending_files": ["/papers/bad.pdf", "/papers/pending.pdf"],
+            "not_started_count": 1,
+            "not_started_files": ["/papers/pending.pdf"],
+            "retryable_failed_count": 1,
+            "retryable_failed_files": ["/papers/bad.pdf"],
+            "completed_count": 1,
+            "completed_files": ["/papers/ok.pdf"],
+            "failed_count": 1,
+            "failed_files": {"/papers/bad.pdf": "parse error"},
+        }
+
+        class ExpectedKernel:
+            def progress_summary(self, directory, clear=False):
+                assert directory == "/papers"
+                assert clear is False
+                return expected
+
+        cli.CiteWeaveKernel = ExpectedKernel
+        original_isdir = cli.os.path.isdir
+        cli.os.path.isdir = lambda path: path == "/papers"
+        try:
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                cli.handle_progress_command(Namespace(directory="/papers", clear=False, json=True, show_completed=False))
+        finally:
+            cli.os.path.isdir = original_isdir
+
+        self.assertEqual(json.loads(buf.getvalue()), expected)
+
+    def test_handle_progress_command_text_output_is_actionable(self):
+        cli = _load_cli_module()
+        progress = {
+            "directory": "/papers",
+            "cleared": False,
+            "total_pdf_files": 3,
+            "summary": {
+                "total_tracked": 2,
+                "completed": 1,
+                "failed": 1,
+                "success_rate": 50.0,
+                "completed_files": ["/papers/ok.pdf"],
+                "failed_files": {"/papers/bad.pdf": "parse error"},
+                "aggregate_stats": {
+                    "total_sentences": 10,
+                    "sentences_with_citations": 4,
+                    "total_citations": 7,
+                    "total_references": 8,
+                },
+                "last_completed": {
+                    "pdf_path": "/papers/ok.pdf",
+                    "paper_id": "paper-1",
+                    "processed_at": 123,
+                    "stats": {"total_sentences": 10},
+                },
+                "failure_reasons": [{"error": "parse error", "count": 1}],
+            },
+            "pending_count": 2,
+            "pending_files": ["/papers/bad.pdf", "/papers/pending.pdf"],
+            "not_started_count": 1,
+            "not_started_files": ["/papers/pending.pdf"],
+            "retryable_failed_count": 1,
+            "retryable_failed_files": ["/papers/bad.pdf"],
+            "completed_count": 1,
+            "completed_files": ["/papers/ok.pdf"],
+            "failed_count": 1,
+            "failed_files": {"/papers/bad.pdf": "parse error"},
+        }
+
+        class ExpectedKernel:
+            def progress_summary(self, directory, clear=False):
+                return progress
+
+        cli.CiteWeaveKernel = ExpectedKernel
+        original_isdir = cli.os.path.isdir
+        cli.os.path.isdir = lambda path: True
+        try:
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                cli.handle_progress_command(Namespace(directory="/papers", clear=False, json=False, show_completed=True))
+        finally:
+            cli.os.path.isdir = original_isdir
+
+        output = buf.getvalue()
+        self.assertIn("Pending / resumable: 2", output)
+        self.assertIn("Not started yet: 1", output)
+        self.assertIn("Retryable failed files: 1", output)
+        self.assertIn("Total sentences processed: 10", output)
+        self.assertIn("1 × parse error", output)
+        self.assertIn("Tip: run batch-upload --resume", output)
+        self.assertIn("Completed Files", output)
+        self.assertIn("ok.pdf", output)
+
+
 class CliHealthAndBootstrapCommandTests(unittest.TestCase):
     def test_handle_health_command_supports_json_output(self):
         cli = _load_cli_module()
@@ -208,6 +330,13 @@ class CliHealthAndBootstrapCommandTests(unittest.TestCase):
             cli.handle_bootstrap_plan_command(Namespace(json=True))
 
         self.assertEqual(json.loads(buf.getvalue()), expected)
+
+
+class RepoHygieneTests(unittest.TestCase):
+    def test_gitignore_explicitly_ignores_test_files_runtime_artifacts(self):
+        gitignore = (CLI_PATH.parents[2] / ".gitignore").read_text(encoding="utf-8")
+        self.assertIn("test_files/*", gitignore)
+        self.assertIn("!test_files/README.md", gitignore)
 
 
 if __name__ == "__main__":

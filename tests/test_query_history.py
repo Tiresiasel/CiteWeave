@@ -1,0 +1,138 @@
+import importlib.util
+import json
+import os
+import sys
+import tempfile
+import types
+import uuid
+from pathlib import Path
+
+
+QUERY_HISTORY_PATH = Path(__file__).resolve().parents[1] / "src" / "kernel" / "query_history.py"
+SERVICE_PATH = Path(__file__).resolve().parents[1] / "src" / "kernel" / "service.py"
+
+
+def _load_module(path: Path, module_name: str):
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+def _stub_module(name: str, **attrs):
+    module = types.ModuleType(name)
+    for key, value in attrs.items():
+        setattr(module, key, value)
+    sys.modules[name] = module
+    return module
+
+
+def test_query_history_recorder_appends_jsonl_entries():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        recorder.record({"question": "What cites Porter (1980)?", "status": "success"})
+        recorder.record({"question": "Who refutes RBV?", "status": "error"})
+
+        rows = [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines()]
+        assert rows == [
+            {"question": "What cites Porter (1980)?", "status": "success"},
+            {"question": "Who refutes RBV?", "status": "error"},
+        ]
+
+
+def test_kernel_query_records_success_metrics_to_history_file():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"src.kernel.query_history_{uuid.uuid4().hex}")
+
+    class DummyDocumentProcessor:
+        pass
+
+    class DummyResearchSystem:
+        def research_question(self, question, confirmation):
+            assert question == "Summarize Porter's theory"
+            assert confirmation == "continue"
+            return "Competitive advantage summary"
+
+    _stub_module("src", __path__=[])
+    _stub_module("src.processing", __path__=[])
+    _stub_module("src.processing.pdf", __path__=[])
+    _stub_module("src.processing.pdf.document_processor", DocumentProcessor=DummyDocumentProcessor)
+    _stub_module("src.agents", __path__=[])
+    _stub_module("src.agents.multi_agent_research_system", LangGraphResearchSystem=DummyResearchSystem)
+    _stub_module("src.agents.routing", active_route_configuration=lambda: {"default_route": "vector_search"})
+    _stub_module("src.kernel", __path__=[])
+    sys.modules["src.kernel.query_history"] = query_history
+
+    service = _load_module(SERVICE_PATH, f"src.kernel.service_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        os.environ["CITEWEAVE_QUERY_HISTORY_FILE"] = str(log_path)
+        try:
+            kernel = service.CiteWeaveKernel()
+            response = kernel.query("Summarize Porter's theory")
+        finally:
+            os.environ.pop("CITEWEAVE_QUERY_HISTORY_FILE", None)
+
+        assert response == "Competitive advantage summary"
+        rows = [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines()]
+        assert len(rows) == 1
+        entry = rows[0]
+        assert entry["question"] == "Summarize Porter's theory"
+        assert entry["confirmation"] == "continue"
+        assert entry["status"] == "success"
+        assert entry["response_chars"] == len("Competitive advantage summary")
+        assert entry["response_preview"] == "Competitive advantage summary"
+        assert entry["satisfaction"] is None
+        assert isinstance(entry["duration_ms"], int)
+        assert entry["duration_ms"] >= 0
+
+
+def test_kernel_query_records_failures_before_reraising():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"src.kernel.query_history_{uuid.uuid4().hex}")
+
+    class DummyDocumentProcessor:
+        pass
+
+    class DummyResearchSystem:
+        def research_question(self, question, confirmation):
+            raise RuntimeError("llm unavailable")
+
+    _stub_module("src", __path__=[])
+    _stub_module("src.processing", __path__=[])
+    _stub_module("src.processing.pdf", __path__=[])
+    _stub_module("src.processing.pdf.document_processor", DocumentProcessor=DummyDocumentProcessor)
+    _stub_module("src.agents", __path__=[])
+    _stub_module("src.agents.multi_agent_research_system", LangGraphResearchSystem=DummyResearchSystem)
+    _stub_module("src.agents.routing", active_route_configuration=lambda: {"default_route": "vector_search"})
+    _stub_module("src.kernel", __path__=[])
+    sys.modules["src.kernel.query_history"] = query_history
+
+    service = _load_module(SERVICE_PATH, f"src.kernel.service_failure_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        os.environ["CITEWEAVE_QUERY_HISTORY_FILE"] = str(log_path)
+        try:
+            kernel = service.CiteWeaveKernel()
+            try:
+                kernel.query("Why is the model down?")
+                assert False, "expected RuntimeError"
+            except RuntimeError as exc:
+                assert str(exc) == "llm unavailable"
+        finally:
+            os.environ.pop("CITEWEAVE_QUERY_HISTORY_FILE", None)
+
+        rows = [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines()]
+        assert len(rows) == 1
+        entry = rows[0]
+        assert entry["question"] == "Why is the model down?"
+        assert entry["status"] == "error"
+        assert entry["error"] == "llm unavailable"
+        assert entry["response_chars"] == 0
+        assert entry["response_preview"] == ""
+        assert entry["satisfaction"] is None

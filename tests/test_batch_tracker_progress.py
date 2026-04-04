@@ -9,6 +9,7 @@ from pathlib import Path
 
 BATCH_TRACKER_PATH = Path(__file__).resolve().parents[1] / "src" / "kernel" / "batch_tracker.py"
 SERVICE_PATH = Path(__file__).resolve().parents[1] / "src" / "kernel" / "service.py"
+QUERY_HISTORY_PATH = Path(__file__).resolve().parents[1] / "src" / "kernel" / "query_history.py"
 
 
 def _load_module(path: Path, prefix: str, module_name: str | None = None):
@@ -101,6 +102,12 @@ def test_kernel_batch_upload_preserves_tracker_aggregate_stats():
     _stub_module("src.agents.routing", active_route_configuration=lambda: {"default_route": "vector_search"})
     _stub_module("src.kernel", __path__=[])
     sys.modules["src.kernel.batch_tracker"] = batch_tracker
+    query_history = _load_module(
+        QUERY_HISTORY_PATH,
+        "query_history",
+        module_name=f"src.kernel.query_history_upload_{uuid.uuid4().hex}",
+    )
+    sys.modules["src.kernel.query_history"] = query_history
 
     service = _load_module(
         SERVICE_PATH,
@@ -157,6 +164,12 @@ def test_kernel_progress_summary_returns_actionable_breakdown():
     _stub_module("src.agents.routing", active_route_configuration=lambda: {"default_route": "vector_search"})
     _stub_module("src.kernel", __path__=[])
     sys.modules["src.kernel.batch_tracker"] = batch_tracker
+    query_history = _load_module(
+        QUERY_HISTORY_PATH,
+        "query_history",
+        module_name=f"src.kernel.query_history_test_{uuid.uuid4().hex}",
+    )
+    sys.modules["src.kernel.query_history"] = query_history
 
     service = _load_module(
         SERVICE_PATH,

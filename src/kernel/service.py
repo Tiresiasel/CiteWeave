@@ -19,6 +19,7 @@ from src.processing.pdf.document_processor import DocumentProcessor
 from src.agents.multi_agent_research_system import LangGraphResearchSystem
 from src.agents.routing import active_route_configuration
 from .batch_tracker import BatchUploadTracker
+from .query_history import QueryHistoryRecorder
 
 
 class CiteWeaveKernel:
@@ -47,7 +48,40 @@ class CiteWeaveKernel:
         return self.document_processor.diagnose_document_processing(pdf_path)
 
     def query(self, question: str, confirmation: str = "continue") -> str:
-        return self.research_system.research_question(question, confirmation)
+        started_at = time.time()
+        recorder = QueryHistoryRecorder()
+
+        try:
+            response = self.research_system.research_question(question, confirmation)
+        except Exception as exc:
+            recorder.record(
+                {
+                    "timestamp": started_at,
+                    "question": question,
+                    "confirmation": confirmation,
+                    "status": "error",
+                    "duration_ms": int((time.time() - started_at) * 1000),
+                    "response_chars": 0,
+                    "response_preview": "",
+                    "error": str(exc),
+                    "satisfaction": None,
+                }
+            )
+            raise
+
+        recorder.record(
+            {
+                "timestamp": started_at,
+                "question": question,
+                "confirmation": confirmation,
+                "status": "success",
+                "duration_ms": int((time.time() - started_at) * 1000),
+                "response_chars": len(response),
+                "response_preview": response[:500],
+                "satisfaction": None,
+            }
+        )
+        return response
 
     def start_chat_system(self) -> LangGraphResearchSystem:
         return self.research_system
