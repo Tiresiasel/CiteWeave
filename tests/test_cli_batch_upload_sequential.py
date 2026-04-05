@@ -112,6 +112,8 @@ class CliBatchUploadSequentialTests(unittest.TestCase):
         self.assertEqual(result_data["total_citations"], 7)
         self.assertEqual(result_data["total_references"], 9)
         self.assertIn("processing_time", result_data)
+        self.assertIn("processed_at", result_data)
+        self.assertIn("duration_seconds", result_data)
 
 
 if __name__ == "__main__":

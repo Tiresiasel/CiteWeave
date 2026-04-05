@@ -56,11 +56,14 @@ class BatchUploadTracker:
             json.dump(all_data, f, indent=2, ensure_ascii=False)
 
     def mark_file_completed(self, pdf_path: str, result_data: Dict[str, Any]) -> None:
+        processed_at = result_data.get("processed_at", result_data.get("processing_time"))
+        duration_seconds = result_data.get("duration_seconds")
         self.progress_data[pdf_path] = {
             "status": _STATUS_COMPLETED,
             "directory": self.directory,
             "paper_id": result_data.get("paper_id"),
-            "processed_at": result_data.get("processing_time"),
+            "processed_at": processed_at,
+            "duration_seconds": float(duration_seconds) if duration_seconds is not None else None,
             "stats": {
                 "total_sentences": result_data.get("total_sentences", 0),
                 "sentences_with_citations": result_data.get("sentences_with_citations", 0),
@@ -117,12 +120,19 @@ class BatchUploadTracker:
             "total_references": 0,
         }
         last_completed = None
+        total_duration_seconds = 0.0
+        completed_with_duration = 0
         for path, entry in completed_entries.items():
             stats = entry.get("stats", {})
             aggregate_stats["total_sentences"] += int(stats.get("total_sentences", 0) or 0)
             aggregate_stats["sentences_with_citations"] += int(stats.get("sentences_with_citations", 0) or 0)
             aggregate_stats["total_citations"] += int(stats.get("total_citations", 0) or 0)
             aggregate_stats["total_references"] += int(stats.get("total_references", 0) or 0)
+
+            duration_seconds = entry.get("duration_seconds")
+            if duration_seconds is not None:
+                total_duration_seconds += float(duration_seconds)
+                completed_with_duration += 1
 
             processed_at = entry.get("processed_at")
             if processed_at is None:
@@ -132,6 +142,7 @@ class BatchUploadTracker:
                     "pdf_path": path,
                     "paper_id": entry.get("paper_id"),
                     "processed_at": processed_at,
+                    "duration_seconds": duration_seconds,
                     "stats": stats,
                 }
 
@@ -151,6 +162,8 @@ class BatchUploadTracker:
                 for path, entry in sorted(failed_entries.items())
             },
             "aggregate_stats": aggregate_stats,
+            "total_completed_duration_seconds": round(total_duration_seconds, 3),
+            "average_completed_duration_seconds": round(total_duration_seconds / completed_with_duration, 3) if completed_with_duration else None,
             "last_completed": last_completed,
             "failure_reasons": [
                 {"error": error, "count": count}

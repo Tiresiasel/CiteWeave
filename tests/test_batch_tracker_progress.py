@@ -42,6 +42,7 @@ def test_batch_tracker_summary_includes_completed_and_failed_files():
             {
                 "paper_id": "paper-1",
                 "processing_time": 1234567890,
+                "duration_seconds": 3.5,
                 "total_sentences": 20,
                 "sentences_with_citations": 5,
                 "total_citations": 8,
@@ -62,12 +63,16 @@ def test_batch_tracker_summary_includes_completed_and_failed_files():
             "total_citations": 8,
             "total_references": 10,
         }
+        assert summary["total_completed_duration_seconds"] == 3.5
+        assert summary["average_completed_duration_seconds"] == 3.5
         assert summary["last_completed"]["pdf_path"] == "/papers/ok.pdf"
         assert summary["last_completed"]["paper_id"] == "paper-1"
+        assert summary["last_completed"]["duration_seconds"] == 3.5
         assert summary["failure_reasons"] == [{"error": "grobid timeout", "count": 1}]
 
         persisted = json.loads(tracker_file.read_text(encoding="utf-8"))
         assert persisted["/papers/ok.pdf"]["paper_id"] == "paper-1"
+        assert persisted["/papers/ok.pdf"]["duration_seconds"] == 3.5
         assert persisted["/papers/bad.pdf"]["error"] == "grobid timeout"
 
 
@@ -139,6 +144,7 @@ def test_kernel_batch_upload_preserves_tracker_aggregate_stats():
             "total_citations": 11,
             "total_references": 13,
         }
+        assert summary["average_completed_duration_seconds"] is not None
         assert summary["last_completed"]["paper_id"] == "paper-1"
 
 
@@ -188,7 +194,7 @@ def test_kernel_progress_summary_returns_actionable_breakdown():
         tracker = batch_tracker.BatchUploadTracker(str(pdf_dir), tracker_file=str(tracker_file))
         tracker.mark_file_completed(
             str(pdf_dir / "ok.pdf"),
-            {"paper_id": "paper-1", "processing_time": 1, "total_sentences": 10, "total_citations": 2},
+            {"paper_id": "paper-1", "processing_time": 1, "duration_seconds": 4.0, "total_sentences": 10, "total_citations": 2},
         )
         tracker.mark_file_failed(str(pdf_dir / "bad.pdf"), "parse error")
 
@@ -219,6 +225,8 @@ def test_kernel_progress_summary_returns_actionable_breakdown():
             str(pdf_dir / "bad.pdf"),
             str(pdf_dir / "pending.pdf"),
         ])
+        assert progress["average_completed_duration_seconds"] == 4.0
+        assert progress["estimated_remaining_seconds"] == 8.0
         assert progress["summary"]["aggregate_stats"] == {
             "total_sentences": 10,
             "sentences_with_citations": 0,
@@ -226,4 +234,5 @@ def test_kernel_progress_summary_returns_actionable_breakdown():
             "total_references": 0,
         }
         assert progress["summary"]["last_completed"]["pdf_path"] == str(pdf_dir / "ok.pdf")
+        assert progress["summary"]["last_completed"]["duration_seconds"] == 4.0
         assert progress["summary"]["failure_reasons"] == [{"error": "parse error", "count": 1}]

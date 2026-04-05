@@ -18,6 +18,10 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-04-05**
+- **batch progress ETA & throughput diagnostics**: extended batch upload tracking to record per-file processing duration, surface average completed time per file, and estimate remaining wall time in `progress` output/JSON so long-running PDF ingests are easier to monitor and resume.
+- **test coverage**: added regression coverage for duration persistence, progress ETA calculation, and enriched sequential batch tracker payloads.
+
 ## **2025-07-22**
 - **information-collection summary**: Fix the infomration collection summary issue.
 - **ai_evaluate_sufficiency-agent**: A new agent that is responsible for judging if the information gathered is sufficient to answer the user's question.

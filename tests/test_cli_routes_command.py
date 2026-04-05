@@ -125,10 +125,13 @@ class CliProgressCommandTests(unittest.TestCase):
                     "total_citations": 7,
                     "total_references": 8,
                 },
+                "total_completed_duration_seconds": 5.0,
+                "average_completed_duration_seconds": 5.0,
                 "last_completed": {
                     "pdf_path": "/papers/ok.pdf",
                     "paper_id": "paper-1",
                     "processed_at": 123,
+                    "duration_seconds": 5.0,
                     "stats": {"total_sentences": 10},
                 },
                 "failure_reasons": [{"error": "parse error", "count": 1}],
@@ -143,6 +146,8 @@ class CliProgressCommandTests(unittest.TestCase):
             "completed_files": ["/papers/ok.pdf"],
             "failed_count": 1,
             "failed_files": {"/papers/bad.pdf": "parse error"},
+            "average_completed_duration_seconds": 5.0,
+            "estimated_remaining_seconds": 10.0,
         }
 
         class ExpectedKernel:
@@ -182,10 +187,13 @@ class CliProgressCommandTests(unittest.TestCase):
                     "total_citations": 7,
                     "total_references": 8,
                 },
+                "total_completed_duration_seconds": 5.0,
+                "average_completed_duration_seconds": 5.0,
                 "last_completed": {
                     "pdf_path": "/papers/ok.pdf",
                     "paper_id": "paper-1",
                     "processed_at": 123,
+                    "duration_seconds": 5.0,
                     "stats": {"total_sentences": 10},
                 },
                 "failure_reasons": [{"error": "parse error", "count": 1}],
@@ -200,6 +208,8 @@ class CliProgressCommandTests(unittest.TestCase):
             "completed_files": ["/papers/ok.pdf"],
             "failed_count": 1,
             "failed_files": {"/papers/bad.pdf": "parse error"},
+            "average_completed_duration_seconds": 5.0,
+            "estimated_remaining_seconds": 10.0,
         }
 
         class ExpectedKernel:
@@ -220,6 +230,8 @@ class CliProgressCommandTests(unittest.TestCase):
         self.assertIn("Pending / resumable: 2", output)
         self.assertIn("Not started yet: 1", output)
         self.assertIn("Retryable failed files: 1", output)
+        self.assertIn("Observed average time per completed file: 5.0s", output)
+        self.assertIn("Estimated remaining wall time: 10.0s", output)
         self.assertIn("Total sentences processed: 10", output)
         self.assertIn("1 × parse error", output)
         self.assertIn("Tip: run batch-upload --resume", output)

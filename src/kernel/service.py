@@ -108,13 +108,17 @@ class CiteWeaveKernel:
         processed = []
         failed = []
         for pdf_path in pending_files:
+            started_at = time.time()
             try:
                 result = self.upload_document(pdf_path, save_results=True)
+                finished_at = time.time()
                 stats = result.get("processing_stats", {})
                 compact = {
                     "pdf_path": pdf_path,
                     "paper_id": result.get("paper_id"),
-                    "processing_time": time.time(),
+                    "processed_at": finished_at,
+                    "processing_time": finished_at,
+                    "duration_seconds": round(finished_at - started_at, 3),
                     "total_sentences": stats.get("total_sentences", 0),
                     "sentences_with_citations": stats.get("sentences_with_citations", 0),
                     "total_citations": stats.get("total_citations", 0),
@@ -227,6 +231,10 @@ class CiteWeaveKernel:
         failed_paths = set(failed_files.keys())
         not_started_files = sorted(pdf_path for pdf_path in all_files if pdf_path not in tracker.progress_data)
         retryable_failed_files = sorted(pdf_path for pdf_path in all_files if pdf_path in failed_paths)
+        average_completed_duration_seconds = summary.get("average_completed_duration_seconds")
+        estimated_remaining_seconds = None
+        if average_completed_duration_seconds is not None and pending_files:
+            estimated_remaining_seconds = round(float(average_completed_duration_seconds) * len(pending_files), 3)
 
         return {
             "directory": directory,
@@ -243,4 +251,6 @@ class CiteWeaveKernel:
             "completed_files": summary["completed_files"],
             "failed_count": summary["failed"],
             "failed_files": failed_files,
+            "average_completed_duration_seconds": average_completed_duration_seconds,
+            "estimated_remaining_seconds": estimated_remaining_seconds,
         }

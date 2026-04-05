@@ -65,7 +65,8 @@ def process_single_pdf_worker(pdf_path, diagnose=False, force=False):
     """
     try:
         logging.info(f"START: Processing PDF file {pdf_path}")
-        
+        started_at = time.time()
+
         # Initialize the document processor in the worker process
         doc_processor = DocumentProcessor()
         
@@ -74,6 +75,7 @@ def process_single_pdf_worker(pdf_path, diagnose=False, force=False):
         
         # Return success with basic stats
         stats = results.get('processing_stats', {})
+        finished_at = time.time()
         result_data = {
             'status': 'success',
             'pdf_path': pdf_path,
@@ -82,7 +84,9 @@ def process_single_pdf_worker(pdf_path, diagnose=False, force=False):
             'sentences_with_citations': stats.get('sentences_with_citations', 0),
             'total_citations': stats.get('total_citations', 0),
             'total_references': stats.get('total_references', 0),
-            'processing_time': time.time()  # Add timestamp for tracking
+            'processed_at': finished_at,
+            'processing_time': finished_at,
+            'duration_seconds': round(finished_at - started_at, 3),
         }
         
         logging.info(f"FINISH: Successfully processed {pdf_path} - Paper ID: {result_data['paper_id']}, Sentences: {result_data['total_sentences']}, Citations: {result_data['total_citations']}")
@@ -468,6 +472,7 @@ def process_files_sequentially(pdf_files, tracker):
 
     for idx, pdf_path in enumerate(pdf_files, 1):
         print(f"\n[{idx}/{len(pdf_files)}] Processing: {pdf_path}")
+        started_at = time.time()
         try:
             print(f"Processing document: {pdf_path}")
             results = kernel.upload_document(pdf_path, save_results=True)
@@ -493,11 +498,14 @@ def process_files_sequentially(pdf_files, tracker):
                         ref = cite.get('reference', {})
                         print(f"   → {cite.get('intext', '')} → {ref.get('title', 'Unknown')[:50]}... ({ref.get('year', 'Unknown')})")
 
+            finished_at = time.time()
             tracker.mark_file_completed(
                 pdf_path,
                 {
                     'paper_id': results.get('paper_id'),
-                    'processing_time': time.time(),
+                    'processed_at': finished_at,
+                    'processing_time': finished_at,
+                    'duration_seconds': round(finished_at - started_at, 3),
                     'total_sentences': stats.get('total_sentences', 0),
                     'sentences_with_citations': stats.get('sentences_with_citations', 0),
                     'total_citations': stats.get('total_citations', 0),
@@ -600,6 +608,13 @@ def handle_progress_command(args):
     print(f"  • Not started yet: {progress['not_started_count']}")
     print(f"  • Retryable failed files: {progress['retryable_failed_count']}")
     print(f"Success rate: {summary['success_rate']:.1f}%")
+
+    average_completed_duration_seconds = progress.get("average_completed_duration_seconds")
+    estimated_remaining_seconds = progress.get("estimated_remaining_seconds")
+    if average_completed_duration_seconds is not None:
+        print(f"Observed average time per completed file: {average_completed_duration_seconds:.1f}s")
+    if estimated_remaining_seconds is not None:
+        print(f"Estimated remaining wall time: {estimated_remaining_seconds:.1f}s")
 
     aggregate_stats = summary.get("aggregate_stats", {})
     if aggregate_stats:
