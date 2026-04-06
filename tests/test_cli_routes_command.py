@@ -45,6 +45,22 @@ def _load_cli_module():
                 "addon_config_issues": [],
             }
 
+        def query_history_snapshot(self, limit=10):
+            return {
+                "log_file": "data/query_history.jsonl",
+                "requested_limit": limit,
+                "entries_returned": 0,
+                "entries_considered": 0,
+                "success_count": 0,
+                "error_count": 0,
+                "corrupt_count": 0,
+                "average_duration_ms": None,
+                "max_duration_ms": None,
+                "latest_status": None,
+                "latest_question": None,
+                "entries": [],
+            }
+
     _stub_module("prompt_toolkit", prompt=lambda *args, **kwargs: "")
     _stub_module("src", __path__=[])
     _stub_module("src.processing", __path__=[])
@@ -237,6 +253,81 @@ class CliProgressCommandTests(unittest.TestCase):
         self.assertIn("Tip: run batch-upload --resume", output)
         self.assertIn("Completed Files", output)
         self.assertIn("ok.pdf", output)
+
+
+class CliQueryHistoryCommandTests(unittest.TestCase):
+    def test_handle_query_history_command_supports_json_output(self):
+        cli = _load_cli_module()
+        expected = {
+            "log_file": "data/query_history.jsonl",
+            "requested_limit": 5,
+            "entries_returned": 2,
+            "entries_considered": 2,
+            "success_count": 1,
+            "error_count": 1,
+            "corrupt_count": 0,
+            "average_duration_ms": 175.0,
+            "max_duration_ms": 250,
+            "latest_status": "error",
+            "latest_question": "Why did retrieval fail?",
+            "entries": [
+                {"status": "error", "question": "Why did retrieval fail?", "duration_ms": 250},
+                {"status": "success", "question": "Summarize Porter", "duration_ms": 100},
+            ],
+        }
+
+        class ExpectedKernel:
+            def query_history_snapshot(self, limit=10):
+                assert limit == 5
+                return expected
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            cli.handle_query_history_command(Namespace(limit=5, json=True))
+
+        self.assertEqual(json.loads(buf.getvalue()), expected)
+
+    def test_handle_query_history_command_text_output_is_actionable(self):
+        cli = _load_cli_module()
+        expected = {
+            "log_file": "data/query_history.jsonl",
+            "requested_limit": 2,
+            "entries_returned": 2,
+            "entries_considered": 2,
+            "success_count": 1,
+            "error_count": 1,
+            "corrupt_count": 0,
+            "average_duration_ms": 175.0,
+            "max_duration_ms": 250,
+            "latest_status": "error",
+            "latest_question": "Why did retrieval fail?",
+            "entries": [
+                {"status": "error", "question": "Why did retrieval fail?", "duration_ms": 250},
+                {"status": "success", "question": "Summarize Porter", "duration_ms": 100},
+            ],
+        }
+
+        class ExpectedKernel:
+            def query_history_snapshot(self, limit=10):
+                assert limit == 2
+                return expected
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            cli.handle_query_history_command(Namespace(limit=2, json=False))
+
+        output = buf.getvalue()
+        self.assertIn("Successful queries: 1", output)
+        self.assertIn("Failed queries: 1", output)
+        self.assertIn("Average duration: 175.0 ms", output)
+        self.assertIn("Slowest query: 250 ms", output)
+        self.assertIn("Latest query: error — Why did retrieval fail?", output)
+        self.assertIn("[error] (250 ms) Why did retrieval fail?", output)
+        self.assertIn("[success] (100 ms) Summarize Porter", output)
 
 
 class CliHealthAndBootstrapCommandTests(unittest.TestCase):

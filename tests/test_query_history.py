@@ -45,6 +45,39 @@ def test_query_history_recorder_appends_jsonl_entries():
         ]
 
 
+def test_query_history_summary_reports_recent_metrics_and_corrupt_rows():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_summary_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        log_path.write_text(
+            "\n".join(
+                [
+                    json.dumps({"question": "old success", "status": "success", "duration_ms": 100}),
+                    "{not-json}",
+                    json.dumps({"question": "latest error", "status": "error", "duration_ms": 250}),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        summary = recorder.summary(limit=3)
+
+        assert summary["entries_returned"] == 3
+        assert summary["entries_considered"] == 2
+        assert summary["success_count"] == 1
+        assert summary["error_count"] == 1
+        assert summary["corrupt_count"] == 1
+        assert summary["average_duration_ms"] == 175.0
+        assert summary["max_duration_ms"] == 250
+        assert summary["latest_status"] == "error"
+        assert summary["latest_question"] == "latest error"
+        assert summary["entries"][0]["question"] == "latest error"
+        assert summary["entries"][1]["status"] == "corrupt"
+
+
 def test_kernel_query_records_success_metrics_to_history_file():
     query_history = _load_module(QUERY_HISTORY_PATH, f"src.kernel.query_history_{uuid.uuid4().hex}")
 
@@ -65,6 +98,7 @@ def test_kernel_query_records_success_metrics_to_history_file():
     _stub_module("src.agents.multi_agent_research_system", LangGraphResearchSystem=DummyResearchSystem)
     _stub_module("src.agents.routing", active_route_configuration=lambda: {"default_route": "vector_search"})
     _stub_module("src.kernel", __path__=[])
+    _stub_module("src.kernel.batch_tracker", BatchUploadTracker=object)
     sys.modules["src.kernel.query_history"] = query_history
 
     service = _load_module(SERVICE_PATH, f"src.kernel.service_{uuid.uuid4().hex}")
@@ -110,6 +144,7 @@ def test_kernel_query_records_failures_before_reraising():
     _stub_module("src.agents.multi_agent_research_system", LangGraphResearchSystem=DummyResearchSystem)
     _stub_module("src.agents.routing", active_route_configuration=lambda: {"default_route": "vector_search"})
     _stub_module("src.kernel", __path__=[])
+    _stub_module("src.kernel.batch_tracker", BatchUploadTracker=object)
     sys.modules["src.kernel.query_history"] = query_history
 
     service = _load_module(SERVICE_PATH, f"src.kernel.service_failure_{uuid.uuid4().hex}")

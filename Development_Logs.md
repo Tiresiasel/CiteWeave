@@ -18,6 +18,10 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-04-06**
+- **query history inspection**: added a first-class `query-history` CLI command and kernel snapshot so recent query telemetry can be reviewed without reading raw JSONL by hand; includes recent entries, success/error counts, and latency summary for daily UX iteration.
+- **test coverage**: added regression tests for query-history summaries, corrupt-row handling, and actionable CLI output.
+
 ## **2026-04-05**
 - **batch progress ETA & throughput diagnostics**: extended batch upload tracking to record per-file processing duration, surface average completed time per file, and estimate remaining wall time in `progress` output/JSON so long-running PDF ingests are easier to monitor and resume.
 - **test coverage**: added regression coverage for duration persistence, progress ETA calculation, and enriched sequential batch tracker payloads.

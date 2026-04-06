@@ -53,6 +53,7 @@ Current CLI commands available on this branch:
 - `routes`
 - `health`
 - `bootstrap-plan`
+- `query-history`
 
 ### Local CLI mode (no OpenClaw needed)
 
@@ -73,6 +74,7 @@ Then run CiteWeave through the project virtualenv:
 .venv/bin/python -m src.core.cli routes
 .venv/bin/python -m src.core.cli health
 .venv/bin/python -m src.core.cli bootstrap-plan
+.venv/bin/python -m src.core.cli query-history --limit 20
 .venv/bin/python -m src.core.cli chat
 ```
 
@@ -202,6 +204,17 @@ other docs.
 ```bash
 .venv/bin/python -m src.core.cli bootstrap-plan
 .venv/bin/python -m src.core.cli bootstrap-plan --json
+```
+
+### `query-history`
+
+Inspect recent query telemetry from the local JSONL history log. This is useful
+for spotting slow or failed research runs without opening the raw log file.
+
+```bash
+.venv/bin/python -m src.core.cli query-history
+.venv/bin/python -m src.core.cli query-history --limit 20
+.venv/bin/python -m src.core.cli query-history --json
 ```
 
 ---
