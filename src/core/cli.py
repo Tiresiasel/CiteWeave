@@ -164,6 +164,7 @@ def main():
     # Query history command
     query_history_parser = subparsers.add_parser("query-history", help="Inspect recent query telemetry from the local JSONL history log.")
     query_history_parser.add_argument("--limit", type=int, default=10, help="How many recent query records to include (default: 10).")
+    query_history_parser.add_argument("--status", choices=["all", "success", "error", "corrupt"], default="all", help="Filter to a specific query status (default: all).")
     query_history_parser.add_argument("--json", action="store_true", help="Print machine-readable query history as JSON.")
 
     args = parser.parse_args()
@@ -818,7 +819,10 @@ def handle_bootstrap_plan_command(args):
 def handle_query_history_command(args):
     """Display recent query telemetry from the local query history log."""
     kernel = CiteWeaveKernel()
-    snapshot = kernel.query_history_snapshot(limit=max(0, getattr(args, "limit", 10)))
+    snapshot = kernel.query_history_snapshot(
+        limit=max(0, getattr(args, "limit", 10)),
+        status=getattr(args, "status", "all") or "all",
+    )
 
     if getattr(args, "json", False):
         print(json.dumps(snapshot, indent=2, ensure_ascii=False, sort_keys=True))
@@ -827,6 +831,7 @@ def handle_query_history_command(args):
     print("\n=== CiteWeave Query History ===\n")
     print(f"Log file: {snapshot.get('log_file', '')}")
     print(f"Requested limit: {snapshot.get('requested_limit', 0)}")
+    print(f"Status filter: {snapshot.get('status_filter', 'all')}")
     print(f"Entries returned: {snapshot.get('entries_returned', 0)}")
     print(f"Successful queries: {snapshot.get('success_count', 0)}")
     print(f"Failed queries: {snapshot.get('error_count', 0)}")
@@ -842,7 +847,11 @@ def handle_query_history_command(args):
     latest_status = snapshot.get("latest_status")
     latest_question = snapshot.get("latest_question")
     if latest_status or latest_question:
-        print(f"Latest query: {latest_status or 'unknown'} — {latest_question or ''}")
+        print(f"Latest query: {latest_status or 'unknown'} - {latest_question or ''}")
+
+    latest_error = snapshot.get("latest_error")
+    if latest_error:
+        print(f"Latest error: {latest_error}")
 
     entries = snapshot.get("entries", [])
     if not entries:

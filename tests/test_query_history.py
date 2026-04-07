@@ -65,6 +65,7 @@ def test_query_history_summary_reports_recent_metrics_and_corrupt_rows():
         recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
         summary = recorder.summary(limit=3)
 
+        assert summary["status_filter"] == "all"
         assert summary["entries_returned"] == 3
         assert summary["entries_considered"] == 2
         assert summary["success_count"] == 1
@@ -74,8 +75,40 @@ def test_query_history_summary_reports_recent_metrics_and_corrupt_rows():
         assert summary["max_duration_ms"] == 250
         assert summary["latest_status"] == "error"
         assert summary["latest_question"] == "latest error"
+        assert summary["latest_error"] is None
         assert summary["entries"][0]["question"] == "latest error"
         assert summary["entries"][1]["status"] == "corrupt"
+
+
+def test_query_history_summary_can_filter_to_errors_only():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_filtered_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        log_path.write_text(
+            "\n".join(
+                [
+                    json.dumps({"question": "ok", "status": "success", "duration_ms": 100}),
+                    json.dumps({"question": "broken", "status": "error", "duration_ms": 250, "error": "timeout"}),
+                    json.dumps({"question": "still broken", "status": "error", "duration_ms": 300, "error": "rate limit"}),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        summary = recorder.summary(limit=2, status="error")
+
+        assert summary["status_filter"] == "error"
+        assert summary["entries_returned"] == 2
+        assert summary["entries_considered"] == 2
+        assert summary["success_count"] == 0
+        assert summary["error_count"] == 2
+        assert summary["latest_status"] == "error"
+        assert summary["latest_question"] == "still broken"
+        assert summary["latest_error"] == "rate limit"
+        assert [entry["question"] for entry in summary["entries"]] == ["still broken", "broken"]
 
 
 def test_kernel_query_records_success_metrics_to_history_file():

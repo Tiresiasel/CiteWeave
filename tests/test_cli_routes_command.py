@@ -45,10 +45,11 @@ def _load_cli_module():
                 "addon_config_issues": [],
             }
 
-        def query_history_snapshot(self, limit=10):
+        def query_history_snapshot(self, limit=10, status="all"):
             return {
                 "log_file": "data/query_history.jsonl",
                 "requested_limit": limit,
+                "status_filter": status,
                 "entries_returned": 0,
                 "entries_considered": 0,
                 "success_count": 0,
@@ -58,6 +59,7 @@ def _load_cli_module():
                 "max_duration_ms": None,
                 "latest_status": None,
                 "latest_question": None,
+                "latest_error": None,
                 "entries": [],
             }
 
@@ -261,31 +263,34 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         expected = {
             "log_file": "data/query_history.jsonl",
             "requested_limit": 5,
+            "status_filter": "error",
             "entries_returned": 2,
             "entries_considered": 2,
-            "success_count": 1,
-            "error_count": 1,
+            "success_count": 0,
+            "error_count": 2,
             "corrupt_count": 0,
-            "average_duration_ms": 175.0,
+            "average_duration_ms": 225.0,
             "max_duration_ms": 250,
             "latest_status": "error",
             "latest_question": "Why did retrieval fail?",
+            "latest_error": "retrieval unavailable",
             "entries": [
-                {"status": "error", "question": "Why did retrieval fail?", "duration_ms": 250},
-                {"status": "success", "question": "Summarize Porter", "duration_ms": 100},
+                {"status": "error", "question": "Why did retrieval fail?", "duration_ms": 250, "error": "retrieval unavailable"},
+                {"status": "error", "question": "Why did ranking fail?", "duration_ms": 200, "error": "timeout"},
             ],
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10):
+            def query_history_snapshot(self, limit=10, status="all"):
                 assert limit == 5
+                assert status == "error"
                 return expected
 
         cli.CiteWeaveKernel = ExpectedKernel
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=5, json=True))
+            cli.handle_query_history_command(Namespace(limit=5, status="error", json=True))
 
         self.assertEqual(json.loads(buf.getvalue()), expected)
 
@@ -294,6 +299,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         expected = {
             "log_file": "data/query_history.jsonl",
             "requested_limit": 2,
+            "status_filter": "all",
             "entries_returned": 2,
             "entries_considered": 2,
             "success_count": 1,
@@ -303,29 +309,33 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "max_duration_ms": 250,
             "latest_status": "error",
             "latest_question": "Why did retrieval fail?",
+            "latest_error": "retrieval unavailable",
             "entries": [
-                {"status": "error", "question": "Why did retrieval fail?", "duration_ms": 250},
+                {"status": "error", "question": "Why did retrieval fail?", "duration_ms": 250, "error": "retrieval unavailable"},
                 {"status": "success", "question": "Summarize Porter", "duration_ms": 100},
             ],
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10):
+            def query_history_snapshot(self, limit=10, status="all"):
                 assert limit == 2
+                assert status == "all"
                 return expected
 
         cli.CiteWeaveKernel = ExpectedKernel
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=2, json=False))
+            cli.handle_query_history_command(Namespace(limit=2, status="all", json=False))
 
         output = buf.getvalue()
+        self.assertIn("Status filter: all", output)
         self.assertIn("Successful queries: 1", output)
         self.assertIn("Failed queries: 1", output)
         self.assertIn("Average duration: 175.0 ms", output)
         self.assertIn("Slowest query: 250 ms", output)
-        self.assertIn("Latest query: error — Why did retrieval fail?", output)
+        self.assertIn("Latest query: error - Why did retrieval fail?", output)
+        self.assertIn("Latest error: retrieval unavailable", output)
         self.assertIn("[error] (250 ms) Why did retrieval fail?", output)
         self.assertIn("[success] (100 ms) Summarize Porter", output)
 

@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 class QueryHistoryRecorder:
@@ -43,23 +43,29 @@ class QueryHistoryRecorder:
                 })
         return entries
 
-    def recent_entries(self, limit: int = 10) -> List[Dict[str, Any]]:
+    def recent_entries(self, limit: int = 10, status: Optional[str] = None) -> List[Dict[str, Any]]:
         if limit <= 0:
             return []
+
         entries = self.load_entries()
+        if status and status != "all":
+            entries = [entry for entry in entries if entry.get("status") == status]
         return list(reversed(entries[-limit:]))
 
-    def summary(self, limit: int = 10) -> Dict[str, Any]:
-        recent = self.recent_entries(limit=limit)
+    def summary(self, limit: int = 10, status: Optional[str] = None) -> Dict[str, Any]:
+        status_filter = status or "all"
+        recent = self.recent_entries(limit=limit, status=status_filter)
         considered = [entry for entry in recent if entry.get("status") != "corrupt"]
         success_count = sum(1 for entry in considered if entry.get("status") == "success")
         error_count = sum(1 for entry in considered if entry.get("status") == "error")
         durations = [entry.get("duration_ms") for entry in considered if isinstance(entry.get("duration_ms"), int)]
         latest = considered[0] if considered else None
+        latest_error = next((entry for entry in recent if entry.get("status") == "error"), None)
 
         return {
             "log_file": str(self.log_file),
             "requested_limit": limit,
+            "status_filter": status_filter,
             "entries_returned": len(recent),
             "entries_considered": len(considered),
             "success_count": success_count,
@@ -69,5 +75,6 @@ class QueryHistoryRecorder:
             "max_duration_ms": max(durations) if durations else None,
             "latest_status": latest.get("status") if latest else None,
             "latest_question": latest.get("question") if latest else None,
+            "latest_error": latest_error.get("error") if latest_error else None,
             "entries": recent,
         }

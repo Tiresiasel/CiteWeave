@@ -255,6 +255,6 @@ class CiteWeaveKernel:
             "estimated_remaining_seconds": estimated_remaining_seconds,
         }
 
-    def query_history_snapshot(self, limit: int = 10) -> Dict[str, Any]:
+    def query_history_snapshot(self, limit: int = 10, status: str = "all") -> Dict[str, Any]:
         recorder = QueryHistoryRecorder()
-        return recorder.summary(limit=limit)
+        return recorder.summary(limit=limit, status=status)
