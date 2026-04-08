@@ -45,11 +45,12 @@ def _load_cli_module():
                 "addon_config_issues": [],
             }
 
-        def query_history_snapshot(self, limit=10, status="all"):
+        def query_history_snapshot(self, limit=10, status="all", since_hours=None):
             return {
                 "log_file": "data/query_history.jsonl",
                 "requested_limit": limit,
                 "status_filter": status,
+                "since_hours": since_hours,
                 "entries_returned": 0,
                 "entries_considered": 0,
                 "success_count": 0,
@@ -443,6 +444,53 @@ class CliHealthAndBootstrapCommandTests(unittest.TestCase):
             cli.handle_bootstrap_plan_command(Namespace(json=True))
 
         self.assertEqual(json.loads(buf.getvalue()), expected)
+
+
+class CliQueryHistoryCommandTests(unittest.TestCase):
+    def test_handle_query_history_command_passes_since_hours_to_kernel(self):
+        cli = _load_cli_module()
+
+        class ExpectedKernel:
+            def query_history_snapshot(self, limit=10, status="all", since_hours=None):
+                assert limit == 5
+                assert status == "error"
+                assert since_hours == 24
+                return {
+                    "log_file": "data/query_history.jsonl",
+                    "requested_limit": limit,
+                    "status_filter": status,
+                    "since_hours": since_hours,
+                    "entries_returned": 1,
+                    "entries_considered": 1,
+                    "success_count": 0,
+                    "error_count": 1,
+                    "corrupt_count": 0,
+                    "average_duration_ms": 123.0,
+                    "max_duration_ms": 123,
+                    "latest_status": "error",
+                    "latest_question": "recent failure",
+                    "latest_error": "timeout",
+                    "entries": [
+                        {
+                            "status": "error",
+                            "duration_ms": 123,
+                            "question": "recent failure",
+                            "timestamp": 1_800_000_000,
+                            "error": "timeout",
+                        }
+                    ],
+                }
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            cli.handle_query_history_command(Namespace(limit=5, status="error", since_hours=24, json=False))
+
+        output = buf.getvalue()
+        self.assertIn("Time window: last 24 hours", output)
+        self.assertIn("recent failure", output)
+        self.assertIn("timeout", output)
 
 
 class RepoHygieneTests(unittest.TestCase):

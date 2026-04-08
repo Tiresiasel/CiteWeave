@@ -18,6 +18,11 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-04-08**
+- **repo hygiene clarification**: documented the canonical `.gitignore` rule for `test_files/*` so consistency checks do not keep inventing punctuation as a feature.
+- **query history time-window inspection**: extended `query-history` with `--since-hours` and timestamp/relative-age output so recent telemetry windows can be reviewed directly from the CLI during daily iteration.
+- **test coverage**: added regression coverage for time-window filtering and query-history CLI output.
+
 ## **2026-04-06**
 - **query history inspection**: added a first-class `query-history` CLI command and kernel snapshot so recent query telemetry can be reviewed without reading raw JSONL by hand; includes recent entries, success/error counts, and latency summary for daily UX iteration.
 - **test coverage**: added regression tests for query-history summaries, corrupt-row handling, and actionable CLI output.

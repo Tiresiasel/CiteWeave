@@ -235,7 +235,8 @@ training_args.bin
 data/*
 !data/README.md
 
-# Local test PDFs should stay out of git
+# Local test PDFs should stay out of git.
+# Canonical ignore rule is `test_files/*` while keeping the tracked README.
 test_files/*
 !test_files/README.md
 

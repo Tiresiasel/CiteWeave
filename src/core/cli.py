@@ -12,6 +12,7 @@ import threading
 import time
 import multiprocessing
 import json
+from datetime import datetime, timezone
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
 from pathlib import Path
@@ -165,6 +166,7 @@ def main():
     query_history_parser = subparsers.add_parser("query-history", help="Inspect recent query telemetry from the local JSONL history log.")
     query_history_parser.add_argument("--limit", type=int, default=10, help="How many recent query records to include (default: 10).")
     query_history_parser.add_argument("--status", choices=["all", "success", "error", "corrupt"], default="all", help="Filter to a specific query status (default: all).")
+    query_history_parser.add_argument("--since-hours", type=float, default=None, help="Only include query records from the last N hours.")
     query_history_parser.add_argument("--json", action="store_true", help="Print machine-readable query history as JSON.")
 
     args = parser.parse_args()
@@ -816,12 +818,41 @@ def handle_bootstrap_plan_command(args):
     print()
 
 
+def _format_query_history_timestamp(timestamp):
+    if not isinstance(timestamp, (int, float)):
+        return ""
+    return datetime.fromtimestamp(timestamp, tz=timezone.utc).astimezone().strftime("%Y-%m-%d %H:%M:%S %Z")
+
+
+
+def _format_relative_age(timestamp):
+    if not isinstance(timestamp, (int, float)):
+        return ""
+
+    delta_seconds = max(0, int(time.time() - timestamp))
+    if delta_seconds < 60:
+        return "just now"
+    if delta_seconds < 3600:
+        minutes = delta_seconds // 60
+        return f"{minutes}m ago"
+    if delta_seconds < 86400:
+        hours = delta_seconds // 3600
+        minutes = (delta_seconds % 3600) // 60
+        return f"{hours}h {minutes}m ago" if minutes else f"{hours}h ago"
+    days = delta_seconds // 86400
+    hours = (delta_seconds % 86400) // 3600
+    return f"{days}d {hours}h ago" if hours else f"{days}d ago"
+
+
+
 def handle_query_history_command(args):
     """Display recent query telemetry from the local query history log."""
     kernel = CiteWeaveKernel()
+    since_hours = getattr(args, "since_hours", None)
     snapshot = kernel.query_history_snapshot(
         limit=max(0, getattr(args, "limit", 10)),
         status=getattr(args, "status", "all") or "all",
+        since_hours=since_hours,
     )
 
     if getattr(args, "json", False):
@@ -832,6 +863,8 @@ def handle_query_history_command(args):
     print(f"Log file: {snapshot.get('log_file', '')}")
     print(f"Requested limit: {snapshot.get('requested_limit', 0)}")
     print(f"Status filter: {snapshot.get('status_filter', 'all')}")
+    if snapshot.get("since_hours") is not None:
+        print(f"Time window: last {snapshot.get('since_hours')} hours")
     print(f"Entries returned: {snapshot.get('entries_returned', 0)}")
     print(f"Successful queries: {snapshot.get('success_count', 0)}")
     print(f"Failed queries: {snapshot.get('error_count', 0)}")
@@ -865,7 +898,11 @@ def handle_query_history_command(args):
         duration = entry.get("duration_ms")
         question = entry.get("question") or entry.get("raw_line") or ""
         duration_text = f" ({duration} ms)" if isinstance(duration, int) else ""
-        print(f"{idx}. [{status}]{duration_text} {question}")
+        timestamp_text = _format_query_history_timestamp(entry.get("timestamp"))
+        relative_age = _format_relative_age(entry.get("timestamp"))
+        when_text = f" at {timestamp_text}" if timestamp_text else ""
+        age_text = f" [{relative_age}]" if relative_age else ""
+        print(f"{idx}. [{status}]{duration_text}{when_text}{age_text} {question}")
 
     print()
 

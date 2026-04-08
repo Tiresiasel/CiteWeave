@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -43,18 +44,36 @@ class QueryHistoryRecorder:
                 })
         return entries
 
-    def recent_entries(self, limit: int = 10, status: Optional[str] = None) -> List[Dict[str, Any]]:
+    def recent_entries(
+        self,
+        limit: int = 10,
+        status: Optional[str] = None,
+        since_hours: Optional[float] = None,
+        now: Optional[float] = None,
+    ) -> List[Dict[str, Any]]:
         if limit <= 0:
             return []
 
         entries = self.load_entries()
         if status and status != "all":
             entries = [entry for entry in entries if entry.get("status") == status]
+        if since_hours is not None and since_hours >= 0:
+            cutoff = (time.time() if now is None else now) - (since_hours * 3600)
+            entries = [
+                entry for entry in entries
+                if isinstance(entry.get("timestamp"), (int, float)) and entry["timestamp"] >= cutoff
+            ]
         return list(reversed(entries[-limit:]))
 
-    def summary(self, limit: int = 10, status: Optional[str] = None) -> Dict[str, Any]:
+    def summary(
+        self,
+        limit: int = 10,
+        status: Optional[str] = None,
+        since_hours: Optional[float] = None,
+        now: Optional[float] = None,
+    ) -> Dict[str, Any]:
         status_filter = status or "all"
-        recent = self.recent_entries(limit=limit, status=status_filter)
+        recent = self.recent_entries(limit=limit, status=status_filter, since_hours=since_hours, now=now)
         considered = [entry for entry in recent if entry.get("status") != "corrupt"]
         success_count = sum(1 for entry in considered if entry.get("status") == "success")
         error_count = sum(1 for entry in considered if entry.get("status") == "error")
@@ -68,6 +87,7 @@ class QueryHistoryRecorder:
             "status_filter": status_filter,
             "entries_returned": len(recent),
             "entries_considered": len(considered),
+            "since_hours": since_hours,
             "success_count": success_count,
             "error_count": error_count,
             "corrupt_count": len(recent) - len(considered),

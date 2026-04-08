@@ -111,6 +111,35 @@ def test_query_history_summary_can_filter_to_errors_only():
         assert [entry["question"] for entry in summary["entries"]] == ["still broken", "broken"]
 
 
+def test_query_history_summary_can_filter_to_recent_time_window():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_recent_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        now = 1_800_000_000
+        log_path.write_text(
+            "\n".join(
+                [
+                    json.dumps({"question": "stale", "status": "success", "duration_ms": 90, "timestamp": now - 5 * 3600}),
+                    json.dumps({"question": "recent ok", "status": "success", "duration_ms": 110, "timestamp": now - 1800}),
+                    json.dumps({"question": "recent error", "status": "error", "duration_ms": 220, "timestamp": now - 600, "error": "timeout"}),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        summary = recorder.summary(limit=10, since_hours=2, now=now)
+
+        assert summary["since_hours"] == 2
+        assert summary["entries_returned"] == 2
+        assert summary["entries_considered"] == 2
+        assert summary["success_count"] == 1
+        assert summary["error_count"] == 1
+        assert [entry["question"] for entry in summary["entries"]] == ["recent error", "recent ok"]
+
+
 def test_kernel_query_records_success_metrics_to_history_file():
     query_history = _load_module(QUERY_HISTORY_PATH, f"src.kernel.query_history_{uuid.uuid4().hex}")
 
