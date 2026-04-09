@@ -166,6 +166,7 @@ def main():
     query_history_parser = subparsers.add_parser("query-history", help="Inspect recent query telemetry from the local JSONL history log.")
     query_history_parser.add_argument("--limit", type=int, default=10, help="How many recent query records to include (default: 10).")
     query_history_parser.add_argument("--status", choices=["all", "success", "error", "corrupt"], default="all", help="Filter to a specific query status (default: all).")
+    query_history_parser.add_argument("--source", default="all", help="Filter to a specific query source, such as cli.query or openclaw.facade.query.")
     query_history_parser.add_argument("--since-hours", type=float, default=None, help="Only include query records from the last N hours.")
     query_history_parser.add_argument("--json", action="store_true", help="Print machine-readable query history as JSON.")
 
@@ -253,7 +254,7 @@ def handle_query_command(args):
     try:
         kernel = CiteWeaveKernel()
         print(f"Querying: {args.question}")
-        response = kernel.query(args.question, confirmation)
+        response = kernel.query(args.question, confirmation, source="cli.query")
         print()
         print(response)
     except Exception as e:
@@ -852,6 +853,7 @@ def handle_query_history_command(args):
     snapshot = kernel.query_history_snapshot(
         limit=max(0, getattr(args, "limit", 10)),
         status=getattr(args, "status", "all") or "all",
+        source=getattr(args, "source", "all") or "all",
         since_hours=since_hours,
     )
 
@@ -863,6 +865,7 @@ def handle_query_history_command(args):
     print(f"Log file: {snapshot.get('log_file', '')}")
     print(f"Requested limit: {snapshot.get('requested_limit', 0)}")
     print(f"Status filter: {snapshot.get('status_filter', 'all')}")
+    print(f"Source filter: {snapshot.get('source_filter', 'all')}")
     if snapshot.get("since_hours") is not None:
         print(f"Time window: last {snapshot.get('since_hours')} hours")
     print(f"Entries returned: {snapshot.get('entries_returned', 0)}")
@@ -879,12 +882,26 @@ def handle_query_history_command(args):
 
     latest_status = snapshot.get("latest_status")
     latest_question = snapshot.get("latest_question")
+    latest_source = snapshot.get("latest_source")
     if latest_status or latest_question:
-        print(f"Latest query: {latest_status or 'unknown'} - {latest_question or ''}")
+        source_suffix = f" [{latest_source}]" if latest_source else ""
+        print(f"Latest query: {latest_status or 'unknown'}{source_suffix} - {latest_question or ''}")
 
     latest_error = snapshot.get("latest_error")
     if latest_error:
         print(f"Latest error: {latest_error}")
+
+    source_breakdown = snapshot.get("source_breakdown") or []
+    if source_breakdown:
+        print("Sources:")
+        for item in source_breakdown:
+            print(f"  - {item['source']}: {item['count']}")
+
+    confirmation_breakdown = snapshot.get("confirmation_breakdown") or []
+    if confirmation_breakdown:
+        print("Confirmations:")
+        for item in confirmation_breakdown:
+            print(f"  - {item['confirmation']}: {item['count']}")
 
     entries = snapshot.get("entries", [])
     if not entries:
@@ -897,12 +914,14 @@ def handle_query_history_command(args):
         status = entry.get("status", "unknown")
         duration = entry.get("duration_ms")
         question = entry.get("question") or entry.get("raw_line") or ""
+        source = entry.get("source")
         duration_text = f" ({duration} ms)" if isinstance(duration, int) else ""
+        source_text = f" {{{source}}}" if source else ""
         timestamp_text = _format_query_history_timestamp(entry.get("timestamp"))
         relative_age = _format_relative_age(entry.get("timestamp"))
         when_text = f" at {timestamp_text}" if timestamp_text else ""
         age_text = f" [{relative_age}]" if relative_age else ""
-        print(f"{idx}. [{status}]{duration_text}{when_text}{age_text} {question}")
+        print(f"{idx}. [{status}]{source_text}{duration_text}{when_text}{age_text} {question}")
 
     print()
 

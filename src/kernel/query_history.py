@@ -9,6 +9,7 @@ from __future__ import annotations
 import json
 import os
 import time
+from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -48,6 +49,7 @@ class QueryHistoryRecorder:
         self,
         limit: int = 10,
         status: Optional[str] = None,
+        source: Optional[str] = None,
         since_hours: Optional[float] = None,
         now: Optional[float] = None,
     ) -> List[Dict[str, Any]]:
@@ -57,6 +59,8 @@ class QueryHistoryRecorder:
         entries = self.load_entries()
         if status and status != "all":
             entries = [entry for entry in entries if entry.get("status") == status]
+        if source and source != "all":
+            entries = [entry for entry in entries if (entry.get("source") or "unknown") == source]
         if since_hours is not None and since_hours >= 0:
             cutoff = (time.time() if now is None else now) - (since_hours * 3600)
             entries = [
@@ -69,22 +73,33 @@ class QueryHistoryRecorder:
         self,
         limit: int = 10,
         status: Optional[str] = None,
+        source: Optional[str] = None,
         since_hours: Optional[float] = None,
         now: Optional[float] = None,
     ) -> Dict[str, Any]:
         status_filter = status or "all"
-        recent = self.recent_entries(limit=limit, status=status_filter, since_hours=since_hours, now=now)
+        source_filter = source or "all"
+        recent = self.recent_entries(
+            limit=limit,
+            status=status_filter,
+            source=source_filter,
+            since_hours=since_hours,
+            now=now,
+        )
         considered = [entry for entry in recent if entry.get("status") != "corrupt"]
         success_count = sum(1 for entry in considered if entry.get("status") == "success")
         error_count = sum(1 for entry in considered if entry.get("status") == "error")
         durations = [entry.get("duration_ms") for entry in considered if isinstance(entry.get("duration_ms"), int)]
         latest = considered[0] if considered else None
         latest_error = next((entry for entry in recent if entry.get("status") == "error"), None)
+        source_counter = Counter((entry.get("source") or "unknown") for entry in considered)
+        confirmation_counter = Counter((entry.get("confirmation") or "unspecified") for entry in considered)
 
         return {
             "log_file": str(self.log_file),
             "requested_limit": limit,
             "status_filter": status_filter,
+            "source_filter": source_filter,
             "entries_returned": len(recent),
             "entries_considered": len(considered),
             "since_hours": since_hours,
@@ -95,6 +110,15 @@ class QueryHistoryRecorder:
             "max_duration_ms": max(durations) if durations else None,
             "latest_status": latest.get("status") if latest else None,
             "latest_question": latest.get("question") if latest else None,
+            "latest_source": latest.get("source") if latest else None,
             "latest_error": latest_error.get("error") if latest_error else None,
+            "source_breakdown": [
+                {"source": source_name, "count": count}
+                for source_name, count in source_counter.most_common()
+            ],
+            "confirmation_breakdown": [
+                {"confirmation": confirmation, "count": count}
+                for confirmation, count in confirmation_counter.most_common()
+            ],
             "entries": recent,
         }

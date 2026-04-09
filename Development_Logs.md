@@ -18,6 +18,10 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-04-09**
+- **query history source diagnostics**: extended query telemetry with entrypoint source labels (`cli.query`, `openclaw.facade.query`, etc.) and added CLI `query-history --source` filtering plus source/confirmation breakdowns so validation traffic can be separated from real usage windows during daily iteration.
+- **test coverage**: added regression coverage for source-aware query history summaries, CLI filtering, and OpenClaw facade query tagging.
+
 ## **2026-04-08**
 - **repo hygiene clarification**: documented the canonical `.gitignore` rule for `test_files/*` so consistency checks do not keep inventing punctuation as a feature.
 - **query history time-window inspection**: extended `query-history` with `--since-hours` and timestamp/relative-age output so recent telemetry windows can be reviewed directly from the CLI during daily iteration.

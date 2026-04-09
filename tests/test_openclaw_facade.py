@@ -21,8 +21,8 @@ class FakeKernel:
     def diagnose_document(self, pdf_path):
         return {"ok": True, "pdf_path": pdf_path}
 
-    def query(self, question, confirmation="continue"):
-        return f"answer:{question}:{confirmation}"
+    def query(self, question, confirmation="continue", source="kernel.query"):
+        return f"answer:{question}:{confirmation}:{source}"
 
     def routes_snapshot(self):
         return {"default_route": "vector_search"}
@@ -48,7 +48,7 @@ class OpenClawFacadeTests(unittest.TestCase):
         mod = load_facade_module()
         facade = mod.OpenClawCiteWeaveFacade(kernel=FakeKernel())
         query_result = facade.query("hello", confirmation="continue")
-        self.assertEqual(query_result["answer"], "answer:hello:continue")
+        self.assertEqual(query_result["answer"], "answer:hello:continue:openclaw.facade.query")
         chat_result = facade.chat_turn("hi")
         self.assertEqual(chat_result["text"], "chat:hi")
 

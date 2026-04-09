@@ -35,7 +35,7 @@ class OpenClawCiteWeaveFacade:
         return self.kernel.diagnose_document(pdf_path)
 
     def query(self, question: str, confirmation: str = "continue") -> Dict[str, Any]:
-        answer = self.kernel.query(question, confirmation)
+        answer = self.kernel.query(question, confirmation, source="openclaw.facade.query")
         return {
             "question": question,
             "confirmation": confirmation,

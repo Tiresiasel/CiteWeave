@@ -265,6 +265,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "log_file": "data/query_history.jsonl",
             "requested_limit": 5,
             "status_filter": "error",
+            "source_filter": "cli.query",
             "entries_returned": 2,
             "entries_considered": 2,
             "success_count": 0,
@@ -274,24 +275,28 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "max_duration_ms": 250,
             "latest_status": "error",
             "latest_question": "Why did retrieval fail?",
+            "latest_source": "cli.query",
             "latest_error": "retrieval unavailable",
+            "source_breakdown": [{"source": "cli.query", "count": 2}],
+            "confirmation_breakdown": [{"confirmation": "continue", "count": 2}],
             "entries": [
-                {"status": "error", "question": "Why did retrieval fail?", "duration_ms": 250, "error": "retrieval unavailable"},
-                {"status": "error", "question": "Why did ranking fail?", "duration_ms": 200, "error": "timeout"},
+                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did retrieval fail?", "duration_ms": 250, "error": "retrieval unavailable"},
+                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did ranking fail?", "duration_ms": 200, "error": "timeout"},
             ],
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all"):
+            def query_history_snapshot(self, limit=10, status="all", source="all"):
                 assert limit == 5
                 assert status == "error"
+                assert source == "cli.query"
                 return expected
 
         cli.CiteWeaveKernel = ExpectedKernel
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=5, status="error", json=True))
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", json=True, since_hours=None))
 
         self.assertEqual(json.loads(buf.getvalue()), expected)
 
@@ -301,6 +306,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "log_file": "data/query_history.jsonl",
             "requested_limit": 2,
             "status_filter": "all",
+            "source_filter": "all",
             "entries_returned": 2,
             "entries_considered": 2,
             "success_count": 1,
@@ -310,35 +316,42 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "max_duration_ms": 250,
             "latest_status": "error",
             "latest_question": "Why did retrieval fail?",
+            "latest_source": "cli.query",
             "latest_error": "retrieval unavailable",
+            "source_breakdown": [{"source": "cli.query", "count": 2}],
+            "confirmation_breakdown": [{"confirmation": "continue", "count": 2}],
             "entries": [
-                {"status": "error", "question": "Why did retrieval fail?", "duration_ms": 250, "error": "retrieval unavailable"},
-                {"status": "success", "question": "Summarize Porter", "duration_ms": 100},
+                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did retrieval fail?", "duration_ms": 250, "error": "retrieval unavailable"},
+                {"status": "success", "source": "cli.query", "confirmation": "continue", "question": "Summarize Porter", "duration_ms": 100},
             ],
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all"):
+            def query_history_snapshot(self, limit=10, status="all", source="all"):
                 assert limit == 2
                 assert status == "all"
+                assert source == "all"
                 return expected
 
         cli.CiteWeaveKernel = ExpectedKernel
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=2, status="all", json=False))
+            cli.handle_query_history_command(Namespace(limit=2, status="all", source="all", json=False, since_hours=None))
 
         output = buf.getvalue()
         self.assertIn("Status filter: all", output)
+        self.assertIn("Source filter: all", output)
         self.assertIn("Successful queries: 1", output)
         self.assertIn("Failed queries: 1", output)
         self.assertIn("Average duration: 175.0 ms", output)
         self.assertIn("Slowest query: 250 ms", output)
-        self.assertIn("Latest query: error - Why did retrieval fail?", output)
+        self.assertIn("Latest query: error [cli.query] - Why did retrieval fail?", output)
         self.assertIn("Latest error: retrieval unavailable", output)
-        self.assertIn("[error] (250 ms) Why did retrieval fail?", output)
-        self.assertIn("[success] (100 ms) Summarize Porter", output)
+        self.assertIn("Sources:", output)
+        self.assertIn("Confirmations:", output)
+        self.assertIn("[error] {cli.query} (250 ms) Why did retrieval fail?", output)
+        self.assertIn("[success] {cli.query} (100 ms) Summarize Porter", output)
 
 
 class CliHealthAndBootstrapCommandTests(unittest.TestCase):
@@ -451,15 +464,17 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         cli = _load_cli_module()
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", since_hours=None):
+            def query_history_snapshot(self, limit=10, status="all", source="all", since_hours=None):
                 assert limit == 5
                 assert status == "error"
+                assert source == "openclaw.facade.query"
                 assert since_hours == 24
                 return {
                     "log_file": "data/query_history.jsonl",
                     "requested_limit": limit,
                     "status_filter": status,
                     "since_hours": since_hours,
+                    "source_filter": source,
                     "entries_returned": 1,
                     "entries_considered": 1,
                     "success_count": 0,
@@ -469,10 +484,15 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
                     "max_duration_ms": 123,
                     "latest_status": "error",
                     "latest_question": "recent failure",
+                    "latest_source": "openclaw.facade.query",
                     "latest_error": "timeout",
+                    "source_breakdown": [{"source": "openclaw.facade.query", "count": 1}],
+                    "confirmation_breakdown": [{"confirmation": "continue", "count": 1}],
                     "entries": [
                         {
                             "status": "error",
+                            "source": "openclaw.facade.query",
+                            "confirmation": "continue",
                             "duration_ms": 123,
                             "question": "recent failure",
                             "timestamp": 1_800_000_000,
@@ -485,10 +505,11 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=5, status="error", since_hours=24, json=False))
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="openclaw.facade.query", since_hours=24, json=False))
 
         output = buf.getvalue()
         self.assertIn("Time window: last 24 hours", output)
+        self.assertIn("Source filter: openclaw.facade.query", output)
         self.assertIn("recent failure", output)
         self.assertIn("timeout", output)
 

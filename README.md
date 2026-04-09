@@ -209,11 +209,14 @@ other docs.
 ### `query-history`
 
 Inspect recent query telemetry from the local JSONL history log. This is useful
-for spotting slow or failed research runs without opening the raw log file.
+for spotting slow or failed research runs without opening the raw log file, and
+for separating CLI traffic from OpenClaw-driven queries when you need to audit
+how the system is actually being used.
 
 ```bash
 .venv/bin/python -m src.core.cli query-history
 .venv/bin/python -m src.core.cli query-history --limit 20
+.venv/bin/python -m src.core.cli query-history --source cli.query --since-hours 24
 .venv/bin/python -m src.core.cli query-history --json
 ```
 

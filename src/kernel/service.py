@@ -47,7 +47,7 @@ class CiteWeaveKernel:
     def diagnose_document(self, pdf_path: str) -> Dict[str, Any]:
         return self.document_processor.diagnose_document_processing(pdf_path)
 
-    def query(self, question: str, confirmation: str = "continue") -> str:
+    def query(self, question: str, confirmation: str = "continue", source: str = "kernel.query") -> str:
         started_at = time.time()
         recorder = QueryHistoryRecorder()
 
@@ -60,6 +60,7 @@ class CiteWeaveKernel:
                     "question": question,
                     "confirmation": confirmation,
                     "status": "error",
+                    "source": source,
                     "duration_ms": int((time.time() - started_at) * 1000),
                     "response_chars": 0,
                     "response_preview": "",
@@ -75,6 +76,7 @@ class CiteWeaveKernel:
                 "question": question,
                 "confirmation": confirmation,
                 "status": "success",
+                "source": source,
                 "duration_ms": int((time.time() - started_at) * 1000),
                 "response_chars": len(response),
                 "response_preview": response[:500],
@@ -259,7 +261,8 @@ class CiteWeaveKernel:
         self,
         limit: int = 10,
         status: str = "all",
+        source: str = "all",
         since_hours: Optional[float] = None,
     ) -> Dict[str, Any]:
         recorder = QueryHistoryRecorder()
-        return recorder.summary(limit=limit, status=status, since_hours=since_hours)
+        return recorder.summary(limit=limit, status=status, source=source, since_hours=since_hours)

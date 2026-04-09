@@ -66,6 +66,7 @@ def test_query_history_summary_reports_recent_metrics_and_corrupt_rows():
         summary = recorder.summary(limit=3)
 
         assert summary["status_filter"] == "all"
+        assert summary["source_filter"] == "all"
         assert summary["entries_returned"] == 3
         assert summary["entries_considered"] == 2
         assert summary["success_count"] == 1
@@ -75,6 +76,7 @@ def test_query_history_summary_reports_recent_metrics_and_corrupt_rows():
         assert summary["max_duration_ms"] == 250
         assert summary["latest_status"] == "error"
         assert summary["latest_question"] == "latest error"
+        assert summary["latest_source"] is None
         assert summary["latest_error"] is None
         assert summary["entries"][0]["question"] == "latest error"
         assert summary["entries"][1]["status"] == "corrupt"
@@ -88,9 +90,9 @@ def test_query_history_summary_can_filter_to_errors_only():
         log_path.write_text(
             "\n".join(
                 [
-                    json.dumps({"question": "ok", "status": "success", "duration_ms": 100}),
-                    json.dumps({"question": "broken", "status": "error", "duration_ms": 250, "error": "timeout"}),
-                    json.dumps({"question": "still broken", "status": "error", "duration_ms": 300, "error": "rate limit"}),
+                    json.dumps({"question": "ok", "status": "success", "duration_ms": 100, "source": "cli.query"}),
+                    json.dumps({"question": "broken", "status": "error", "duration_ms": 250, "error": "timeout", "source": "cli.query"}),
+                    json.dumps({"question": "still broken", "status": "error", "duration_ms": 300, "error": "rate limit", "source": "openclaw.facade.query"}),
                 ]
             )
             + "\n",
@@ -107,11 +109,16 @@ def test_query_history_summary_can_filter_to_errors_only():
         assert summary["error_count"] == 2
         assert summary["latest_status"] == "error"
         assert summary["latest_question"] == "still broken"
+        assert summary["latest_source"] == "openclaw.facade.query"
         assert summary["latest_error"] == "rate limit"
+        assert summary["source_breakdown"] == [
+            {"source": "openclaw.facade.query", "count": 1},
+            {"source": "cli.query", "count": 1},
+        ]
         assert [entry["question"] for entry in summary["entries"]] == ["still broken", "broken"]
 
 
-def test_query_history_summary_can_filter_to_recent_time_window():
+def test_query_history_summary_can_filter_to_source_and_recent_time_window():
     query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_recent_{uuid.uuid4().hex}")
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -120,9 +127,9 @@ def test_query_history_summary_can_filter_to_recent_time_window():
         log_path.write_text(
             "\n".join(
                 [
-                    json.dumps({"question": "stale", "status": "success", "duration_ms": 90, "timestamp": now - 5 * 3600}),
-                    json.dumps({"question": "recent ok", "status": "success", "duration_ms": 110, "timestamp": now - 1800}),
-                    json.dumps({"question": "recent error", "status": "error", "duration_ms": 220, "timestamp": now - 600, "error": "timeout"}),
+                    json.dumps({"question": "stale", "status": "success", "duration_ms": 90, "timestamp": now - 5 * 3600, "source": "cli.query"}),
+                    json.dumps({"question": "recent ok", "status": "success", "duration_ms": 110, "timestamp": now - 1800, "source": "cli.query"}),
+                    json.dumps({"question": "recent error", "status": "error", "duration_ms": 220, "timestamp": now - 600, "error": "timeout", "source": "openclaw.facade.query"}),
                 ]
             )
             + "\n",
@@ -130,14 +137,15 @@ def test_query_history_summary_can_filter_to_recent_time_window():
         )
 
         recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
-        summary = recorder.summary(limit=10, since_hours=2, now=now)
+        summary = recorder.summary(limit=10, source="cli.query", since_hours=2, now=now)
 
         assert summary["since_hours"] == 2
-        assert summary["entries_returned"] == 2
-        assert summary["entries_considered"] == 2
+        assert summary["source_filter"] == "cli.query"
+        assert summary["entries_returned"] == 1
+        assert summary["entries_considered"] == 1
         assert summary["success_count"] == 1
-        assert summary["error_count"] == 1
-        assert [entry["question"] for entry in summary["entries"]] == ["recent error", "recent ok"]
+        assert summary["error_count"] == 0
+        assert [entry["question"] for entry in summary["entries"]] == ["recent ok"]
 
 
 def test_kernel_query_records_success_metrics_to_history_file():
@@ -170,7 +178,7 @@ def test_kernel_query_records_success_metrics_to_history_file():
         os.environ["CITEWEAVE_QUERY_HISTORY_FILE"] = str(log_path)
         try:
             kernel = service.CiteWeaveKernel()
-            response = kernel.query("Summarize Porter's theory")
+            response = kernel.query("Summarize Porter's theory", source="cli.query")
         finally:
             os.environ.pop("CITEWEAVE_QUERY_HISTORY_FILE", None)
 
@@ -181,6 +189,7 @@ def test_kernel_query_records_success_metrics_to_history_file():
         assert entry["question"] == "Summarize Porter's theory"
         assert entry["confirmation"] == "continue"
         assert entry["status"] == "success"
+        assert entry["source"] == "cli.query"
         assert entry["response_chars"] == len("Competitive advantage summary")
         assert entry["response_preview"] == "Competitive advantage summary"
         assert entry["satisfaction"] is None
@@ -217,7 +226,7 @@ def test_kernel_query_records_failures_before_reraising():
         try:
             kernel = service.CiteWeaveKernel()
             try:
-                kernel.query("Why is the model down?")
+                kernel.query("Why is the model down?", source="openclaw.facade.query")
                 assert False, "expected RuntimeError"
             except RuntimeError as exc:
                 assert str(exc) == "llm unavailable"
@@ -229,6 +238,7 @@ def test_kernel_query_records_failures_before_reraising():
         entry = rows[0]
         assert entry["question"] == "Why is the model down?"
         assert entry["status"] == "error"
+        assert entry["source"] == "openclaw.facade.query"
         assert entry["error"] == "llm unavailable"
         assert entry["response_chars"] == 0
         assert entry["response_preview"] == ""
