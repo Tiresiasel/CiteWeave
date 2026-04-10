@@ -464,10 +464,11 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         cli = _load_cli_module()
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", since_hours=None):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None):
                 assert limit == 5
                 assert status == "error"
                 assert source == "openclaw.facade.query"
+                assert confirmation == "expand"
                 assert since_hours == 24
                 return {
                     "log_file": "data/query_history.jsonl",
@@ -475,6 +476,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
                     "status_filter": status,
                     "since_hours": since_hours,
                     "source_filter": source,
+                    "confirmation_filter": confirmation,
                     "entries_returned": 1,
                     "entries_considered": 1,
                     "success_count": 0,
@@ -505,11 +507,12 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=5, status="error", source="openclaw.facade.query", since_hours=24, json=False))
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="openclaw.facade.query", confirmation="expand", since_hours=24, json=False))
 
         output = buf.getvalue()
         self.assertIn("Time window: last 24 hours", output)
         self.assertIn("Source filter: openclaw.facade.query", output)
+        self.assertIn("Confirmation filter: expand", output)
         self.assertIn("recent failure", output)
         self.assertIn("timeout", output)
 
@@ -517,6 +520,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
 class RepoHygieneTests(unittest.TestCase):
     def test_gitignore_explicitly_ignores_test_files_runtime_artifacts(self):
         gitignore = (CLI_PATH.parents[2] / ".gitignore").read_text(encoding="utf-8")
+        self.assertIn("test_files/*.", gitignore)
         self.assertIn("test_files/*", gitignore)
         self.assertIn("!test_files/README.md", gitignore)
 

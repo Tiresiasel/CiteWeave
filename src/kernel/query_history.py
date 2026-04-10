@@ -50,6 +50,7 @@ class QueryHistoryRecorder:
         limit: int = 10,
         status: Optional[str] = None,
         source: Optional[str] = None,
+        confirmation: Optional[str] = None,
         since_hours: Optional[float] = None,
         now: Optional[float] = None,
     ) -> List[Dict[str, Any]]:
@@ -61,6 +62,8 @@ class QueryHistoryRecorder:
             entries = [entry for entry in entries if entry.get("status") == status]
         if source and source != "all":
             entries = [entry for entry in entries if (entry.get("source") or "unknown") == source]
+        if confirmation and confirmation != "all":
+            entries = [entry for entry in entries if (entry.get("confirmation") or "unspecified") == confirmation]
         if since_hours is not None and since_hours >= 0:
             cutoff = (time.time() if now is None else now) - (since_hours * 3600)
             entries = [
@@ -74,15 +77,18 @@ class QueryHistoryRecorder:
         limit: int = 10,
         status: Optional[str] = None,
         source: Optional[str] = None,
+        confirmation: Optional[str] = None,
         since_hours: Optional[float] = None,
         now: Optional[float] = None,
     ) -> Dict[str, Any]:
         status_filter = status or "all"
         source_filter = source or "all"
+        confirmation_filter = confirmation or "all"
         recent = self.recent_entries(
             limit=limit,
             status=status_filter,
             source=source_filter,
+            confirmation=confirmation_filter,
             since_hours=since_hours,
             now=now,
         )
@@ -100,6 +106,7 @@ class QueryHistoryRecorder:
             "requested_limit": limit,
             "status_filter": status_filter,
             "source_filter": source_filter,
+            "confirmation_filter": confirmation_filter,
             "entries_returned": len(recent),
             "entries_considered": len(considered),
             "since_hours": since_hours,

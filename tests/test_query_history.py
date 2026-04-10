@@ -148,6 +148,36 @@ def test_query_history_summary_can_filter_to_source_and_recent_time_window():
         assert [entry["question"] for entry in summary["entries"]] == ["recent ok"]
 
 
+def test_query_history_summary_can_filter_to_confirmation_mode():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_confirmation_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        log_path.write_text(
+            "\n".join(
+                [
+                    json.dumps({"question": "base run", "status": "success", "duration_ms": 100, "confirmation": "continue", "source": "cli.query"}),
+                    json.dumps({"question": "expanded run", "status": "success", "duration_ms": 150, "confirmation": "expand", "source": "cli.query"}),
+                    json.dumps({"question": "refined run", "status": "error", "duration_ms": 200, "confirmation": "refine", "source": "openclaw.facade.query", "error": "timeout"}),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        summary = recorder.summary(limit=10, confirmation="expand")
+
+        assert summary["confirmation_filter"] == "expand"
+        assert summary["entries_returned"] == 1
+        assert summary["entries_considered"] == 1
+        assert summary["success_count"] == 1
+        assert summary["error_count"] == 0
+        assert summary["latest_question"] == "expanded run"
+        assert summary["confirmation_breakdown"] == [{"confirmation": "expand", "count": 1}]
+        assert [entry["question"] for entry in summary["entries"]] == ["expanded run"]
+
+
 def test_kernel_query_records_success_metrics_to_history_file():
     query_history = _load_module(QUERY_HISTORY_PATH, f"src.kernel.query_history_{uuid.uuid4().hex}")
 

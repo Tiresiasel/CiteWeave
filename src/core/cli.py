@@ -167,6 +167,7 @@ def main():
     query_history_parser.add_argument("--limit", type=int, default=10, help="How many recent query records to include (default: 10).")
     query_history_parser.add_argument("--status", choices=["all", "success", "error", "corrupt"], default="all", help="Filter to a specific query status (default: all).")
     query_history_parser.add_argument("--source", default="all", help="Filter to a specific query source, such as cli.query or openclaw.facade.query.")
+    query_history_parser.add_argument("--confirmation", default="all", help="Filter to a specific confirmation mode, such as continue or expand.")
     query_history_parser.add_argument("--since-hours", type=float, default=None, help="Only include query records from the last N hours.")
     query_history_parser.add_argument("--json", action="store_true", help="Print machine-readable query history as JSON.")
 
@@ -854,6 +855,7 @@ def handle_query_history_command(args):
         limit=max(0, getattr(args, "limit", 10)),
         status=getattr(args, "status", "all") or "all",
         source=getattr(args, "source", "all") or "all",
+        confirmation=getattr(args, "confirmation", "all") or "all",
         since_hours=since_hours,
     )
 
@@ -866,6 +868,7 @@ def handle_query_history_command(args):
     print(f"Requested limit: {snapshot.get('requested_limit', 0)}")
     print(f"Status filter: {snapshot.get('status_filter', 'all')}")
     print(f"Source filter: {snapshot.get('source_filter', 'all')}")
+    print(f"Confirmation filter: {snapshot.get('confirmation_filter', 'all')}")
     if snapshot.get("since_hours") is not None:
         print(f"Time window: last {snapshot.get('since_hours')} hours")
     print(f"Entries returned: {snapshot.get('entries_returned', 0)}")

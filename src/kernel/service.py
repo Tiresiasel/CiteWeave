@@ -262,7 +262,14 @@ class CiteWeaveKernel:
         limit: int = 10,
         status: str = "all",
         source: str = "all",
+        confirmation: str = "all",
         since_hours: Optional[float] = None,
     ) -> Dict[str, Any]:
         recorder = QueryHistoryRecorder()
-        return recorder.summary(limit=limit, status=status, source=source, since_hours=since_hours)
+        return recorder.summary(
+            limit=limit,
+            status=status,
+            source=source,
+            confirmation=confirmation,
+            since_hours=since_hours,
+        )
