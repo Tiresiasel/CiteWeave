@@ -169,6 +169,7 @@ def main():
     query_history_parser.add_argument("--source", default="all", help="Filter to a specific query source, such as cli.query or openclaw.facade.query.")
     query_history_parser.add_argument("--confirmation", default="all", help="Filter to a specific confirmation mode, such as continue or expand.")
     query_history_parser.add_argument("--since-hours", type=float, default=None, help="Only include query records from the last N hours.")
+    query_history_parser.add_argument("--contains", default="", help="Only include query records whose question or error text contains this substring.")
     query_history_parser.add_argument("--json", action="store_true", help="Print machine-readable query history as JSON.")
 
     args = parser.parse_args()
@@ -857,6 +858,7 @@ def handle_query_history_command(args):
         source=getattr(args, "source", "all") or "all",
         confirmation=getattr(args, "confirmation", "all") or "all",
         since_hours=since_hours,
+        contains=getattr(args, "contains", "") or "",
     )
 
     if getattr(args, "json", False):
@@ -869,9 +871,14 @@ def handle_query_history_command(args):
     print(f"Status filter: {snapshot.get('status_filter', 'all')}")
     print(f"Source filter: {snapshot.get('source_filter', 'all')}")
     print(f"Confirmation filter: {snapshot.get('confirmation_filter', 'all')}")
+    contains_filter = snapshot.get("contains_filter", "")
+    if contains_filter:
+        print(f"Contains filter: {contains_filter}")
     if snapshot.get("since_hours") is not None:
         print(f"Time window: last {snapshot.get('since_hours')} hours")
     print(f"Entries returned: {snapshot.get('entries_returned', 0)}")
+    if snapshot.get("matching_entries_total") is not None:
+        print(f"Matching entries before limit: {snapshot.get('matching_entries_total', 0)}")
     print(f"Successful queries: {snapshot.get('success_count', 0)}")
     print(f"Failed queries: {snapshot.get('error_count', 0)}")
     print(f"Corrupt rows skipped into diagnostics: {snapshot.get('corrupt_count', 0)}")

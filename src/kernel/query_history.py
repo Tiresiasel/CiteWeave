@@ -45,6 +45,39 @@ class QueryHistoryRecorder:
                 })
         return entries
 
+    def _apply_filters(
+        self,
+        entries: List[Dict[str, Any]],
+        status: Optional[str] = None,
+        source: Optional[str] = None,
+        confirmation: Optional[str] = None,
+        since_hours: Optional[float] = None,
+        contains: Optional[str] = None,
+        now: Optional[float] = None,
+    ) -> List[Dict[str, Any]]:
+        filtered = entries
+        if status and status != "all":
+            filtered = [entry for entry in filtered if entry.get("status") == status]
+        if source and source != "all":
+            filtered = [entry for entry in filtered if (entry.get("source") or "unknown") == source]
+        if confirmation and confirmation != "all":
+            filtered = [entry for entry in filtered if (entry.get("confirmation") or "unspecified") == confirmation]
+        if since_hours is not None and since_hours >= 0:
+            cutoff = (time.time() if now is None else now) - (since_hours * 3600)
+            filtered = [
+                entry for entry in filtered
+                if isinstance(entry.get("timestamp"), (int, float)) and entry["timestamp"] >= cutoff
+            ]
+        if contains:
+            needle = contains.casefold()
+            filtered = [
+                entry for entry in filtered
+                if needle in (entry.get("question") or "").casefold()
+                or needle in (entry.get("error") or "").casefold()
+                or needle in (entry.get("raw_line") or "").casefold()
+            ]
+        return filtered
+
     def recent_entries(
         self,
         limit: int = 10,
@@ -52,24 +85,21 @@ class QueryHistoryRecorder:
         source: Optional[str] = None,
         confirmation: Optional[str] = None,
         since_hours: Optional[float] = None,
+        contains: Optional[str] = None,
         now: Optional[float] = None,
     ) -> List[Dict[str, Any]]:
         if limit <= 0:
             return []
 
-        entries = self.load_entries()
-        if status and status != "all":
-            entries = [entry for entry in entries if entry.get("status") == status]
-        if source and source != "all":
-            entries = [entry for entry in entries if (entry.get("source") or "unknown") == source]
-        if confirmation and confirmation != "all":
-            entries = [entry for entry in entries if (entry.get("confirmation") or "unspecified") == confirmation]
-        if since_hours is not None and since_hours >= 0:
-            cutoff = (time.time() if now is None else now) - (since_hours * 3600)
-            entries = [
-                entry for entry in entries
-                if isinstance(entry.get("timestamp"), (int, float)) and entry["timestamp"] >= cutoff
-            ]
+        entries = self._apply_filters(
+            self.load_entries(),
+            status=status,
+            source=source,
+            confirmation=confirmation,
+            since_hours=since_hours,
+            contains=contains,
+            now=now,
+        )
         return list(reversed(entries[-limit:]))
 
     def summary(
@@ -79,17 +109,29 @@ class QueryHistoryRecorder:
         source: Optional[str] = None,
         confirmation: Optional[str] = None,
         since_hours: Optional[float] = None,
+        contains: Optional[str] = None,
         now: Optional[float] = None,
     ) -> Dict[str, Any]:
         status_filter = status or "all"
         source_filter = source or "all"
         confirmation_filter = confirmation or "all"
+        contains_filter = contains or ""
+        matching_entries = self._apply_filters(
+            self.load_entries(),
+            status=status_filter,
+            source=source_filter,
+            confirmation=confirmation_filter,
+            since_hours=since_hours,
+            contains=contains_filter,
+            now=now,
+        )
         recent = self.recent_entries(
             limit=limit,
             status=status_filter,
             source=source_filter,
             confirmation=confirmation_filter,
             since_hours=since_hours,
+            contains=contains_filter,
             now=now,
         )
         considered = [entry for entry in recent if entry.get("status") != "corrupt"]
@@ -107,7 +149,9 @@ class QueryHistoryRecorder:
             "status_filter": status_filter,
             "source_filter": source_filter,
             "confirmation_filter": confirmation_filter,
+            "contains_filter": contains_filter,
             "entries_returned": len(recent),
+            "matching_entries_total": len(matching_entries),
             "entries_considered": len(considered),
             "since_hours": since_hours,
             "success_count": success_count,

@@ -264,6 +264,7 @@ class CiteWeaveKernel:
         source: str = "all",
         confirmation: str = "all",
         since_hours: Optional[float] = None,
+        contains: str = "",
     ) -> Dict[str, Any]:
         recorder = QueryHistoryRecorder()
         return recorder.summary(
@@ -272,4 +273,5 @@ class CiteWeaveKernel:
             source=source,
             confirmation=confirmation,
             since_hours=since_hours,
+            contains=contains,
         )

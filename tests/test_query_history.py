@@ -178,6 +178,34 @@ def test_query_history_summary_can_filter_to_confirmation_mode():
         assert [entry["question"] for entry in summary["entries"]] == ["expanded run"]
 
 
+def test_query_history_summary_can_filter_by_question_or_error_substring():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_contains_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        log_path.write_text(
+            "\n".join(
+                [
+                    json.dumps({"question": "Why did retrieval fail?", "status": "error", "duration_ms": 250, "source": "cli.query", "error": "retrieval unavailable"}),
+                    json.dumps({"question": "Summarize Porter", "status": "success", "duration_ms": 100, "source": "cli.query"}),
+                    json.dumps({"question": "Why did ranking fail?", "status": "error", "duration_ms": 200, "source": "cli.query", "error": "timeout"}),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        summary = recorder.summary(limit=5, contains="retrieval")
+
+        assert summary["contains_filter"] == "retrieval"
+        assert summary["matching_entries_total"] == 1
+        assert summary["entries_returned"] == 1
+        assert summary["entries_considered"] == 1
+        assert summary["latest_question"] == "Why did retrieval fail?"
+        assert [entry["question"] for entry in summary["entries"]] == ["Why did retrieval fail?"]
+
+
 def test_kernel_query_records_success_metrics_to_history_file():
     query_history = _load_module(QUERY_HISTORY_PATH, f"src.kernel.query_history_{uuid.uuid4().hex}")
 
