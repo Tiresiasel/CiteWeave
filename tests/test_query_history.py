@@ -78,6 +78,8 @@ def test_query_history_summary_reports_recent_metrics_and_corrupt_rows():
         assert summary["latest_question"] == "latest error"
         assert summary["latest_source"] is None
         assert summary["latest_error"] is None
+        assert summary["query_plan_database_breakdown"] == []
+        assert summary["query_plan_method_breakdown"] == []
         assert summary["entries"][0]["question"] == "latest error"
         assert summary["entries"][1]["status"] == "corrupt"
 
@@ -115,6 +117,8 @@ def test_query_history_summary_can_filter_to_errors_only():
             {"source": "openclaw.facade.query", "count": 1},
             {"source": "cli.query", "count": 1},
         ]
+        assert summary["query_plan_database_breakdown"] == []
+        assert summary["query_plan_method_breakdown"] == []
         assert [entry["question"] for entry in summary["entries"]] == ["still broken", "broken"]
 
 
@@ -206,6 +210,49 @@ def test_query_history_summary_can_filter_by_question_or_error_substring():
         assert [entry["question"] for entry in summary["entries"]] == ["Why did retrieval fail?"]
 
 
+def test_query_history_summary_reports_query_plan_breakdowns():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_plan_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        log_path.write_text(
+            "\n".join(
+                [
+                    json.dumps({
+                        "question": "Find Porter summaries",
+                        "status": "success",
+                        "duration_ms": 100,
+                        "source": "cli.query",
+                        "query_plan_databases": ["vector_db", "pdf_db"],
+                        "query_plan_methods": ["search_relevant_sentences", "get_full_pdf_content"],
+                    }),
+                    json.dumps({
+                        "question": "Find RBV papers",
+                        "status": "success",
+                        "duration_ms": 120,
+                        "source": "cli.query",
+                        "query_plan_databases": ["vector_db"],
+                        "query_plan_methods": ["search_relevant_sentences"],
+                    }),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        summary = recorder.summary(limit=10)
+
+        assert summary["query_plan_database_breakdown"] == [
+            {"database": "vector_db", "count": 2},
+            {"database": "pdf_db", "count": 1},
+        ]
+        assert summary["query_plan_method_breakdown"] == [
+            {"method": "search_relevant_sentences", "count": 2},
+            {"method": "get_full_pdf_content", "count": 1},
+        ]
+
+
 def test_kernel_query_records_success_metrics_to_history_file():
     query_history = _load_module(QUERY_HISTORY_PATH, f"src.kernel.query_history_{uuid.uuid4().hex}")
 
@@ -251,8 +298,64 @@ def test_kernel_query_records_success_metrics_to_history_file():
         assert entry["response_chars"] == len("Competitive advantage summary")
         assert entry["response_preview"] == "Competitive advantage summary"
         assert entry["satisfaction"] is None
+        assert entry["query_plan_step_count"] == 0
+        assert entry["query_plan_databases"] == []
+        assert entry["query_plan_methods"] == []
         assert isinstance(entry["duration_ms"], int)
         assert entry["duration_ms"] >= 0
+
+
+def test_kernel_query_records_query_plan_details_when_available():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"src.kernel.query_history_{uuid.uuid4().hex}")
+
+    class DummyDocumentProcessor:
+        pass
+
+    class DummyResearchSystem:
+        def research_question_details(self, question, confirmation):
+            assert question == "Find local first routes"
+            assert confirmation == "continue"
+            return {
+                "final_response": "Planned local-first retrieval",
+                "error": None,
+                "query_plan": {
+                    "query_sequence": [
+                        {"database": "vector_db", "method": "search_relevant_sentences"},
+                        {"database": "pdf_db", "method": "get_full_pdf_content"},
+                        {"database": "vector_db", "method": "search_relevant_sentences"},
+                    ]
+                },
+            }
+
+    _stub_module("src", __path__=[])
+    _stub_module("src.processing", __path__=[])
+    _stub_module("src.processing.pdf", __path__=[])
+    _stub_module("src.processing.pdf.document_processor", DocumentProcessor=DummyDocumentProcessor)
+    _stub_module("src.agents", __path__=[])
+    _stub_module("src.agents.multi_agent_research_system", LangGraphResearchSystem=DummyResearchSystem)
+    _stub_module("src.agents.routing", active_route_configuration=lambda: {"default_route": "vector_search"})
+    _stub_module("src.kernel", __path__=[])
+    _stub_module("src.kernel.batch_tracker", BatchUploadTracker=object)
+    sys.modules["src.kernel.query_history"] = query_history
+
+    service = _load_module(SERVICE_PATH, f"src.kernel.service_plan_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        os.environ["CITEWEAVE_QUERY_HISTORY_FILE"] = str(log_path)
+        try:
+            kernel = service.CiteWeaveKernel()
+            response = kernel.query("Find local first routes", source="cli.query")
+        finally:
+            os.environ.pop("CITEWEAVE_QUERY_HISTORY_FILE", None)
+
+        assert response == "Planned local-first retrieval"
+        rows = [json.loads(line) for line in log_path.read_text(encoding="utf-8").splitlines()]
+        assert len(rows) == 1
+        entry = rows[0]
+        assert entry["query_plan_step_count"] == 3
+        assert entry["query_plan_databases"] == ["vector_db", "pdf_db"]
+        assert entry["query_plan_methods"] == ["search_relevant_sentences", "get_full_pdf_content"]
 
 
 def test_kernel_query_records_failures_before_reraising():
@@ -301,3 +404,6 @@ def test_kernel_query_records_failures_before_reraising():
         assert entry["response_chars"] == 0
         assert entry["response_preview"] == ""
         assert entry["satisfaction"] is None
+        assert entry["query_plan_step_count"] == 0
+        assert entry["query_plan_databases"] == []
+        assert entry["query_plan_methods"] == []

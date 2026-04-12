@@ -3816,8 +3816,8 @@ Please respond with: CONTINUE or EXPAND
         final_response = "\n".join(response_parts)
         return {**state, "final_response": final_response}
     
-    def research_question(self, question: str, user_confirmation: str = "continue") -> str:
-        """Main method to research a question using the LangGraph workflow with user confirmation"""
+    def research_question_details(self, question: str, user_confirmation: str = "continue") -> Dict[str, Any]:
+        """Run the research workflow and return the final workflow state for diagnostics."""
         self.logger.info(f"Starting LangGraph research for: {question}")
         request_id = str(uuid.uuid4())
         initial_state = ResearchState(
@@ -3840,13 +3840,29 @@ Please respond with: CONTINUE or EXPAND
             final_state = self.workflow.invoke(initial_state)
             if final_state.get("error"):
                 log_event("System", "error", {"error": final_state["error"]}, level=logging.ERROR, request_id=request_id)
-                return f"❌ Error: {final_state['error']}"
-            log_event("System", "final_response", {"response": final_state.get("final_response", "No response generated")}, level=logging.INFO, request_id=request_id)
-            return final_state.get("final_response", "No response generated")
+            else:
+                log_event("System", "final_response", {"response": final_state.get("final_response", "No response generated")}, level=logging.INFO, request_id=request_id)
+            return final_state
         except Exception as e:
             self.logger.error(f"Workflow execution failed: {e}")
             log_event("System", "exception", {"error": str(e)}, level=logging.ERROR, request_id=request_id)
-            return f"❌ Workflow error: {str(e)}"
+            return {
+                "question": question,
+                "user_confirmation": user_confirmation,
+                "final_response": f"❌ Workflow error: {str(e)}",
+                "error": str(e),
+                "request_id": request_id,
+                "query_plan": None,
+                "query_intent": None,
+                "target_entity": None,
+            }
+
+    def research_question(self, question: str, user_confirmation: str = "continue") -> str:
+        """Main method to research a question using the LangGraph workflow with user confirmation."""
+        final_state = self.research_question_details(question, user_confirmation)
+        if final_state.get("error"):
+            return f"❌ Error: {final_state['error']}"
+        return final_state.get("final_response", "No response generated")
     
     def research_question_with_confirmation(self, question: str) -> str:
         """Interactive research method that shows information summary and asks for user confirmation"""

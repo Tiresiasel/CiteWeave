@@ -142,6 +142,18 @@ class QueryHistoryRecorder:
         latest_error = next((entry for entry in recent if entry.get("status") == "error"), None)
         source_counter = Counter((entry.get("source") or "unknown") for entry in considered)
         confirmation_counter = Counter((entry.get("confirmation") or "unspecified") for entry in considered)
+        query_plan_database_counter = Counter(
+            database
+            for entry in considered
+            for database in (entry.get("query_plan_databases") or [])
+            if isinstance(database, str) and database
+        )
+        query_plan_method_counter = Counter(
+            method
+            for entry in considered
+            for method in (entry.get("query_plan_methods") or [])
+            if isinstance(method, str) and method
+        )
 
         return {
             "log_file": str(self.log_file),
@@ -163,6 +175,14 @@ class QueryHistoryRecorder:
             "latest_question": latest.get("question") if latest else None,
             "latest_source": latest.get("source") if latest else None,
             "latest_error": latest_error.get("error") if latest_error else None,
+            "query_plan_database_breakdown": [
+                {"database": database, "count": count}
+                for database, count in query_plan_database_counter.most_common()
+            ],
+            "query_plan_method_breakdown": [
+                {"method": method, "count": count}
+                for method, count in query_plan_method_counter.most_common()
+            ],
             "source_breakdown": [
                 {"source": source_name, "count": count}
                 for source_name, count in source_counter.most_common()

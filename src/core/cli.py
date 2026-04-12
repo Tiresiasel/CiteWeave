@@ -848,6 +848,20 @@ def _format_relative_age(timestamp):
 
 
 
+def _format_query_plan_summary(entry):
+    databases = [value for value in (entry.get("query_plan_databases") or []) if isinstance(value, str) and value]
+    methods = [value for value in (entry.get("query_plan_methods") or []) if isinstance(value, str) and value]
+    parts = []
+    if databases:
+        parts.append("db=" + ", ".join(databases))
+    if methods:
+        parts.append("methods=" + ", ".join(methods[:3]))
+        if len(methods) > 3:
+            parts[-1] += f" (+{len(methods) - 3} more)"
+    return " | ".join(parts)
+
+
+
 def handle_query_history_command(args):
     """Display recent query telemetry from the local query history log."""
     kernel = CiteWeaveKernel()
@@ -913,6 +927,18 @@ def handle_query_history_command(args):
         for item in confirmation_breakdown:
             print(f"  - {item['confirmation']}: {item['count']}")
 
+    query_plan_database_breakdown = snapshot.get("query_plan_database_breakdown") or []
+    if query_plan_database_breakdown:
+        print("Planned databases:")
+        for item in query_plan_database_breakdown:
+            print(f"  - {item['database']}: {item['count']}")
+
+    query_plan_method_breakdown = snapshot.get("query_plan_method_breakdown") or []
+    if query_plan_method_breakdown:
+        print("Planned methods:")
+        for item in query_plan_method_breakdown[:8]:
+            print(f"  - {item['method']}: {item['count']}")
+
     entries = snapshot.get("entries", [])
     if not entries:
         print("\nNo query history recorded yet.")
@@ -932,6 +958,9 @@ def handle_query_history_command(args):
         when_text = f" at {timestamp_text}" if timestamp_text else ""
         age_text = f" [{relative_age}]" if relative_age else ""
         print(f"{idx}. [{status}]{source_text}{duration_text}{when_text}{age_text} {question}")
+        plan_summary = _format_query_plan_summary(entry)
+        if plan_summary:
+            print(f"    plan: {plan_summary}")
 
     print()
 

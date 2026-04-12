@@ -51,8 +51,47 @@ class CiteWeaveKernel:
         started_at = time.time()
         recorder = QueryHistoryRecorder()
 
+        def summarize_query_plan(query_plan: Any) -> Dict[str, Any]:
+            if not isinstance(query_plan, dict):
+                return {
+                    "query_plan_step_count": 0,
+                    "query_plan_databases": [],
+                    "query_plan_methods": [],
+                }
+
+            query_sequence = query_plan.get("query_sequence")
+            if not isinstance(query_sequence, list):
+                query_sequence = []
+
+            databases = []
+            methods = []
+            for step in query_sequence:
+                if not isinstance(step, dict):
+                    continue
+                database = step.get("database")
+                method = step.get("method")
+                if isinstance(database, str) and database not in databases:
+                    databases.append(database)
+                if isinstance(method, str) and method not in methods:
+                    methods.append(method)
+
+            return {
+                "query_plan_step_count": len(query_sequence),
+                "query_plan_databases": databases,
+                "query_plan_methods": methods,
+            }
+
         try:
-            response = self.research_system.research_question(question, confirmation)
+            research_details_fn = getattr(self.research_system, "research_question_details", None)
+            if callable(research_details_fn):
+                details = research_details_fn(question, confirmation)
+                response = details.get("final_response", "No response generated")
+                error_message = details.get("error")
+                plan_summary = summarize_query_plan(details.get("query_plan"))
+            else:
+                response = self.research_system.research_question(question, confirmation)
+                error_message = None
+                plan_summary = summarize_query_plan(None)
         except Exception as exc:
             recorder.record(
                 {
@@ -66,9 +105,30 @@ class CiteWeaveKernel:
                     "response_preview": "",
                     "error": str(exc),
                     "satisfaction": None,
+                    "query_plan_step_count": 0,
+                    "query_plan_databases": [],
+                    "query_plan_methods": [],
                 }
             )
             raise
+
+        if error_message:
+            recorder.record(
+                {
+                    "timestamp": started_at,
+                    "question": question,
+                    "confirmation": confirmation,
+                    "status": "error",
+                    "source": source,
+                    "duration_ms": int((time.time() - started_at) * 1000),
+                    "response_chars": len(response),
+                    "response_preview": response[:500],
+                    "error": error_message,
+                    "satisfaction": None,
+                    **plan_summary,
+                }
+            )
+            return response
 
         recorder.record(
             {
@@ -81,6 +141,7 @@ class CiteWeaveKernel:
                 "response_chars": len(response),
                 "response_preview": response[:500],
                 "satisfaction": None,
+                **plan_summary,
             }
         )
         return response

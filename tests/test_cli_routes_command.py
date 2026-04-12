@@ -50,8 +50,12 @@ def _load_cli_module():
                 "log_file": "data/query_history.jsonl",
                 "requested_limit": limit,
                 "status_filter": status,
+                "source_filter": "all",
+                "confirmation_filter": "all",
+                "contains_filter": "",
                 "since_hours": since_hours,
                 "entries_returned": 0,
+                "matching_entries_total": 0,
                 "entries_considered": 0,
                 "success_count": 0,
                 "error_count": 0,
@@ -60,7 +64,12 @@ def _load_cli_module():
                 "max_duration_ms": None,
                 "latest_status": None,
                 "latest_question": None,
+                "latest_source": None,
                 "latest_error": None,
+                "source_breakdown": [],
+                "confirmation_breakdown": [],
+                "query_plan_database_breakdown": [],
+                "query_plan_method_breakdown": [],
                 "entries": [],
             }
 
@@ -282,9 +291,11 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "latest_error": "retrieval unavailable",
             "source_breakdown": [{"source": "cli.query", "count": 2}],
             "confirmation_breakdown": [{"confirmation": "continue", "count": 2}],
+            "query_plan_database_breakdown": [{"database": "vector_db", "count": 2}],
+            "query_plan_method_breakdown": [{"method": "search_relevant_sentences", "count": 2}],
             "entries": [
-                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did retrieval fail?", "duration_ms": 250, "error": "retrieval unavailable"},
-                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did ranking fail?", "duration_ms": 200, "error": "timeout"},
+                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did retrieval fail?", "duration_ms": 250, "error": "retrieval unavailable", "query_plan_databases": ["vector_db"], "query_plan_methods": ["search_relevant_sentences"]},
+                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did ranking fail?", "duration_ms": 200, "error": "timeout", "query_plan_databases": ["vector_db"], "query_plan_methods": ["search_relevant_sentences"]},
             ],
         }
 
@@ -329,9 +340,11 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "latest_error": "retrieval unavailable",
             "source_breakdown": [{"source": "cli.query", "count": 2}],
             "confirmation_breakdown": [{"confirmation": "continue", "count": 2}],
+            "query_plan_database_breakdown": [{"database": "vector_db", "count": 2}, {"database": "pdf_db", "count": 1}],
+            "query_plan_method_breakdown": [{"method": "search_relevant_sentences", "count": 2}, {"method": "get_full_pdf_content", "count": 1}],
             "entries": [
-                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did retrieval fail?", "duration_ms": 250, "error": "retrieval unavailable"},
-                {"status": "success", "source": "cli.query", "confirmation": "continue", "question": "Summarize Porter", "duration_ms": 100},
+                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did retrieval fail?", "duration_ms": 250, "error": "retrieval unavailable", "query_plan_databases": ["vector_db"], "query_plan_methods": ["search_relevant_sentences"]},
+                {"status": "success", "source": "cli.query", "confirmation": "continue", "question": "Summarize Porter", "duration_ms": 100, "query_plan_databases": ["vector_db", "pdf_db"], "query_plan_methods": ["search_relevant_sentences", "get_full_pdf_content"]},
             ],
         }
 
@@ -363,8 +376,12 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         self.assertIn("Latest error: retrieval unavailable", output)
         self.assertIn("Sources:", output)
         self.assertIn("Confirmations:", output)
+        self.assertIn("Planned databases:", output)
+        self.assertIn("Planned methods:", output)
         self.assertIn("[error] {cli.query} (250 ms) Why did retrieval fail?", output)
+        self.assertIn("plan: db=vector_db | methods=search_relevant_sentences", output)
         self.assertIn("[success] {cli.query} (100 ms) Summarize Porter", output)
+        self.assertIn("plan: db=vector_db, pdf_db | methods=search_relevant_sentences, get_full_pdf_content", output)
 
 
 class CliHealthAndBootstrapCommandTests(unittest.TestCase):
@@ -504,6 +521,8 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
                     "latest_error": "timeout",
                     "source_breakdown": [{"source": "openclaw.facade.query", "count": 1}],
                     "confirmation_breakdown": [{"confirmation": "continue", "count": 1}],
+                    "query_plan_database_breakdown": [{"database": "vector_db", "count": 1}],
+                    "query_plan_method_breakdown": [{"method": "search_relevant_sentences", "count": 1}],
                     "entries": [
                         {
                             "status": "error",
@@ -513,6 +532,8 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
                             "question": "recent failure",
                             "timestamp": 1_800_000_000,
                             "error": "timeout",
+                            "query_plan_databases": ["vector_db"],
+                            "query_plan_methods": ["search_relevant_sentences"],
                         }
                     ],
                 }
