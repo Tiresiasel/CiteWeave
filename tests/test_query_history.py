@@ -253,6 +253,55 @@ def test_query_history_summary_reports_query_plan_breakdowns():
         ]
 
 
+def test_query_history_summary_can_filter_by_planned_database_and_method():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_plan_filters_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        log_path.write_text(
+            "\n".join(
+                [
+                    json.dumps({
+                        "question": "Vector and PDF query",
+                        "status": "success",
+                        "duration_ms": 100,
+                        "source": "cli.query",
+                        "query_plan_databases": ["vector_db", "pdf_db"],
+                        "query_plan_methods": ["search_relevant_sentences", "get_full_pdf_content"],
+                    }),
+                    json.dumps({
+                        "question": "Vector only query",
+                        "status": "success",
+                        "duration_ms": 120,
+                        "source": "cli.query",
+                        "query_plan_databases": ["vector_db"],
+                        "query_plan_methods": ["search_relevant_sentences"],
+                    }),
+                    json.dumps({
+                        "question": "Graph query",
+                        "status": "success",
+                        "duration_ms": 140,
+                        "source": "cli.query",
+                        "query_plan_databases": ["graph_db"],
+                        "query_plan_methods": ["get_graph_context"],
+                    }),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        summary = recorder.summary(limit=10, planned_database="pdf_db", planned_method="get_full_pdf_content")
+
+        assert summary["planned_database_filter"] == "pdf_db"
+        assert summary["planned_method_filter"] == "get_full_pdf_content"
+        assert summary["matching_entries_total"] == 1
+        assert summary["entries_returned"] == 1
+        assert summary["latest_question"] == "Vector and PDF query"
+        assert [entry["question"] for entry in summary["entries"]] == ["Vector and PDF query"]
+
+
 def test_kernel_query_records_success_metrics_to_history_file():
     query_history = _load_module(QUERY_HISTORY_PATH, f"src.kernel.query_history_{uuid.uuid4().hex}")
 

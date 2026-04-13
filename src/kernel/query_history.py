@@ -53,6 +53,8 @@ class QueryHistoryRecorder:
         confirmation: Optional[str] = None,
         since_hours: Optional[float] = None,
         contains: Optional[str] = None,
+        planned_database: Optional[str] = None,
+        planned_method: Optional[str] = None,
         now: Optional[float] = None,
     ) -> List[Dict[str, Any]]:
         filtered = entries
@@ -76,6 +78,24 @@ class QueryHistoryRecorder:
                 or needle in (entry.get("error") or "").casefold()
                 or needle in (entry.get("raw_line") or "").casefold()
             ]
+        if planned_database and planned_database != "all":
+            database_needle = planned_database.casefold()
+            filtered = [
+                entry for entry in filtered
+                if any(
+                    isinstance(database, str) and database.casefold() == database_needle
+                    for database in (entry.get("query_plan_databases") or [])
+                )
+            ]
+        if planned_method and planned_method != "all":
+            method_needle = planned_method.casefold()
+            filtered = [
+                entry for entry in filtered
+                if any(
+                    isinstance(method, str) and method.casefold() == method_needle
+                    for method in (entry.get("query_plan_methods") or [])
+                )
+            ]
         return filtered
 
     def recent_entries(
@@ -86,6 +106,8 @@ class QueryHistoryRecorder:
         confirmation: Optional[str] = None,
         since_hours: Optional[float] = None,
         contains: Optional[str] = None,
+        planned_database: Optional[str] = None,
+        planned_method: Optional[str] = None,
         now: Optional[float] = None,
     ) -> List[Dict[str, Any]]:
         if limit <= 0:
@@ -98,6 +120,8 @@ class QueryHistoryRecorder:
             confirmation=confirmation,
             since_hours=since_hours,
             contains=contains,
+            planned_database=planned_database,
+            planned_method=planned_method,
             now=now,
         )
         return list(reversed(entries[-limit:]))
@@ -110,12 +134,16 @@ class QueryHistoryRecorder:
         confirmation: Optional[str] = None,
         since_hours: Optional[float] = None,
         contains: Optional[str] = None,
+        planned_database: Optional[str] = None,
+        planned_method: Optional[str] = None,
         now: Optional[float] = None,
     ) -> Dict[str, Any]:
         status_filter = status or "all"
         source_filter = source or "all"
         confirmation_filter = confirmation or "all"
         contains_filter = contains or ""
+        planned_database_filter = planned_database or "all"
+        planned_method_filter = planned_method or "all"
         matching_entries = self._apply_filters(
             self.load_entries(),
             status=status_filter,
@@ -123,6 +151,8 @@ class QueryHistoryRecorder:
             confirmation=confirmation_filter,
             since_hours=since_hours,
             contains=contains_filter,
+            planned_database=planned_database_filter,
+            planned_method=planned_method_filter,
             now=now,
         )
         recent = self.recent_entries(
@@ -132,6 +162,8 @@ class QueryHistoryRecorder:
             confirmation=confirmation_filter,
             since_hours=since_hours,
             contains=contains_filter,
+            planned_database=planned_database_filter,
+            planned_method=planned_method_filter,
             now=now,
         )
         considered = [entry for entry in recent if entry.get("status") != "corrupt"]
@@ -162,6 +194,8 @@ class QueryHistoryRecorder:
             "source_filter": source_filter,
             "confirmation_filter": confirmation_filter,
             "contains_filter": contains_filter,
+            "planned_database_filter": planned_database_filter,
+            "planned_method_filter": planned_method_filter,
             "entries_returned": len(recent),
             "matching_entries_total": len(matching_entries),
             "entries_considered": len(considered),

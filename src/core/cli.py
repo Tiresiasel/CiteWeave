@@ -170,6 +170,8 @@ def main():
     query_history_parser.add_argument("--confirmation", default="all", help="Filter to a specific confirmation mode, such as continue or expand.")
     query_history_parser.add_argument("--since-hours", type=float, default=None, help="Only include query records from the last N hours.")
     query_history_parser.add_argument("--contains", default="", help="Only include query records whose question or error text contains this substring.")
+    query_history_parser.add_argument("--planned-database", default="all", help="Only include query records whose planned query path used this database, such as vector_db or pdf_db.")
+    query_history_parser.add_argument("--planned-method", default="all", help="Only include query records whose planned query path used this method, such as search_relevant_sentences.")
     query_history_parser.add_argument("--json", action="store_true", help="Print machine-readable query history as JSON.")
 
     args = parser.parse_args()
@@ -873,6 +875,8 @@ def handle_query_history_command(args):
         confirmation=getattr(args, "confirmation", "all") or "all",
         since_hours=since_hours,
         contains=getattr(args, "contains", "") or "",
+        planned_database=getattr(args, "planned_database", "all") or "all",
+        planned_method=getattr(args, "planned_method", "all") or "all",
     )
 
     if getattr(args, "json", False):
@@ -890,6 +894,12 @@ def handle_query_history_command(args):
         print(f"Contains filter: {contains_filter}")
     if snapshot.get("since_hours") is not None:
         print(f"Time window: last {snapshot.get('since_hours')} hours")
+    planned_database_filter = snapshot.get("planned_database_filter", "all")
+    planned_method_filter = snapshot.get("planned_method_filter", "all")
+    if planned_database_filter != "all":
+        print(f"Planned database filter: {planned_database_filter}")
+    if planned_method_filter != "all":
+        print(f"Planned method filter: {planned_method_filter}")
     print(f"Entries returned: {snapshot.get('entries_returned', 0)}")
     if snapshot.get("matching_entries_total") is not None:
         print(f"Matching entries before limit: {snapshot.get('matching_entries_total', 0)}")

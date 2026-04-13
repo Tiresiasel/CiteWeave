@@ -45,14 +45,16 @@ def _load_cli_module():
                 "addon_config_issues": [],
             }
 
-        def query_history_snapshot(self, limit=10, status="all", since_hours=None):
+        def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all"):
             return {
                 "log_file": "data/query_history.jsonl",
                 "requested_limit": limit,
                 "status_filter": status,
-                "source_filter": "all",
-                "confirmation_filter": "all",
-                "contains_filter": "",
+                "source_filter": source,
+                "confirmation_filter": confirmation,
+                "contains_filter": contains,
+                "planned_database_filter": planned_database,
+                "planned_method_filter": planned_method,
                 "since_hours": since_hours,
                 "entries_returned": 0,
                 "matching_entries_total": 0,
@@ -277,6 +279,8 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "source_filter": "cli.query",
             "confirmation_filter": "continue",
             "contains_filter": "retrieval",
+            "planned_database_filter": "vector_db",
+            "planned_method_filter": "search_relevant_sentences",
             "entries_returned": 2,
             "matching_entries_total": 2,
             "entries_considered": 2,
@@ -300,20 +304,22 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains=""):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all"):
                 assert limit == 5
                 assert status == "error"
                 assert source == "cli.query"
                 assert confirmation == "continue"
                 assert since_hours is None
                 assert contains == "retrieval"
+                assert planned_database == "vector_db"
+                assert planned_method == "search_relevant_sentences"
                 return expected
 
         cli.CiteWeaveKernel = ExpectedKernel
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="continue", contains="retrieval", json=True, since_hours=None))
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="continue", contains="retrieval", planned_database="vector_db", planned_method="search_relevant_sentences", json=True, since_hours=None))
 
         self.assertEqual(json.loads(buf.getvalue()), expected)
 
@@ -326,6 +332,8 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "source_filter": "all",
             "confirmation_filter": "all",
             "contains_filter": "",
+            "planned_database_filter": "all",
+            "planned_method_filter": "all",
             "entries_returned": 2,
             "matching_entries_total": 2,
             "entries_considered": 2,
@@ -349,20 +357,22 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains=""):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all"):
                 assert limit == 2
                 assert status == "all"
                 assert source == "all"
                 assert confirmation == "all"
                 assert since_hours is None
                 assert contains == ""
+                assert planned_database == "all"
+                assert planned_method == "all"
                 return expected
 
         cli.CiteWeaveKernel = ExpectedKernel
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=2, status="all", source="all", confirmation="all", contains="", json=False, since_hours=None))
+            cli.handle_query_history_command(Namespace(limit=2, status="all", source="all", confirmation="all", contains="", planned_database="all", planned_method="all", json=False, since_hours=None))
 
         output = buf.getvalue()
         self.assertIn("Status filter: all", output)
@@ -494,13 +504,15 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         cli = _load_cli_module()
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains=""):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all"):
                 assert limit == 5
                 assert status == "error"
                 assert source == "openclaw.facade.query"
                 assert confirmation == "expand"
                 assert since_hours == 24
                 assert contains == ""
+                assert planned_database == "pdf_db"
+                assert planned_method == "get_full_pdf_content"
                 return {
                     "log_file": "data/query_history.jsonl",
                     "requested_limit": limit,
@@ -508,6 +520,8 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
                     "since_hours": since_hours,
                     "source_filter": source,
                     "confirmation_filter": confirmation,
+                    "planned_database_filter": "pdf_db",
+                    "planned_method_filter": "get_full_pdf_content",
                     "entries_returned": 1,
                     "entries_considered": 1,
                     "success_count": 0,
@@ -542,12 +556,14 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=5, status="error", source="openclaw.facade.query", confirmation="expand", since_hours=24, contains="", json=False))
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="openclaw.facade.query", confirmation="expand", since_hours=24, contains="", planned_database="pdf_db", planned_method="get_full_pdf_content", json=False))
 
         output = buf.getvalue()
         self.assertIn("Time window: last 24 hours", output)
         self.assertIn("Source filter: openclaw.facade.query", output)
         self.assertIn("Confirmation filter: expand", output)
+        self.assertIn("Planned database filter: pdf_db", output)
+        self.assertIn("Planned method filter: get_full_pdf_content", output)
         self.assertIn("recent failure", output)
         self.assertIn("timeout", output)
 
