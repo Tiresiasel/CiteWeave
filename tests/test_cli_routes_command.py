@@ -130,9 +130,102 @@ class CliRoutesCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_routes_command(Namespace(json=True))
+            cli.handle_routes_command(Namespace(json=True, check=False))
 
         self.assertEqual(json.loads(buf.getvalue()), expected)
+
+    def test_handle_routes_command_check_reports_success(self):
+        cli = _load_cli_module()
+
+        class ExpectedKernel:
+            def routes_snapshot(self):
+                return {
+                    "default_route": "vector_search",
+                    "valid_routes": ["vector_search"],
+                    "aliases": {},
+                    "priority_map": {},
+                    "alias_overrides": {},
+                    "priority_overrides": {},
+                    "ignored_alias_overrides": [],
+                    "ignored_priority_overrides": [],
+                    "addon_config_paths": ["/tmp/routes.json"],
+                    "addon_config_issues": [],
+                }
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            cli.handle_routes_command(Namespace(json=False, check=True))
+
+        output = buf.getvalue()
+        self.assertIn("Route configuration check: ok", output)
+        self.assertIn("ignored alias overrides: 0", output)
+        self.assertIn("addon config sources: 1", output)
+
+    def test_handle_routes_command_check_exits_nonzero_on_invalid_config(self):
+        cli = _load_cli_module()
+
+        class ExpectedKernel:
+            def routes_snapshot(self):
+                return {
+                    "default_route": "vector_search",
+                    "valid_routes": ["vector_search"],
+                    "aliases": {},
+                    "priority_map": {},
+                    "alias_overrides": {},
+                    "priority_overrides": {},
+                    "ignored_alias_overrides": [{"key": "bad_alias", "route": "unknown", "reason": "unknown_route"}],
+                    "ignored_priority_overrides": [],
+                    "addon_config_paths": ["/tmp/routes.json"],
+                    "addon_config_issues": [{"reason": "missing_file", "path": "/tmp/routes.json"}],
+                }
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf), self.assertRaises(SystemExit) as exc:
+            cli.handle_routes_command(Namespace(json=False, check=True))
+
+        self.assertEqual(exc.exception.code, 1)
+        output = buf.getvalue()
+        self.assertIn("Route configuration check: invalid", output)
+        self.assertIn("Tip: run `.venv/bin/python -m src.core.cli routes`", output)
+
+    def test_handle_routes_command_check_supports_json_output(self):
+        cli = _load_cli_module()
+
+        class ExpectedKernel:
+            def routes_snapshot(self):
+                return {
+                    "default_route": "vector_search",
+                    "valid_routes": ["vector_search"],
+                    "aliases": {},
+                    "priority_map": {},
+                    "alias_overrides": {},
+                    "priority_overrides": {},
+                    "ignored_alias_overrides": [],
+                    "ignored_priority_overrides": [{"key": "bad", "route": "unknown", "reason": "unknown_route"}],
+                    "addon_config_paths": [],
+                    "addon_config_issues": [],
+                }
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf), self.assertRaises(SystemExit):
+            cli.handle_routes_command(Namespace(json=True, check=True))
+
+        self.assertEqual(
+            json.loads(buf.getvalue()),
+            {
+                "addon_config_issues": 0,
+                "addon_config_sources": 0,
+                "ignored_alias_overrides": 0,
+                "ignored_priority_overrides": 1,
+                "ok": False,
+            },
+        )
 
 
 class CliProgressCommandTests(unittest.TestCase):

@@ -153,6 +153,7 @@ def main():
     # Routes command
     routes_parser = subparsers.add_parser("routes", help="Show active route configuration.")
     routes_parser.add_argument("--json", action="store_true", help="Print machine-readable route configuration as JSON.")
+    routes_parser.add_argument("--check", action="store_true", help="Exit non-zero when route overrides or addon config files contain ignored/invalid entries.")
 
     # Health command
     health_parser = subparsers.add_parser("health", help="Show machine-readable service and environment health.")
@@ -692,6 +693,29 @@ def handle_routes_command(args):
     """Display the active route configuration for diagnostics."""
     kernel = CiteWeaveKernel()
     config = kernel.routes_snapshot()
+    validation = {
+        "ok": not config.get("ignored_alias_overrides") and not config.get("ignored_priority_overrides") and not config.get("addon_config_issues"),
+        "ignored_alias_overrides": len(config.get("ignored_alias_overrides", [])),
+        "ignored_priority_overrides": len(config.get("ignored_priority_overrides", [])),
+        "addon_config_issues": len(config.get("addon_config_issues", [])),
+        "addon_config_sources": len(config.get("addon_config_paths", [])),
+    }
+
+    if getattr(args, "check", False):
+        if getattr(args, "json", False):
+            print(json.dumps(validation, indent=2, ensure_ascii=False, sort_keys=True))
+        else:
+            status_text = "ok" if validation["ok"] else "invalid"
+            print(f"Route configuration check: {status_text}")
+            print(f"  ignored alias overrides: {validation['ignored_alias_overrides']}")
+            print(f"  ignored priority overrides: {validation['ignored_priority_overrides']}")
+            print(f"  addon config issues: {validation['addon_config_issues']}")
+            print(f"  addon config sources: {validation['addon_config_sources']}")
+            if not validation["ok"]:
+                print("  Tip: run `.venv/bin/python -m src.core.cli routes` for the full diagnostic report.")
+        if not validation["ok"]:
+            raise SystemExit(1)
+        return
 
     if getattr(args, "json", False):
         print(json.dumps(config, indent=2, ensure_ascii=False, sort_keys=True))
@@ -731,12 +755,16 @@ def handle_routes_command(args):
     if config["ignored_alias_overrides"]:
         print(f"\nIgnored alias overrides ({len(config['ignored_alias_overrides'])}):")
         for entry in config["ignored_alias_overrides"]:
-            print(f"  {entry['key']} → {entry['route']}  [{entry['reason']}]")
+            route = entry.get("route", "<missing>")
+            key = entry.get("key", "<missing>")
+            print(f"  {key} → {route}  [{entry['reason']}]")
 
     if config["ignored_priority_overrides"]:
         print(f"\nIgnored priority overrides ({len(config['ignored_priority_overrides'])}):")
         for entry in config["ignored_priority_overrides"]:
-            print(f"  {entry['key']} → {entry['route']}  [{entry['reason']}]")
+            route = entry.get("route", "<missing>")
+            key = entry.get("key", "<missing>")
+            print(f"  {key} → {route}  [{entry['reason']}]")
 
     if config["addon_config_paths"]:
         print(f"\nAddon config sources ({len(config['addon_config_paths'])}):")
