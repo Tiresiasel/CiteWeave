@@ -996,6 +996,9 @@ def handle_query_history_command(args):
         when_text = f" at {timestamp_text}" if timestamp_text else ""
         age_text = f" [{relative_age}]" if relative_age else ""
         print(f"{idx}. [{status}]{source_text}{duration_text}{when_text}{age_text} {question}")
+        error_text = entry.get("error")
+        if error_text:
+            print(f"    error: {error_text}")
         plan_summary = _format_query_plan_summary(entry)
         if plan_summary:
             print(f"    plan: {plan_summary}")

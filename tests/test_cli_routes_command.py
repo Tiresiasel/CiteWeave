@@ -482,6 +482,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         self.assertIn("Planned databases:", output)
         self.assertIn("Planned methods:", output)
         self.assertIn("[error] {cli.query} (250 ms) Why did retrieval fail?", output)
+        self.assertIn("error: retrieval unavailable", output)
         self.assertIn("plan: db=vector_db | methods=search_relevant_sentences", output)
         self.assertIn("[success] {cli.query} (100 ms) Summarize Porter", output)
         self.assertIn("plan: db=vector_db, pdf_db | methods=search_relevant_sentences, get_full_pdf_content", output)
