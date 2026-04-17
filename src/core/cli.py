@@ -173,6 +173,7 @@ def main():
     query_history_parser.add_argument("--contains", default="", help="Only include query records whose question or error text contains this substring.")
     query_history_parser.add_argument("--planned-database", default="all", help="Only include query records whose planned query path used this database, such as vector_db or pdf_db.")
     query_history_parser.add_argument("--planned-method", default="all", help="Only include query records whose planned query path used this method, such as search_relevant_sentences.")
+    query_history_parser.add_argument("--check-empty", action="store_true", help="Exit non-zero when the filtered query history is not empty. Useful for automation that should fail on recent matching errors.")
     query_history_parser.add_argument("--json", action="store_true", help="Print machine-readable query history as JSON.")
 
     args = parser.parse_args()
@@ -906,6 +907,39 @@ def handle_query_history_command(args):
         planned_database=getattr(args, "planned_database", "all") or "all",
         planned_method=getattr(args, "planned_method", "all") or "all",
     )
+
+    if getattr(args, "check_empty", False):
+        validation = {
+            "ok": snapshot.get("matching_entries_total", 0) == 0,
+            "matching_entries_total": snapshot.get("matching_entries_total", 0),
+            "status_filter": snapshot.get("status_filter", "all"),
+            "source_filter": snapshot.get("source_filter", "all"),
+            "confirmation_filter": snapshot.get("confirmation_filter", "all"),
+            "contains_filter": snapshot.get("contains_filter", ""),
+            "planned_database_filter": snapshot.get("planned_database_filter", "all"),
+            "planned_method_filter": snapshot.get("planned_method_filter", "all"),
+            "since_hours": snapshot.get("since_hours"),
+        }
+        if getattr(args, "json", False):
+            print(json.dumps(validation, indent=2, ensure_ascii=False, sort_keys=True))
+        else:
+            status_text = "ok" if validation["ok"] else "not empty"
+            print(f"Query history check: {status_text}")
+            print(f"  matching entries: {validation['matching_entries_total']}")
+            print(f"  status filter: {validation['status_filter']}")
+            print(f"  source filter: {validation['source_filter']}")
+            print(f"  confirmation filter: {validation['confirmation_filter']}")
+            if validation["contains_filter"]:
+                print(f"  contains filter: {validation['contains_filter']}")
+            if validation["planned_database_filter"] != "all":
+                print(f"  planned database filter: {validation['planned_database_filter']}")
+            if validation["planned_method_filter"] != "all":
+                print(f"  planned method filter: {validation['planned_method_filter']}")
+            if validation["since_hours"] is not None:
+                print(f"  time window: last {validation['since_hours']} hours")
+        if not validation["ok"]:
+            raise SystemExit(1)
+        return
 
     if getattr(args, "json", False):
         print(json.dumps(snapshot, indent=2, ensure_ascii=False, sort_keys=True))

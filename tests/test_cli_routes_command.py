@@ -488,6 +488,110 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         self.assertIn("plan: db=vector_db, pdf_db | methods=search_relevant_sentences, get_full_pdf_content", output)
 
 
+class CliQueryHistoryCheckCommandTests(unittest.TestCase):
+    def test_handle_query_history_command_check_empty_reports_success(self):
+        cli = _load_cli_module()
+
+        class ExpectedKernel:
+            def query_history_snapshot(self, **kwargs):
+                return {
+                    "log_file": "data/query_history.jsonl",
+                    "requested_limit": kwargs.get("limit", 10),
+                    "status_filter": kwargs.get("status", "all"),
+                    "source_filter": kwargs.get("source", "all"),
+                    "confirmation_filter": kwargs.get("confirmation", "all"),
+                    "contains_filter": kwargs.get("contains", ""),
+                    "planned_database_filter": kwargs.get("planned_database", "all"),
+                    "planned_method_filter": kwargs.get("planned_method", "all"),
+                    "since_hours": kwargs.get("since_hours"),
+                    "matching_entries_total": 0,
+                    "entries_returned": 0,
+                    "entries_considered": 0,
+                    "success_count": 0,
+                    "error_count": 0,
+                    "corrupt_count": 0,
+                    "average_duration_ms": None,
+                    "max_duration_ms": None,
+                    "latest_status": None,
+                    "latest_question": None,
+                    "latest_source": None,
+                    "latest_error": None,
+                    "source_breakdown": [],
+                    "confirmation_breakdown": [],
+                    "query_plan_database_breakdown": [],
+                    "query_plan_method_breakdown": [],
+                    "entries": [],
+                }
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="timeout", planned_database="all", planned_method="all", json=False, since_hours=24, check_empty=True))
+
+        output = buf.getvalue()
+        self.assertIn("Query history check: ok", output)
+        self.assertIn("matching entries: 0", output)
+        self.assertIn("status filter: error", output)
+        self.assertIn("time window: last 24 hours", output)
+
+    def test_handle_query_history_command_check_empty_exits_nonzero_when_matches_exist(self):
+        cli = _load_cli_module()
+
+        class ExpectedKernel:
+            def query_history_snapshot(self, **kwargs):
+                return {
+                    "log_file": "data/query_history.jsonl",
+                    "requested_limit": kwargs.get("limit", 10),
+                    "status_filter": kwargs.get("status", "all"),
+                    "source_filter": kwargs.get("source", "all"),
+                    "confirmation_filter": kwargs.get("confirmation", "all"),
+                    "contains_filter": kwargs.get("contains", ""),
+                    "planned_database_filter": kwargs.get("planned_database", "all"),
+                    "planned_method_filter": kwargs.get("planned_method", "all"),
+                    "since_hours": kwargs.get("since_hours"),
+                    "matching_entries_total": 2,
+                    "entries_returned": 2,
+                    "entries_considered": 2,
+                    "success_count": 0,
+                    "error_count": 2,
+                    "corrupt_count": 0,
+                    "average_duration_ms": 123.0,
+                    "max_duration_ms": 150,
+                    "latest_status": "error",
+                    "latest_question": "recent failure",
+                    "latest_source": "cli.query",
+                    "latest_error": "timeout",
+                    "source_breakdown": [],
+                    "confirmation_breakdown": [],
+                    "query_plan_database_breakdown": [],
+                    "query_plan_method_breakdown": [],
+                    "entries": [],
+                }
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf), self.assertRaises(SystemExit) as exc:
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="", planned_database="vector_db", planned_method="search_relevant_sentences", json=True, since_hours=12, check_empty=True))
+
+        self.assertEqual(exc.exception.code, 1)
+        self.assertEqual(
+            json.loads(buf.getvalue()),
+            {
+                "confirmation_filter": "all",
+                "contains_filter": "",
+                "matching_entries_total": 2,
+                "ok": False,
+                "planned_database_filter": "vector_db",
+                "planned_method_filter": "search_relevant_sentences",
+                "since_hours": 12,
+                "source_filter": "cli.query",
+                "status_filter": "error",
+            },
+        )
+
+
 class CliHealthAndBootstrapCommandTests(unittest.TestCase):
     def test_handle_health_command_supports_json_output(self):
         cli = _load_cli_module()
