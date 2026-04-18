@@ -253,6 +253,36 @@ def test_query_history_summary_reports_query_plan_breakdowns():
         ]
 
 
+
+def test_query_history_summary_can_filter_by_minimum_duration():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_min_duration_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        log_path.write_text(
+            "\n".join(
+                [
+                    json.dumps({"question": "Fast query", "status": "success", "duration_ms": 90, "source": "cli.query"}),
+                    json.dumps({"question": "Slow success", "status": "success", "duration_ms": 450, "source": "cli.query"}),
+                    json.dumps({"question": "Slow error", "status": "error", "duration_ms": 700, "source": "cli.query", "error": "timeout"}),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        summary = recorder.summary(limit=10, min_duration_ms=400)
+
+        assert summary["min_duration_ms_filter"] == 400
+        assert summary["matching_entries_total"] == 2
+        assert summary["entries_returned"] == 2
+        assert summary["entries_considered"] == 2
+        assert summary["average_duration_ms"] == 575.0
+        assert summary["max_duration_ms"] == 700
+        assert [entry["question"] for entry in summary["entries"]] == ["Slow error", "Slow success"]
+
+
 def test_query_history_summary_can_filter_by_planned_database_and_method():
     query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_plan_filters_{uuid.uuid4().hex}")
 

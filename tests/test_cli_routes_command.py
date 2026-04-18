@@ -45,7 +45,7 @@ def _load_cli_module():
                 "addon_config_issues": [],
             }
 
-        def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all"):
+        def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", min_duration_ms=None):
             return {
                 "log_file": "data/query_history.jsonl",
                 "requested_limit": limit,
@@ -56,6 +56,7 @@ def _load_cli_module():
                 "planned_database_filter": planned_database,
                 "planned_method_filter": planned_method,
                 "since_hours": since_hours,
+                "min_duration_ms_filter": min_duration_ms,
                 "entries_returned": 0,
                 "matching_entries_total": 0,
                 "entries_considered": 0,
@@ -374,6 +375,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "contains_filter": "retrieval",
             "planned_database_filter": "vector_db",
             "planned_method_filter": "search_relevant_sentences",
+            "min_duration_ms_filter": 200,
             "entries_returned": 2,
             "matching_entries_total": 2,
             "entries_considered": 2,
@@ -397,7 +399,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all"):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", min_duration_ms=None):
                 assert limit == 5
                 assert status == "error"
                 assert source == "cli.query"
@@ -406,13 +408,14 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
                 assert contains == "retrieval"
                 assert planned_database == "vector_db"
                 assert planned_method == "search_relevant_sentences"
+                assert min_duration_ms == 200
                 return expected
 
         cli.CiteWeaveKernel = ExpectedKernel
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="continue", contains="retrieval", planned_database="vector_db", planned_method="search_relevant_sentences", json=True, since_hours=None))
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="continue", contains="retrieval", planned_database="vector_db", planned_method="search_relevant_sentences", min_duration_ms=200, json=True, since_hours=None))
 
         self.assertEqual(json.loads(buf.getvalue()), expected)
 
@@ -427,6 +430,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "contains_filter": "",
             "planned_database_filter": "all",
             "planned_method_filter": "all",
+            "min_duration_ms_filter": 200,
             "entries_returned": 2,
             "matching_entries_total": 2,
             "entries_considered": 2,
@@ -450,7 +454,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all"):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", min_duration_ms=None):
                 assert limit == 2
                 assert status == "all"
                 assert source == "all"
@@ -459,18 +463,20 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
                 assert contains == ""
                 assert planned_database == "all"
                 assert planned_method == "all"
+                assert min_duration_ms == 200
                 return expected
 
         cli.CiteWeaveKernel = ExpectedKernel
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=2, status="all", source="all", confirmation="all", contains="", planned_database="all", planned_method="all", json=False, since_hours=None))
+            cli.handle_query_history_command(Namespace(limit=2, status="all", source="all", confirmation="all", contains="", planned_database="all", planned_method="all", min_duration_ms=200, json=False, since_hours=None))
 
         output = buf.getvalue()
         self.assertIn("Status filter: all", output)
         self.assertIn("Source filter: all", output)
         self.assertIn("Matching entries before limit: 2", output)
+        self.assertIn("Minimum duration filter: 200 ms", output)
         self.assertIn("Successful queries: 1", output)
         self.assertIn("Failed queries: 1", output)
         self.assertIn("Average duration: 175.0 ms", output)
@@ -503,6 +509,7 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
                     "contains_filter": kwargs.get("contains", ""),
                     "planned_database_filter": kwargs.get("planned_database", "all"),
                     "planned_method_filter": kwargs.get("planned_method", "all"),
+                    "min_duration_ms_filter": kwargs.get("min_duration_ms"),
                     "since_hours": kwargs.get("since_hours"),
                     "matching_entries_total": 0,
                     "entries_returned": 0,
@@ -527,12 +534,13 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="timeout", planned_database="all", planned_method="all", json=False, since_hours=24, check_empty=True))
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="timeout", planned_database="all", planned_method="all", min_duration_ms=300, json=False, since_hours=24, check_empty=True))
 
         output = buf.getvalue()
         self.assertIn("Query history check: ok", output)
         self.assertIn("matching entries: 0", output)
         self.assertIn("status filter: error", output)
+        self.assertIn("minimum duration: 300 ms", output)
         self.assertIn("time window: last 24 hours", output)
 
     def test_handle_query_history_command_check_empty_exits_nonzero_when_matches_exist(self):
@@ -549,6 +557,7 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
                     "contains_filter": kwargs.get("contains", ""),
                     "planned_database_filter": kwargs.get("planned_database", "all"),
                     "planned_method_filter": kwargs.get("planned_method", "all"),
+                    "min_duration_ms_filter": kwargs.get("min_duration_ms"),
                     "since_hours": kwargs.get("since_hours"),
                     "matching_entries_total": 2,
                     "entries_returned": 2,
@@ -573,7 +582,7 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf), self.assertRaises(SystemExit) as exc:
-            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="", planned_database="vector_db", planned_method="search_relevant_sentences", json=True, since_hours=12, check_empty=True))
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="", planned_database="vector_db", planned_method="search_relevant_sentences", min_duration_ms=250, json=True, since_hours=12, check_empty=True))
 
         self.assertEqual(exc.exception.code, 1)
         self.assertEqual(
@@ -582,6 +591,7 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
                 "confirmation_filter": "all",
                 "contains_filter": "",
                 "matching_entries_total": 2,
+                "min_duration_ms_filter": 250,
                 "ok": False,
                 "planned_database_filter": "vector_db",
                 "planned_method_filter": "search_relevant_sentences",
@@ -702,7 +712,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         cli = _load_cli_module()
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all"):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", min_duration_ms=None):
                 assert limit == 5
                 assert status == "error"
                 assert source == "openclaw.facade.query"

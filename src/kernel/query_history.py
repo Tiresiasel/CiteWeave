@@ -55,6 +55,7 @@ class QueryHistoryRecorder:
         contains: Optional[str] = None,
         planned_database: Optional[str] = None,
         planned_method: Optional[str] = None,
+        min_duration_ms: Optional[int] = None,
         now: Optional[float] = None,
     ) -> List[Dict[str, Any]]:
         filtered = entries
@@ -96,6 +97,11 @@ class QueryHistoryRecorder:
                     for method in (entry.get("query_plan_methods") or [])
                 )
             ]
+        if min_duration_ms is not None and min_duration_ms >= 0:
+            filtered = [
+                entry for entry in filtered
+                if isinstance(entry.get("duration_ms"), int) and entry["duration_ms"] >= min_duration_ms
+            ]
         return filtered
 
     def recent_entries(
@@ -108,6 +114,7 @@ class QueryHistoryRecorder:
         contains: Optional[str] = None,
         planned_database: Optional[str] = None,
         planned_method: Optional[str] = None,
+        min_duration_ms: Optional[int] = None,
         now: Optional[float] = None,
     ) -> List[Dict[str, Any]]:
         if limit <= 0:
@@ -122,6 +129,7 @@ class QueryHistoryRecorder:
             contains=contains,
             planned_database=planned_database,
             planned_method=planned_method,
+            min_duration_ms=min_duration_ms,
             now=now,
         )
         return list(reversed(entries[-limit:]))
@@ -136,6 +144,7 @@ class QueryHistoryRecorder:
         contains: Optional[str] = None,
         planned_database: Optional[str] = None,
         planned_method: Optional[str] = None,
+        min_duration_ms: Optional[int] = None,
         now: Optional[float] = None,
     ) -> Dict[str, Any]:
         status_filter = status or "all"
@@ -144,6 +153,7 @@ class QueryHistoryRecorder:
         contains_filter = contains or ""
         planned_database_filter = planned_database or "all"
         planned_method_filter = planned_method or "all"
+        min_duration_filter = min_duration_ms if isinstance(min_duration_ms, int) and min_duration_ms >= 0 else None
         matching_entries = self._apply_filters(
             self.load_entries(),
             status=status_filter,
@@ -153,6 +163,7 @@ class QueryHistoryRecorder:
             contains=contains_filter,
             planned_database=planned_database_filter,
             planned_method=planned_method_filter,
+            min_duration_ms=min_duration_filter,
             now=now,
         )
         recent = self.recent_entries(
@@ -164,6 +175,7 @@ class QueryHistoryRecorder:
             contains=contains_filter,
             planned_database=planned_database_filter,
             planned_method=planned_method_filter,
+            min_duration_ms=min_duration_filter,
             now=now,
         )
         considered = [entry for entry in recent if entry.get("status") != "corrupt"]
@@ -196,6 +208,7 @@ class QueryHistoryRecorder:
             "contains_filter": contains_filter,
             "planned_database_filter": planned_database_filter,
             "planned_method_filter": planned_method_filter,
+            "min_duration_ms_filter": min_duration_filter,
             "entries_returned": len(recent),
             "matching_entries_total": len(matching_entries),
             "entries_considered": len(considered),

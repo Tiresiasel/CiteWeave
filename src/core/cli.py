@@ -173,6 +173,7 @@ def main():
     query_history_parser.add_argument("--contains", default="", help="Only include query records whose question or error text contains this substring.")
     query_history_parser.add_argument("--planned-database", default="all", help="Only include query records whose planned query path used this database, such as vector_db or pdf_db.")
     query_history_parser.add_argument("--planned-method", default="all", help="Only include query records whose planned query path used this method, such as search_relevant_sentences.")
+    query_history_parser.add_argument("--min-duration-ms", type=int, default=None, help="Only include query records whose duration was at least this many milliseconds.")
     query_history_parser.add_argument("--check-empty", action="store_true", help="Exit non-zero when the filtered query history is not empty. Useful for automation that should fail on recent matching errors.")
     query_history_parser.add_argument("--json", action="store_true", help="Print machine-readable query history as JSON.")
 
@@ -906,6 +907,7 @@ def handle_query_history_command(args):
         contains=getattr(args, "contains", "") or "",
         planned_database=getattr(args, "planned_database", "all") or "all",
         planned_method=getattr(args, "planned_method", "all") or "all",
+        min_duration_ms=getattr(args, "min_duration_ms", None),
     )
 
     if getattr(args, "check_empty", False):
@@ -918,6 +920,7 @@ def handle_query_history_command(args):
             "contains_filter": snapshot.get("contains_filter", ""),
             "planned_database_filter": snapshot.get("planned_database_filter", "all"),
             "planned_method_filter": snapshot.get("planned_method_filter", "all"),
+            "min_duration_ms_filter": snapshot.get("min_duration_ms_filter"),
             "since_hours": snapshot.get("since_hours"),
         }
         if getattr(args, "json", False):
@@ -935,6 +938,8 @@ def handle_query_history_command(args):
                 print(f"  planned database filter: {validation['planned_database_filter']}")
             if validation["planned_method_filter"] != "all":
                 print(f"  planned method filter: {validation['planned_method_filter']}")
+            if validation["min_duration_ms_filter"] is not None:
+                print(f"  minimum duration: {validation['min_duration_ms_filter']} ms")
             if validation["since_hours"] is not None:
                 print(f"  time window: last {validation['since_hours']} hours")
         if not validation["ok"]:
@@ -962,6 +967,9 @@ def handle_query_history_command(args):
         print(f"Planned database filter: {planned_database_filter}")
     if planned_method_filter != "all":
         print(f"Planned method filter: {planned_method_filter}")
+    min_duration_filter = snapshot.get("min_duration_ms_filter")
+    if min_duration_filter is not None:
+        print(f"Minimum duration filter: {min_duration_filter} ms")
     print(f"Entries returned: {snapshot.get('entries_returned', 0)}")
     if snapshot.get("matching_entries_total") is not None:
         print(f"Matching entries before limit: {snapshot.get('matching_entries_total', 0)}")

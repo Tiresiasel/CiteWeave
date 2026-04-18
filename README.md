@@ -75,6 +75,7 @@ Then run CiteWeave through the project virtualenv:
 .venv/bin/python -m src.core.cli health
 .venv/bin/python -m src.core.cli bootstrap-plan
 .venv/bin/python -m src.core.cli query-history --limit 20
+.venv/bin/python -m src.core.cli query-history --status error --min-duration-ms 2000
 .venv/bin/python -m src.core.cli chat
 ```
 
@@ -217,6 +218,7 @@ how the system is actually being used.
 .venv/bin/python -m src.core.cli query-history
 .venv/bin/python -m src.core.cli query-history --limit 20
 .venv/bin/python -m src.core.cli query-history --source cli.query --since-hours 24
+.venv/bin/python -m src.core.cli query-history --status error --min-duration-ms 2000
 .venv/bin/python -m src.core.cli query-history --json
 ```
 

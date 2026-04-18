@@ -328,6 +328,7 @@ class CiteWeaveKernel:
         contains: str = "",
         planned_database: str = "all",
         planned_method: str = "all",
+        min_duration_ms: Optional[int] = None,
     ) -> Dict[str, Any]:
         recorder = QueryHistoryRecorder()
         return recorder.summary(
@@ -339,4 +340,5 @@ class CiteWeaveKernel:
             contains=contains,
             planned_database=planned_database,
             planned_method=planned_method,
+            min_duration_ms=min_duration_ms,
         )

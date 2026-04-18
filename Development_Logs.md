@@ -18,6 +18,10 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-04-18**
+- **slow-query diagnostics**: added `query-history --min-duration-ms` so recent telemetry can isolate latency regressions and support automation against slow query windows instead of only empty/non-empty checks.
+- **test coverage**: added regression coverage for minimum-duration filtering in recorder summaries and CLI output/check flows.
+
 ## **2026-04-17**
 - **query-history automation gate**: added CLI `query-history --check-empty` so filtered history windows can fail fast in cron/CI when recent matching entries exist, with concise text and JSON validation output for scripted diagnostics.
 - **test coverage**: added regression coverage for both clean and failing `--check-empty` query-history checks.
