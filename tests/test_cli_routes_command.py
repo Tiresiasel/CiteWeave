@@ -45,7 +45,7 @@ def _load_cli_module():
                 "addon_config_issues": [],
             }
 
-        def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", min_duration_ms=None):
+        def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None):
             return {
                 "log_file": "data/query_history.jsonl",
                 "requested_limit": limit,
@@ -55,6 +55,7 @@ def _load_cli_module():
                 "contains_filter": contains,
                 "planned_database_filter": planned_database,
                 "planned_method_filter": planned_method,
+                "planned_route_filter": planned_route,
                 "since_hours": since_hours,
                 "min_duration_ms_filter": min_duration_ms,
                 "entries_returned": 0,
@@ -73,6 +74,7 @@ def _load_cli_module():
                 "confirmation_breakdown": [],
                 "query_plan_database_breakdown": [],
                 "query_plan_method_breakdown": [],
+                "query_plan_route_breakdown": [],
                 "entries": [],
             }
 
@@ -399,7 +401,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", min_duration_ms=None):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None):
                 assert limit == 5
                 assert status == "error"
                 assert source == "cli.query"
@@ -430,6 +432,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "contains_filter": "",
             "planned_database_filter": "all",
             "planned_method_filter": "all",
+            "planned_route_filter": "all",
             "min_duration_ms_filter": 200,
             "entries_returned": 2,
             "matching_entries_total": 2,
@@ -447,14 +450,15 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "confirmation_breakdown": [{"confirmation": "continue", "count": 2}],
             "query_plan_database_breakdown": [{"database": "vector_db", "count": 2}, {"database": "pdf_db", "count": 1}],
             "query_plan_method_breakdown": [{"method": "search_relevant_sentences", "count": 2}, {"method": "get_full_pdf_content", "count": 1}],
+            "query_plan_route_breakdown": [{"route": "vector_search", "count": 2}, {"route": "pdf_analysis", "count": 1}],
             "entries": [
-                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did retrieval fail?", "duration_ms": 250, "error": "retrieval unavailable", "query_plan_databases": ["vector_db"], "query_plan_methods": ["search_relevant_sentences"]},
-                {"status": "success", "source": "cli.query", "confirmation": "continue", "question": "Summarize Porter", "duration_ms": 100, "query_plan_databases": ["vector_db", "pdf_db"], "query_plan_methods": ["search_relevant_sentences", "get_full_pdf_content"]},
+                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did retrieval fail?", "duration_ms": 250, "error": "retrieval unavailable", "query_plan_databases": ["vector_db"], "query_plan_methods": ["search_relevant_sentences"], "query_plan_routes": ["vector_search"]},
+                {"status": "success", "source": "cli.query", "confirmation": "continue", "question": "Summarize Porter", "duration_ms": 100, "query_plan_databases": ["vector_db", "pdf_db"], "query_plan_methods": ["search_relevant_sentences", "get_full_pdf_content"], "query_plan_routes": ["vector_search", "pdf_analysis"]},
             ],
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", min_duration_ms=None):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None):
                 assert limit == 2
                 assert status == "all"
                 assert source == "all"
@@ -463,6 +467,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
                 assert contains == ""
                 assert planned_database == "all"
                 assert planned_method == "all"
+                assert planned_route == "all"
                 assert min_duration_ms == 200
                 return expected
 
@@ -470,7 +475,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=2, status="all", source="all", confirmation="all", contains="", planned_database="all", planned_method="all", min_duration_ms=200, json=False, since_hours=None))
+            cli.handle_query_history_command(Namespace(limit=2, status="all", source="all", confirmation="all", contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=200, json=False, since_hours=None))
 
         output = buf.getvalue()
         self.assertIn("Status filter: all", output)
@@ -487,11 +492,12 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         self.assertIn("Confirmations:", output)
         self.assertIn("Planned databases:", output)
         self.assertIn("Planned methods:", output)
+        self.assertIn("Planned routes:", output)
         self.assertIn("[error] {cli.query} (250 ms) Why did retrieval fail?", output)
         self.assertIn("error: retrieval unavailable", output)
-        self.assertIn("plan: db=vector_db | methods=search_relevant_sentences", output)
+        self.assertIn("plan: routes=vector_search | db=vector_db | methods=search_relevant_sentences", output)
         self.assertIn("[success] {cli.query} (100 ms) Summarize Porter", output)
-        self.assertIn("plan: db=vector_db, pdf_db | methods=search_relevant_sentences, get_full_pdf_content", output)
+        self.assertIn("plan: routes=vector_search, pdf_analysis | db=vector_db, pdf_db | methods=search_relevant_sentences, get_full_pdf_content", output)
 
 
 class CliQueryHistoryCheckCommandTests(unittest.TestCase):
@@ -509,6 +515,7 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
                     "contains_filter": kwargs.get("contains", ""),
                     "planned_database_filter": kwargs.get("planned_database", "all"),
                     "planned_method_filter": kwargs.get("planned_method", "all"),
+                    "planned_route_filter": kwargs.get("planned_route", "all"),
                     "min_duration_ms_filter": kwargs.get("min_duration_ms"),
                     "since_hours": kwargs.get("since_hours"),
                     "matching_entries_total": 0,
@@ -534,7 +541,7 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="timeout", planned_database="all", planned_method="all", min_duration_ms=300, json=False, since_hours=24, check_empty=True))
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="timeout", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=300, json=False, since_hours=24, check_empty=True))
 
         output = buf.getvalue()
         self.assertIn("Query history check: ok", output)
@@ -557,6 +564,7 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
                     "contains_filter": kwargs.get("contains", ""),
                     "planned_database_filter": kwargs.get("planned_database", "all"),
                     "planned_method_filter": kwargs.get("planned_method", "all"),
+                    "planned_route_filter": kwargs.get("planned_route", "all"),
                     "min_duration_ms_filter": kwargs.get("min_duration_ms"),
                     "since_hours": kwargs.get("since_hours"),
                     "matching_entries_total": 2,
@@ -582,7 +590,7 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf), self.assertRaises(SystemExit) as exc:
-            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="", planned_database="vector_db", planned_method="search_relevant_sentences", min_duration_ms=250, json=True, since_hours=12, check_empty=True))
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="", planned_database="vector_db", planned_method="search_relevant_sentences", planned_route="vector_search", min_duration_ms=250, json=True, since_hours=12, check_empty=True))
 
         self.assertEqual(exc.exception.code, 1)
         self.assertEqual(
@@ -595,6 +603,7 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
                 "ok": False,
                 "planned_database_filter": "vector_db",
                 "planned_method_filter": "search_relevant_sentences",
+                "planned_route_filter": "vector_search",
                 "since_hours": 12,
                 "source_filter": "cli.query",
                 "status_filter": "error",
@@ -712,7 +721,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         cli = _load_cli_module()
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", min_duration_ms=None):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None):
                 assert limit == 5
                 assert status == "error"
                 assert source == "openclaw.facade.query"

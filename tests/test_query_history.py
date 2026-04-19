@@ -80,6 +80,7 @@ def test_query_history_summary_reports_recent_metrics_and_corrupt_rows():
         assert summary["latest_error"] is None
         assert summary["query_plan_database_breakdown"] == []
         assert summary["query_plan_method_breakdown"] == []
+        assert summary["query_plan_route_breakdown"] == []
         assert summary["entries"][0]["question"] == "latest error"
         assert summary["entries"][1]["status"] == "corrupt"
 
@@ -119,6 +120,7 @@ def test_query_history_summary_can_filter_to_errors_only():
         ]
         assert summary["query_plan_database_breakdown"] == []
         assert summary["query_plan_method_breakdown"] == []
+        assert summary["query_plan_route_breakdown"] == []
         assert [entry["question"] for entry in summary["entries"]] == ["still broken", "broken"]
 
 
@@ -250,6 +252,10 @@ def test_query_history_summary_reports_query_plan_breakdowns():
         assert summary["query_plan_method_breakdown"] == [
             {"method": "search_relevant_sentences", "count": 2},
             {"method": "get_full_pdf_content", "count": 1},
+        ]
+        assert summary["query_plan_route_breakdown"] == [
+            {"route": "vector_search", "count": 2},
+            {"route": "pdf_analysis", "count": 1},
         ]
 
 
@@ -486,3 +492,41 @@ def test_kernel_query_records_failures_before_reraising():
         assert entry["query_plan_step_count"] == 0
         assert entry["query_plan_databases"] == []
         assert entry["query_plan_methods"] == []
+
+
+def test_query_history_summary_can_filter_by_planned_route_and_infer_from_databases():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_route_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        log_path.write_text(
+            "\n".join(
+                [
+                    json.dumps({
+                        "question": "Graph lookup",
+                        "status": "success",
+                        "duration_ms": 90,
+                        "query_plan_databases": ["graph_db"],
+                        "query_plan_methods": ["get_papers_citing_paper"],
+                    }),
+                    json.dumps({
+                        "question": "Vector lookup",
+                        "status": "success",
+                        "duration_ms": 110,
+                        "query_plan_databases": ["vector_db"],
+                        "query_plan_methods": ["search_relevant_sentences"],
+                    }),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        summary = recorder.summary(limit=10, planned_route="graph_analysis")
+
+        assert summary["planned_route_filter"] == "graph_analysis"
+        assert summary["entries_returned"] == 1
+        assert summary["latest_question"] == "Graph lookup"
+        assert summary["query_plan_route_breakdown"] == [{"route": "graph_analysis", "count": 1}]
+        assert [entry["question"] for entry in summary["entries"]] == ["Graph lookup"]

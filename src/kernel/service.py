@@ -19,7 +19,7 @@ from src.processing.pdf.document_processor import DocumentProcessor
 from src.agents.multi_agent_research_system import LangGraphResearchSystem
 from src.agents.routing import active_route_configuration
 from .batch_tracker import BatchUploadTracker
-from .query_history import QueryHistoryRecorder
+from .query_history import QueryHistoryRecorder, DATABASE_ROUTE_MAP
 
 
 class CiteWeaveKernel:
@@ -57,6 +57,7 @@ class CiteWeaveKernel:
                     "query_plan_step_count": 0,
                     "query_plan_databases": [],
                     "query_plan_methods": [],
+                    "query_plan_routes": [],
                 }
 
             query_sequence = query_plan.get("query_sequence")
@@ -65,6 +66,7 @@ class CiteWeaveKernel:
 
             databases = []
             methods = []
+            routes = []
             for step in query_sequence:
                 if not isinstance(step, dict):
                     continue
@@ -74,11 +76,15 @@ class CiteWeaveKernel:
                     databases.append(database)
                 if isinstance(method, str) and method not in methods:
                     methods.append(method)
+                route = DATABASE_ROUTE_MAP.get(database) if isinstance(database, str) else None
+                if route and route not in routes:
+                    routes.append(route)
 
             return {
                 "query_plan_step_count": len(query_sequence),
                 "query_plan_databases": databases,
                 "query_plan_methods": methods,
+                "query_plan_routes": routes,
             }
 
         try:
@@ -108,6 +114,7 @@ class CiteWeaveKernel:
                     "query_plan_step_count": 0,
                     "query_plan_databases": [],
                     "query_plan_methods": [],
+                    "query_plan_routes": [],
                 }
             )
             raise
@@ -328,6 +335,7 @@ class CiteWeaveKernel:
         contains: str = "",
         planned_database: str = "all",
         planned_method: str = "all",
+        planned_route: str = "all",
         min_duration_ms: Optional[int] = None,
     ) -> Dict[str, Any]:
         recorder = QueryHistoryRecorder()
@@ -340,5 +348,6 @@ class CiteWeaveKernel:
             contains=contains,
             planned_database=planned_database,
             planned_method=planned_method,
+            planned_route=planned_route,
             min_duration_ms=min_duration_ms,
         )

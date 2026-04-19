@@ -14,6 +14,31 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 
+DATABASE_ROUTE_MAP = {
+    "graph_db": "graph_analysis",
+    "vector_db": "vector_search",
+    "pdf_db": "pdf_analysis",
+}
+
+
+def _infer_query_plan_routes(entry: Dict[str, Any]) -> List[str]:
+    """Return planned routes for an entry, inferring them from databases when needed."""
+    explicit_routes = entry.get("query_plan_routes") or []
+    routes: List[str] = []
+    for route in explicit_routes:
+        if isinstance(route, str) and route and route not in routes:
+            routes.append(route)
+
+    for database in entry.get("query_plan_databases") or []:
+        if not isinstance(database, str):
+            continue
+        route = DATABASE_ROUTE_MAP.get(database)
+        if route and route not in routes:
+            routes.append(route)
+
+    return routes
+
+
 class QueryHistoryRecorder:
     """Append query interaction records to a local JSONL log file."""
 
@@ -55,6 +80,7 @@ class QueryHistoryRecorder:
         contains: Optional[str] = None,
         planned_database: Optional[str] = None,
         planned_method: Optional[str] = None,
+        planned_route: Optional[str] = None,
         min_duration_ms: Optional[int] = None,
         now: Optional[float] = None,
     ) -> List[Dict[str, Any]]:
@@ -97,6 +123,12 @@ class QueryHistoryRecorder:
                     for method in (entry.get("query_plan_methods") or [])
                 )
             ]
+        if planned_route and planned_route != "all":
+            route_needle = planned_route.casefold()
+            filtered = [
+                entry for entry in filtered
+                if any(route.casefold() == route_needle for route in _infer_query_plan_routes(entry))
+            ]
         if min_duration_ms is not None and min_duration_ms >= 0:
             filtered = [
                 entry for entry in filtered
@@ -114,6 +146,7 @@ class QueryHistoryRecorder:
         contains: Optional[str] = None,
         planned_database: Optional[str] = None,
         planned_method: Optional[str] = None,
+        planned_route: Optional[str] = None,
         min_duration_ms: Optional[int] = None,
         now: Optional[float] = None,
     ) -> List[Dict[str, Any]]:
@@ -129,6 +162,7 @@ class QueryHistoryRecorder:
             contains=contains,
             planned_database=planned_database,
             planned_method=planned_method,
+            planned_route=planned_route,
             min_duration_ms=min_duration_ms,
             now=now,
         )
@@ -144,6 +178,7 @@ class QueryHistoryRecorder:
         contains: Optional[str] = None,
         planned_database: Optional[str] = None,
         planned_method: Optional[str] = None,
+        planned_route: Optional[str] = None,
         min_duration_ms: Optional[int] = None,
         now: Optional[float] = None,
     ) -> Dict[str, Any]:
@@ -153,6 +188,7 @@ class QueryHistoryRecorder:
         contains_filter = contains or ""
         planned_database_filter = planned_database or "all"
         planned_method_filter = planned_method or "all"
+        planned_route_filter = planned_route or "all"
         min_duration_filter = min_duration_ms if isinstance(min_duration_ms, int) and min_duration_ms >= 0 else None
         matching_entries = self._apply_filters(
             self.load_entries(),
@@ -163,6 +199,7 @@ class QueryHistoryRecorder:
             contains=contains_filter,
             planned_database=planned_database_filter,
             planned_method=planned_method_filter,
+            planned_route=planned_route_filter,
             min_duration_ms=min_duration_filter,
             now=now,
         )
@@ -175,6 +212,7 @@ class QueryHistoryRecorder:
             contains=contains_filter,
             planned_database=planned_database_filter,
             planned_method=planned_method_filter,
+            planned_route=planned_route_filter,
             min_duration_ms=min_duration_filter,
             now=now,
         )
@@ -198,6 +236,11 @@ class QueryHistoryRecorder:
             for method in (entry.get("query_plan_methods") or [])
             if isinstance(method, str) and method
         )
+        query_plan_route_counter = Counter(
+            route
+            for entry in considered
+            for route in _infer_query_plan_routes(entry)
+        )
 
         return {
             "log_file": str(self.log_file),
@@ -208,6 +251,7 @@ class QueryHistoryRecorder:
             "contains_filter": contains_filter,
             "planned_database_filter": planned_database_filter,
             "planned_method_filter": planned_method_filter,
+            "planned_route_filter": planned_route_filter,
             "min_duration_ms_filter": min_duration_filter,
             "entries_returned": len(recent),
             "matching_entries_total": len(matching_entries),
@@ -229,6 +273,10 @@ class QueryHistoryRecorder:
             "query_plan_method_breakdown": [
                 {"method": method, "count": count}
                 for method, count in query_plan_method_counter.most_common()
+            ],
+            "query_plan_route_breakdown": [
+                {"route": route, "count": count}
+                for route, count in query_plan_route_counter.most_common()
             ],
             "source_breakdown": [
                 {"source": source_name, "count": count}

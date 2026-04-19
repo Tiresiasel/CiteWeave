@@ -173,6 +173,7 @@ def main():
     query_history_parser.add_argument("--contains", default="", help="Only include query records whose question or error text contains this substring.")
     query_history_parser.add_argument("--planned-database", default="all", help="Only include query records whose planned query path used this database, such as vector_db or pdf_db.")
     query_history_parser.add_argument("--planned-method", default="all", help="Only include query records whose planned query path used this method, such as search_relevant_sentences.")
+    query_history_parser.add_argument("--planned-route", default="all", help="Only include query records whose planned query path used this route, such as vector_search or graph_analysis.")
     query_history_parser.add_argument("--min-duration-ms", type=int, default=None, help="Only include query records whose duration was at least this many milliseconds.")
     query_history_parser.add_argument("--check-empty", action="store_true", help="Exit non-zero when the filtered query history is not empty. Useful for automation that should fail on recent matching errors.")
     query_history_parser.add_argument("--json", action="store_true", help="Print machine-readable query history as JSON.")
@@ -883,7 +884,10 @@ def _format_relative_age(timestamp):
 def _format_query_plan_summary(entry):
     databases = [value for value in (entry.get("query_plan_databases") or []) if isinstance(value, str) and value]
     methods = [value for value in (entry.get("query_plan_methods") or []) if isinstance(value, str) and value]
+    routes = [value for value in (entry.get("query_plan_routes") or []) if isinstance(value, str) and value]
     parts = []
+    if routes:
+        parts.append("routes=" + ", ".join(routes))
     if databases:
         parts.append("db=" + ", ".join(databases))
     if methods:
@@ -907,6 +911,7 @@ def handle_query_history_command(args):
         contains=getattr(args, "contains", "") or "",
         planned_database=getattr(args, "planned_database", "all") or "all",
         planned_method=getattr(args, "planned_method", "all") or "all",
+        planned_route=getattr(args, "planned_route", "all") or "all",
         min_duration_ms=getattr(args, "min_duration_ms", None),
     )
 
@@ -920,6 +925,7 @@ def handle_query_history_command(args):
             "contains_filter": snapshot.get("contains_filter", ""),
             "planned_database_filter": snapshot.get("planned_database_filter", "all"),
             "planned_method_filter": snapshot.get("planned_method_filter", "all"),
+            "planned_route_filter": snapshot.get("planned_route_filter", "all"),
             "min_duration_ms_filter": snapshot.get("min_duration_ms_filter"),
             "since_hours": snapshot.get("since_hours"),
         }
@@ -938,6 +944,8 @@ def handle_query_history_command(args):
                 print(f"  planned database filter: {validation['planned_database_filter']}")
             if validation["planned_method_filter"] != "all":
                 print(f"  planned method filter: {validation['planned_method_filter']}")
+            if validation["planned_route_filter"] != "all":
+                print(f"  planned route filter: {validation['planned_route_filter']}")
             if validation["min_duration_ms_filter"] is not None:
                 print(f"  minimum duration: {validation['min_duration_ms_filter']} ms")
             if validation["since_hours"] is not None:
@@ -963,10 +971,13 @@ def handle_query_history_command(args):
         print(f"Time window: last {snapshot.get('since_hours')} hours")
     planned_database_filter = snapshot.get("planned_database_filter", "all")
     planned_method_filter = snapshot.get("planned_method_filter", "all")
+    planned_route_filter = snapshot.get("planned_route_filter", "all")
     if planned_database_filter != "all":
         print(f"Planned database filter: {planned_database_filter}")
     if planned_method_filter != "all":
         print(f"Planned method filter: {planned_method_filter}")
+    if planned_route_filter != "all":
+        print(f"Planned route filter: {planned_route_filter}")
     min_duration_filter = snapshot.get("min_duration_ms_filter")
     if min_duration_filter is not None:
         print(f"Minimum duration filter: {min_duration_filter} ms")
@@ -1018,6 +1029,12 @@ def handle_query_history_command(args):
         print("Planned methods:")
         for item in query_plan_method_breakdown[:8]:
             print(f"  - {item['method']}: {item['count']}")
+
+    query_plan_route_breakdown = snapshot.get("query_plan_route_breakdown") or []
+    if query_plan_route_breakdown:
+        print("Planned routes:")
+        for item in query_plan_route_breakdown:
+            print(f"  - {item['route']}: {item['count']}")
 
     entries = snapshot.get("entries", [])
     if not entries:
