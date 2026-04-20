@@ -103,6 +103,7 @@ class QueryHistoryRecorder:
                 entry for entry in filtered
                 if needle in (entry.get("question") or "").casefold()
                 or needle in (entry.get("error") or "").casefold()
+                or needle in (entry.get("response_preview") or "").casefold()
                 or needle in (entry.get("raw_line") or "").casefold()
             ]
         if planned_database and planned_database != "all":
@@ -220,6 +221,7 @@ class QueryHistoryRecorder:
         success_count = sum(1 for entry in considered if entry.get("status") == "success")
         error_count = sum(1 for entry in considered if entry.get("status") == "error")
         durations = [entry.get("duration_ms") for entry in considered if isinstance(entry.get("duration_ms"), int)]
+        response_sizes = [entry.get("response_chars") for entry in considered if isinstance(entry.get("response_chars"), int)]
         latest = considered[0] if considered else None
         latest_error = next((entry for entry in recent if entry.get("status") == "error"), None)
         source_counter = Counter((entry.get("source") or "unknown") for entry in considered)
@@ -262,10 +264,13 @@ class QueryHistoryRecorder:
             "corrupt_count": len(recent) - len(considered),
             "average_duration_ms": round(sum(durations) / len(durations), 2) if durations else None,
             "max_duration_ms": max(durations) if durations else None,
+            "average_response_chars": round(sum(response_sizes) / len(response_sizes), 2) if response_sizes else None,
+            "max_response_chars": max(response_sizes) if response_sizes else None,
             "latest_status": latest.get("status") if latest else None,
             "latest_question": latest.get("question") if latest else None,
             "latest_source": latest.get("source") if latest else None,
             "latest_error": latest_error.get("error") if latest_error else None,
+            "latest_response_preview": latest.get("response_preview") if latest else None,
             "query_plan_database_breakdown": [
                 {"database": database, "count": count}
                 for database, count in query_plan_database_counter.most_common()

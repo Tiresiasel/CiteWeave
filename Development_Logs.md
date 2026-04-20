@@ -18,6 +18,11 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-04-20**
+- **query-history UX telemetry**: extended `query-history` matching and text diagnostics to include `response_preview` / `response_chars`, so daily iteration can audit answer quality from the local JSONL log instead of only question/error metadata.
+- **response-size summaries**: added average/max response length metrics plus latest response preview in query-history summaries, making it easier to spot terse failures versus useful answers during autonomous iteration.
+- **test coverage**: added regression coverage for response-preview filtering and the enriched CLI output.
+
 ## **2026-04-18**
 - **slow-query diagnostics**: added `query-history --min-duration-ms` so recent telemetry can isolate latency regressions and support automation against slow query windows instead of only empty/non-empty checks.
 - **test coverage**: added regression coverage for minimum-duration filtering in recorder summaries and CLI output/check flows.

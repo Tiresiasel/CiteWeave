@@ -990,10 +990,16 @@ def handle_query_history_command(args):
 
     average_duration_ms = snapshot.get("average_duration_ms")
     max_duration_ms = snapshot.get("max_duration_ms")
+    average_response_chars = snapshot.get("average_response_chars")
+    max_response_chars = snapshot.get("max_response_chars")
     if average_duration_ms is not None:
         print(f"Average duration: {average_duration_ms} ms")
     if max_duration_ms is not None:
         print(f"Slowest query: {max_duration_ms} ms")
+    if average_response_chars is not None:
+        print(f"Average response size: {average_response_chars} chars")
+    if max_response_chars is not None:
+        print(f"Longest response: {max_response_chars} chars")
 
     latest_status = snapshot.get("latest_status")
     latest_question = snapshot.get("latest_question")
@@ -1005,6 +1011,9 @@ def handle_query_history_command(args):
     latest_error = snapshot.get("latest_error")
     if latest_error:
         print(f"Latest error: {latest_error}")
+    latest_response_preview = snapshot.get("latest_response_preview")
+    if latest_response_preview:
+        print(f"Latest response preview: {latest_response_preview}")
 
     source_breakdown = snapshot.get("source_breakdown") or []
     if source_breakdown:
@@ -1058,6 +1067,12 @@ def handle_query_history_command(args):
         error_text = entry.get("error")
         if error_text:
             print(f"    error: {error_text}")
+        response_chars = entry.get("response_chars")
+        response_preview = entry.get("response_preview")
+        if isinstance(response_chars, int):
+            print(f"    response chars: {response_chars}")
+        if response_preview:
+            print(f"    response: {response_preview}")
         plan_summary = _format_query_plan_summary(entry)
         if plan_summary:
             print(f"    plan: {plan_summary}")

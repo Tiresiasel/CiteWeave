@@ -74,10 +74,13 @@ def test_query_history_summary_reports_recent_metrics_and_corrupt_rows():
         assert summary["corrupt_count"] == 1
         assert summary["average_duration_ms"] == 175.0
         assert summary["max_duration_ms"] == 250
+        assert summary["average_response_chars"] is None
+        assert summary["max_response_chars"] is None
         assert summary["latest_status"] == "error"
         assert summary["latest_question"] == "latest error"
         assert summary["latest_source"] is None
         assert summary["latest_error"] is None
+        assert summary["latest_response_preview"] is None
         assert summary["query_plan_database_breakdown"] == []
         assert summary["query_plan_method_breakdown"] == []
         assert summary["query_plan_route_breakdown"] == []
@@ -184,7 +187,7 @@ def test_query_history_summary_can_filter_to_confirmation_mode():
         assert [entry["question"] for entry in summary["entries"]] == ["expanded run"]
 
 
-def test_query_history_summary_can_filter_by_question_or_error_substring():
+def test_query_history_summary_can_filter_by_question_error_or_response_substring():
     query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_contains_{uuid.uuid4().hex}")
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -193,7 +196,7 @@ def test_query_history_summary_can_filter_by_question_or_error_substring():
             "\n".join(
                 [
                     json.dumps({"question": "Why did retrieval fail?", "status": "error", "duration_ms": 250, "source": "cli.query", "error": "retrieval unavailable"}),
-                    json.dumps({"question": "Summarize Porter", "status": "success", "duration_ms": 100, "source": "cli.query"}),
+                    json.dumps({"question": "Summarize Porter", "status": "success", "duration_ms": 100, "source": "cli.query", "response_preview": "Competitive advantage summary", "response_chars": 29}),
                     json.dumps({"question": "Why did ranking fail?", "status": "error", "duration_ms": 200, "source": "cli.query", "error": "timeout"}),
                 ]
             )
@@ -202,14 +205,15 @@ def test_query_history_summary_can_filter_by_question_or_error_substring():
         )
 
         recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
-        summary = recorder.summary(limit=5, contains="retrieval")
+        summary = recorder.summary(limit=5, contains="competitive advantage")
 
-        assert summary["contains_filter"] == "retrieval"
+        assert summary["contains_filter"] == "competitive advantage"
         assert summary["matching_entries_total"] == 1
         assert summary["entries_returned"] == 1
         assert summary["entries_considered"] == 1
-        assert summary["latest_question"] == "Why did retrieval fail?"
-        assert [entry["question"] for entry in summary["entries"]] == ["Why did retrieval fail?"]
+        assert summary["latest_question"] == "Summarize Porter"
+        assert summary["latest_response_preview"] == "Competitive advantage summary"
+        assert [entry["question"] for entry in summary["entries"]] == ["Summarize Porter"]
 
 
 def test_query_history_summary_reports_query_plan_breakdowns():
@@ -286,6 +290,8 @@ def test_query_history_summary_can_filter_by_minimum_duration():
         assert summary["entries_considered"] == 2
         assert summary["average_duration_ms"] == 575.0
         assert summary["max_duration_ms"] == 700
+        assert summary["average_response_chars"] is None
+        assert summary["max_response_chars"] is None
         assert [entry["question"] for entry in summary["entries"]] == ["Slow error", "Slow success"]
 
 

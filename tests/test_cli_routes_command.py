@@ -386,17 +386,20 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "corrupt_count": 0,
             "average_duration_ms": 225.0,
             "max_duration_ms": 250,
+            "average_response_chars": 42.5,
+            "max_response_chars": 50,
             "latest_status": "error",
             "latest_question": "Why did retrieval fail?",
             "latest_source": "cli.query",
             "latest_error": "retrieval unavailable",
+            "latest_response_preview": "Could not retrieve Porter evidence right now.",
             "source_breakdown": [{"source": "cli.query", "count": 2}],
             "confirmation_breakdown": [{"confirmation": "continue", "count": 2}],
             "query_plan_database_breakdown": [{"database": "vector_db", "count": 2}],
             "query_plan_method_breakdown": [{"method": "search_relevant_sentences", "count": 2}],
             "entries": [
-                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did retrieval fail?", "duration_ms": 250, "error": "retrieval unavailable", "query_plan_databases": ["vector_db"], "query_plan_methods": ["search_relevant_sentences"]},
-                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did ranking fail?", "duration_ms": 200, "error": "timeout", "query_plan_databases": ["vector_db"], "query_plan_methods": ["search_relevant_sentences"]},
+                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did retrieval fail?", "duration_ms": 250, "response_chars": 50, "response_preview": "Could not retrieve Porter evidence right now.", "error": "retrieval unavailable", "query_plan_databases": ["vector_db"], "query_plan_methods": ["search_relevant_sentences"]},
+                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did ranking fail?", "duration_ms": 200, "response_chars": 35, "response_preview": "Ranking failed because the request timed out.", "error": "timeout", "query_plan_databases": ["vector_db"], "query_plan_methods": ["search_relevant_sentences"]},
             ],
         }
 
@@ -442,18 +445,21 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "corrupt_count": 0,
             "average_duration_ms": 175.0,
             "max_duration_ms": 250,
+            "average_response_chars": 41.5,
+            "max_response_chars": 47,
             "latest_status": "error",
             "latest_question": "Why did retrieval fail?",
             "latest_source": "cli.query",
             "latest_error": "retrieval unavailable",
+            "latest_response_preview": "Could not retrieve Porter evidence right now.",
             "source_breakdown": [{"source": "cli.query", "count": 2}],
             "confirmation_breakdown": [{"confirmation": "continue", "count": 2}],
             "query_plan_database_breakdown": [{"database": "vector_db", "count": 2}, {"database": "pdf_db", "count": 1}],
             "query_plan_method_breakdown": [{"method": "search_relevant_sentences", "count": 2}, {"method": "get_full_pdf_content", "count": 1}],
             "query_plan_route_breakdown": [{"route": "vector_search", "count": 2}, {"route": "pdf_analysis", "count": 1}],
             "entries": [
-                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did retrieval fail?", "duration_ms": 250, "error": "retrieval unavailable", "query_plan_databases": ["vector_db"], "query_plan_methods": ["search_relevant_sentences"], "query_plan_routes": ["vector_search"]},
-                {"status": "success", "source": "cli.query", "confirmation": "continue", "question": "Summarize Porter", "duration_ms": 100, "query_plan_databases": ["vector_db", "pdf_db"], "query_plan_methods": ["search_relevant_sentences", "get_full_pdf_content"], "query_plan_routes": ["vector_search", "pdf_analysis"]},
+                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did retrieval fail?", "duration_ms": 250, "response_chars": 47, "response_preview": "Could not retrieve Porter evidence right now.", "error": "retrieval unavailable", "query_plan_databases": ["vector_db"], "query_plan_methods": ["search_relevant_sentences"], "query_plan_routes": ["vector_search"]},
+                {"status": "success", "source": "cli.query", "confirmation": "continue", "question": "Summarize Porter", "duration_ms": 100, "response_chars": 36, "response_preview": "Porter links firm advantage to activity fit.", "query_plan_databases": ["vector_db", "pdf_db"], "query_plan_methods": ["search_relevant_sentences", "get_full_pdf_content"], "query_plan_routes": ["vector_search", "pdf_analysis"]},
             ],
         }
 
@@ -486,8 +492,11 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         self.assertIn("Failed queries: 1", output)
         self.assertIn("Average duration: 175.0 ms", output)
         self.assertIn("Slowest query: 250 ms", output)
+        self.assertIn("Average response size: 41.5 chars", output)
+        self.assertIn("Longest response: 47 chars", output)
         self.assertIn("Latest query: error [cli.query] - Why did retrieval fail?", output)
         self.assertIn("Latest error: retrieval unavailable", output)
+        self.assertIn("Latest response preview: Could not retrieve Porter evidence right now.", output)
         self.assertIn("Sources:", output)
         self.assertIn("Confirmations:", output)
         self.assertIn("Planned databases:", output)
@@ -495,8 +504,11 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         self.assertIn("Planned routes:", output)
         self.assertIn("[error] {cli.query} (250 ms) Why did retrieval fail?", output)
         self.assertIn("error: retrieval unavailable", output)
+        self.assertIn("response chars: 47", output)
+        self.assertIn("response: Could not retrieve Porter evidence right now.", output)
         self.assertIn("plan: routes=vector_search | db=vector_db | methods=search_relevant_sentences", output)
         self.assertIn("[success] {cli.query} (100 ms) Summarize Porter", output)
+        self.assertIn("response: Porter links firm advantage to activity fit.", output)
         self.assertIn("plan: routes=vector_search, pdf_analysis | db=vector_db, pdf_db | methods=search_relevant_sentences, get_full_pdf_content", output)
 
 
