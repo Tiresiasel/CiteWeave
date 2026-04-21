@@ -295,6 +295,36 @@ def test_query_history_summary_can_filter_by_minimum_duration():
         assert [entry["question"] for entry in summary["entries"]] == ["Slow error", "Slow success"]
 
 
+def test_query_history_summary_can_filter_by_response_size():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_response_size_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        log_path.write_text(
+            "\n".join(
+                [
+                    json.dumps({"question": "Tiny answer", "status": "success", "duration_ms": 90, "source": "cli.query", "response_chars": 18, "response_preview": "Too short to trust"}),
+                    json.dumps({"question": "Useful answer", "status": "success", "duration_ms": 110, "source": "cli.query", "response_chars": 140, "response_preview": "A grounded explanation with evidence."}),
+                    json.dumps({"question": "Verbose answer", "status": "success", "duration_ms": 130, "source": "cli.query", "response_chars": 420, "response_preview": "A very long answer"}),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        summary = recorder.summary(limit=10, min_response_chars=100, max_response_chars=200)
+
+        assert summary["min_response_chars_filter"] == 100
+        assert summary["max_response_chars_filter"] == 200
+        assert summary["matching_entries_total"] == 1
+        assert summary["entries_returned"] == 1
+        assert summary["average_response_chars"] == 140.0
+        assert summary["max_response_chars"] == 140
+        assert summary["latest_question"] == "Useful answer"
+        assert [entry["question"] for entry in summary["entries"]] == ["Useful answer"]
+
+
 def test_query_history_summary_can_filter_by_planned_database_and_method():
     query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_plan_filters_{uuid.uuid4().hex}")
 

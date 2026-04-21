@@ -18,6 +18,10 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-04-21**
+- **query-history terse-answer filters**: added `--min-response-chars` / `--max-response-chars` so autonomous iteration and local audits can isolate suspiciously short answers or intentionally concise responses without grepping raw JSONL.
+- **test coverage**: added regression coverage for response-size filtering in recorder summaries and CLI output/check flows.
+
 ## **2026-04-20**
 - **query-history UX telemetry**: extended `query-history` matching and text diagnostics to include `response_preview` / `response_chars`, so daily iteration can audit answer quality from the local JSONL log instead of only question/error metadata.
 - **response-size summaries**: added average/max response length metrics plus latest response preview in query-history summaries, making it easier to spot terse failures versus useful answers during autonomous iteration.

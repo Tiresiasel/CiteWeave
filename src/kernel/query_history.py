@@ -82,6 +82,8 @@ class QueryHistoryRecorder:
         planned_method: Optional[str] = None,
         planned_route: Optional[str] = None,
         min_duration_ms: Optional[int] = None,
+        min_response_chars: Optional[int] = None,
+        max_response_chars: Optional[int] = None,
         now: Optional[float] = None,
     ) -> List[Dict[str, Any]]:
         filtered = entries
@@ -135,6 +137,16 @@ class QueryHistoryRecorder:
                 entry for entry in filtered
                 if isinstance(entry.get("duration_ms"), int) and entry["duration_ms"] >= min_duration_ms
             ]
+        if min_response_chars is not None and min_response_chars >= 0:
+            filtered = [
+                entry for entry in filtered
+                if isinstance(entry.get("response_chars"), int) and entry["response_chars"] >= min_response_chars
+            ]
+        if max_response_chars is not None and max_response_chars >= 0:
+            filtered = [
+                entry for entry in filtered
+                if isinstance(entry.get("response_chars"), int) and entry["response_chars"] <= max_response_chars
+            ]
         return filtered
 
     def recent_entries(
@@ -149,6 +161,8 @@ class QueryHistoryRecorder:
         planned_method: Optional[str] = None,
         planned_route: Optional[str] = None,
         min_duration_ms: Optional[int] = None,
+        min_response_chars: Optional[int] = None,
+        max_response_chars: Optional[int] = None,
         now: Optional[float] = None,
     ) -> List[Dict[str, Any]]:
         if limit <= 0:
@@ -165,6 +179,8 @@ class QueryHistoryRecorder:
             planned_method=planned_method,
             planned_route=planned_route,
             min_duration_ms=min_duration_ms,
+            min_response_chars=min_response_chars,
+            max_response_chars=max_response_chars,
             now=now,
         )
         return list(reversed(entries[-limit:]))
@@ -181,6 +197,8 @@ class QueryHistoryRecorder:
         planned_method: Optional[str] = None,
         planned_route: Optional[str] = None,
         min_duration_ms: Optional[int] = None,
+        min_response_chars: Optional[int] = None,
+        max_response_chars: Optional[int] = None,
         now: Optional[float] = None,
     ) -> Dict[str, Any]:
         status_filter = status or "all"
@@ -191,6 +209,8 @@ class QueryHistoryRecorder:
         planned_method_filter = planned_method or "all"
         planned_route_filter = planned_route or "all"
         min_duration_filter = min_duration_ms if isinstance(min_duration_ms, int) and min_duration_ms >= 0 else None
+        min_response_filter = min_response_chars if isinstance(min_response_chars, int) and min_response_chars >= 0 else None
+        max_response_filter = max_response_chars if isinstance(max_response_chars, int) and max_response_chars >= 0 else None
         matching_entries = self._apply_filters(
             self.load_entries(),
             status=status_filter,
@@ -202,6 +222,8 @@ class QueryHistoryRecorder:
             planned_method=planned_method_filter,
             planned_route=planned_route_filter,
             min_duration_ms=min_duration_filter,
+            min_response_chars=min_response_filter,
+            max_response_chars=max_response_filter,
             now=now,
         )
         recent = self.recent_entries(
@@ -215,6 +237,8 @@ class QueryHistoryRecorder:
             planned_method=planned_method_filter,
             planned_route=planned_route_filter,
             min_duration_ms=min_duration_filter,
+            min_response_chars=min_response_filter,
+            max_response_chars=max_response_filter,
             now=now,
         )
         considered = [entry for entry in recent if entry.get("status") != "corrupt"]
@@ -255,6 +279,8 @@ class QueryHistoryRecorder:
             "planned_method_filter": planned_method_filter,
             "planned_route_filter": planned_route_filter,
             "min_duration_ms_filter": min_duration_filter,
+            "min_response_chars_filter": min_response_filter,
+            "max_response_chars_filter": max_response_filter,
             "entries_returned": len(recent),
             "matching_entries_total": len(matching_entries),
             "entries_considered": len(considered),

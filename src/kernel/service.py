@@ -337,6 +337,8 @@ class CiteWeaveKernel:
         planned_method: str = "all",
         planned_route: str = "all",
         min_duration_ms: Optional[int] = None,
+        min_response_chars: Optional[int] = None,
+        max_response_chars: Optional[int] = None,
     ) -> Dict[str, Any]:
         recorder = QueryHistoryRecorder()
         return recorder.summary(
@@ -350,4 +352,6 @@ class CiteWeaveKernel:
             planned_method=planned_method,
             planned_route=planned_route,
             min_duration_ms=min_duration_ms,
+            min_response_chars=min_response_chars,
+            max_response_chars=max_response_chars,
         )

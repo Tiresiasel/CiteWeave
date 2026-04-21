@@ -175,6 +175,8 @@ def main():
     query_history_parser.add_argument("--planned-method", default="all", help="Only include query records whose planned query path used this method, such as search_relevant_sentences.")
     query_history_parser.add_argument("--planned-route", default="all", help="Only include query records whose planned query path used this route, such as vector_search or graph_analysis.")
     query_history_parser.add_argument("--min-duration-ms", type=int, default=None, help="Only include query records whose duration was at least this many milliseconds.")
+    query_history_parser.add_argument("--min-response-chars", type=int, default=None, help="Only include query records whose response size was at least this many characters.")
+    query_history_parser.add_argument("--max-response-chars", type=int, default=None, help="Only include query records whose response size was at most this many characters.")
     query_history_parser.add_argument("--check-empty", action="store_true", help="Exit non-zero when the filtered query history is not empty. Useful for automation that should fail on recent matching errors.")
     query_history_parser.add_argument("--json", action="store_true", help="Print machine-readable query history as JSON.")
 
@@ -913,6 +915,8 @@ def handle_query_history_command(args):
         planned_method=getattr(args, "planned_method", "all") or "all",
         planned_route=getattr(args, "planned_route", "all") or "all",
         min_duration_ms=getattr(args, "min_duration_ms", None),
+        min_response_chars=getattr(args, "min_response_chars", None),
+        max_response_chars=getattr(args, "max_response_chars", None),
     )
 
     if getattr(args, "check_empty", False):
@@ -927,6 +931,8 @@ def handle_query_history_command(args):
             "planned_method_filter": snapshot.get("planned_method_filter", "all"),
             "planned_route_filter": snapshot.get("planned_route_filter", "all"),
             "min_duration_ms_filter": snapshot.get("min_duration_ms_filter"),
+            "min_response_chars_filter": snapshot.get("min_response_chars_filter"),
+            "max_response_chars_filter": snapshot.get("max_response_chars_filter"),
             "since_hours": snapshot.get("since_hours"),
         }
         if getattr(args, "json", False):
@@ -948,6 +954,10 @@ def handle_query_history_command(args):
                 print(f"  planned route filter: {validation['planned_route_filter']}")
             if validation["min_duration_ms_filter"] is not None:
                 print(f"  minimum duration: {validation['min_duration_ms_filter']} ms")
+            if validation.get("min_response_chars_filter") is not None:
+                print(f"  minimum response size: {validation['min_response_chars_filter']} chars")
+            if validation.get("max_response_chars_filter") is not None:
+                print(f"  maximum response size: {validation['max_response_chars_filter']} chars")
             if validation["since_hours"] is not None:
                 print(f"  time window: last {validation['since_hours']} hours")
         if not validation["ok"]:
@@ -981,6 +991,12 @@ def handle_query_history_command(args):
     min_duration_filter = snapshot.get("min_duration_ms_filter")
     if min_duration_filter is not None:
         print(f"Minimum duration filter: {min_duration_filter} ms")
+    min_response_filter = snapshot.get("min_response_chars_filter")
+    if min_response_filter is not None:
+        print(f"Minimum response size filter: {min_response_filter} chars")
+    max_response_filter = snapshot.get("max_response_chars_filter")
+    if max_response_filter is not None:
+        print(f"Maximum response size filter: {max_response_filter} chars")
     print(f"Entries returned: {snapshot.get('entries_returned', 0)}")
     if snapshot.get("matching_entries_total") is not None:
         print(f"Matching entries before limit: {snapshot.get('matching_entries_total', 0)}")

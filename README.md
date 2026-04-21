@@ -219,6 +219,7 @@ how the system is actually being used.
 .venv/bin/python -m src.core.cli query-history --limit 20
 .venv/bin/python -m src.core.cli query-history --source cli.query --since-hours 24
 .venv/bin/python -m src.core.cli query-history --status error --min-duration-ms 2000
+.venv/bin/python -m src.core.cli query-history --status success --max-response-chars 120
 .venv/bin/python -m src.core.cli query-history --json
 ```
 
