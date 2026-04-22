@@ -45,7 +45,7 @@ def _load_cli_module():
                 "addon_config_issues": [],
             }
 
-        def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, min_response_chars=None, max_response_chars=None):
+        def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
             return {
                 "log_file": "data/query_history.jsonl",
                 "requested_limit": limit,
@@ -58,6 +58,7 @@ def _load_cli_module():
                 "planned_route_filter": planned_route,
                 "since_hours": since_hours,
                 "min_duration_ms_filter": min_duration_ms,
+                "max_duration_ms_filter": max_duration_ms,
                 "min_response_chars_filter": min_response_chars,
                 "max_response_chars_filter": max_response_chars,
                 "entries_returned": 0,
@@ -408,7 +409,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, min_response_chars=None, max_response_chars=None):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
                 assert limit == 5
                 assert status == "error"
                 assert source == "cli.query"
@@ -418,6 +419,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
                 assert planned_database == "vector_db"
                 assert planned_method == "search_relevant_sentences"
                 assert min_duration_ms == 200
+                assert max_duration_ms == 260
                 assert min_response_chars is None
                 assert max_response_chars is None
                 return expected
@@ -443,6 +445,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "planned_method_filter": "all",
             "planned_route_filter": "all",
             "min_duration_ms_filter": 200,
+            "max_duration_ms_filter": 260,
             "min_response_chars_filter": None,
             "max_response_chars_filter": None,
             "entries_returned": 2,
@@ -472,7 +475,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, min_response_chars=None, max_response_chars=None):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
                 assert limit == 2
                 assert status == "all"
                 assert source == "all"
@@ -483,6 +486,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
                 assert planned_method == "all"
                 assert planned_route == "all"
                 assert min_duration_ms == 200
+                assert max_duration_ms == 260
                 assert min_response_chars is None
                 assert max_response_chars is None
                 return expected
@@ -491,13 +495,14 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=2, status="all", source="all", confirmation="all", contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=200, min_response_chars=None, max_response_chars=None, json=False, since_hours=None))
+            cli.handle_query_history_command(Namespace(limit=2, status="all", source="all", confirmation="all", contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=200, max_duration_ms=260, min_response_chars=None, max_response_chars=None, json=False, since_hours=None))
 
         output = buf.getvalue()
         self.assertIn("Status filter: all", output)
         self.assertIn("Source filter: all", output)
         self.assertIn("Matching entries before limit: 2", output)
         self.assertIn("Minimum duration filter: 200 ms", output)
+        self.assertIn("Maximum duration filter: 260 ms", output)
         self.assertIn("Successful queries: 1", output)
         self.assertIn("Failed queries: 1", output)
         self.assertIn("Average duration: 175.0 ms", output)
@@ -539,6 +544,7 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
                     "planned_method_filter": kwargs.get("planned_method", "all"),
                     "planned_route_filter": kwargs.get("planned_route", "all"),
                     "min_duration_ms_filter": kwargs.get("min_duration_ms"),
+                    "max_duration_ms_filter": kwargs.get("max_duration_ms"),
                     "min_response_chars_filter": kwargs.get("min_response_chars"),
                     "max_response_chars_filter": kwargs.get("max_response_chars"),
                     "since_hours": kwargs.get("since_hours"),
@@ -565,13 +571,14 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="timeout", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=300, min_response_chars=20, max_response_chars=120, json=False, since_hours=24, check_empty=True))
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="timeout", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=300, max_duration_ms=900, min_response_chars=20, max_response_chars=120, json=False, since_hours=24, check_empty=True))
 
         output = buf.getvalue()
         self.assertIn("Query history check: ok", output)
         self.assertIn("matching entries: 0", output)
         self.assertIn("status filter: error", output)
         self.assertIn("minimum duration: 300 ms", output)
+        self.assertIn("maximum duration: 900 ms", output)
         self.assertIn("minimum response size: 20 chars", output)
         self.assertIn("maximum response size: 120 chars", output)
         self.assertIn("time window: last 24 hours", output)
@@ -592,6 +599,7 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
                     "planned_method_filter": kwargs.get("planned_method", "all"),
                     "planned_route_filter": kwargs.get("planned_route", "all"),
                     "min_duration_ms_filter": kwargs.get("min_duration_ms"),
+                    "max_duration_ms_filter": kwargs.get("max_duration_ms"),
                     "min_response_chars_filter": kwargs.get("min_response_chars"),
                     "max_response_chars_filter": kwargs.get("max_response_chars"),
                     "since_hours": kwargs.get("since_hours"),
@@ -618,7 +626,7 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf), self.assertRaises(SystemExit) as exc:
-            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="", planned_database="vector_db", planned_method="search_relevant_sentences", planned_route="vector_search", min_duration_ms=250, min_response_chars=10, max_response_chars=80, json=True, since_hours=12, check_empty=True))
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="", planned_database="vector_db", planned_method="search_relevant_sentences", planned_route="vector_search", min_duration_ms=250, max_duration_ms=600, min_response_chars=10, max_response_chars=80, json=True, since_hours=12, check_empty=True))
 
         self.assertEqual(exc.exception.code, 1)
         self.assertEqual(
@@ -628,6 +636,7 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
                 "contains_filter": "",
                 "matching_entries_total": 2,
                 "min_duration_ms_filter": 250,
+                "max_duration_ms_filter": 600,
                 "min_response_chars_filter": 10,
                 "max_response_chars_filter": 80,
                 "ok": False,
@@ -751,7 +760,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         cli = _load_cli_module()
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, min_response_chars=None, max_response_chars=None):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
                 assert limit == 5
                 assert status == "error"
                 assert source == "openclaw.facade.query"

@@ -82,6 +82,7 @@ class QueryHistoryRecorder:
         planned_method: Optional[str] = None,
         planned_route: Optional[str] = None,
         min_duration_ms: Optional[int] = None,
+        max_duration_ms: Optional[int] = None,
         min_response_chars: Optional[int] = None,
         max_response_chars: Optional[int] = None,
         now: Optional[float] = None,
@@ -137,6 +138,11 @@ class QueryHistoryRecorder:
                 entry for entry in filtered
                 if isinstance(entry.get("duration_ms"), int) and entry["duration_ms"] >= min_duration_ms
             ]
+        if max_duration_ms is not None and max_duration_ms >= 0:
+            filtered = [
+                entry for entry in filtered
+                if isinstance(entry.get("duration_ms"), int) and entry["duration_ms"] <= max_duration_ms
+            ]
         if min_response_chars is not None and min_response_chars >= 0:
             filtered = [
                 entry for entry in filtered
@@ -161,6 +167,7 @@ class QueryHistoryRecorder:
         planned_method: Optional[str] = None,
         planned_route: Optional[str] = None,
         min_duration_ms: Optional[int] = None,
+        max_duration_ms: Optional[int] = None,
         min_response_chars: Optional[int] = None,
         max_response_chars: Optional[int] = None,
         now: Optional[float] = None,
@@ -179,6 +186,7 @@ class QueryHistoryRecorder:
             planned_method=planned_method,
             planned_route=planned_route,
             min_duration_ms=min_duration_ms,
+            max_duration_ms=max_duration_ms,
             min_response_chars=min_response_chars,
             max_response_chars=max_response_chars,
             now=now,
@@ -197,6 +205,7 @@ class QueryHistoryRecorder:
         planned_method: Optional[str] = None,
         planned_route: Optional[str] = None,
         min_duration_ms: Optional[int] = None,
+        max_duration_ms: Optional[int] = None,
         min_response_chars: Optional[int] = None,
         max_response_chars: Optional[int] = None,
         now: Optional[float] = None,
@@ -209,6 +218,7 @@ class QueryHistoryRecorder:
         planned_method_filter = planned_method or "all"
         planned_route_filter = planned_route or "all"
         min_duration_filter = min_duration_ms if isinstance(min_duration_ms, int) and min_duration_ms >= 0 else None
+        max_duration_filter = max_duration_ms if isinstance(max_duration_ms, int) and max_duration_ms >= 0 else None
         min_response_filter = min_response_chars if isinstance(min_response_chars, int) and min_response_chars >= 0 else None
         max_response_filter = max_response_chars if isinstance(max_response_chars, int) and max_response_chars >= 0 else None
         matching_entries = self._apply_filters(
@@ -222,6 +232,7 @@ class QueryHistoryRecorder:
             planned_method=planned_method_filter,
             planned_route=planned_route_filter,
             min_duration_ms=min_duration_filter,
+            max_duration_ms=max_duration_filter,
             min_response_chars=min_response_filter,
             max_response_chars=max_response_filter,
             now=now,
@@ -237,6 +248,7 @@ class QueryHistoryRecorder:
             planned_method=planned_method_filter,
             planned_route=planned_route_filter,
             min_duration_ms=min_duration_filter,
+            max_duration_ms=max_duration_filter,
             min_response_chars=min_response_filter,
             max_response_chars=max_response_filter,
             now=now,
@@ -279,6 +291,7 @@ class QueryHistoryRecorder:
             "planned_method_filter": planned_method_filter,
             "planned_route_filter": planned_route_filter,
             "min_duration_ms_filter": min_duration_filter,
+            "max_duration_ms_filter": max_duration_filter,
             "min_response_chars_filter": min_response_filter,
             "max_response_chars_filter": max_response_filter,
             "entries_returned": len(recent),
