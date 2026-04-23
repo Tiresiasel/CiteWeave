@@ -157,6 +157,35 @@ def test_query_history_summary_can_filter_to_source_and_recent_time_window():
         assert [entry["question"] for entry in summary["entries"]] == ["recent ok"]
 
 
+def test_query_history_summary_can_filter_to_satisfaction_and_report_breakdown():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_satisfaction_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        log_path.write_text(
+            "\n".join(
+                [
+                    json.dumps({"question": "Grounded answer", "status": "success", "duration_ms": 100, "satisfaction": True}),
+                    json.dumps({"question": "Mixed answer", "status": "success", "duration_ms": 140, "satisfaction": 3}),
+                    json.dumps({"question": "Bad answer", "status": "error", "duration_ms": 200, "satisfaction": "thumbs_down", "error": "not useful"}),
+                    json.dumps({"question": "Unrated answer", "status": "success", "duration_ms": 90, "satisfaction": None}),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        summary = recorder.summary(limit=10, satisfaction="dissatisfied")
+
+        assert summary["satisfaction_filter"] == "dissatisfied"
+        assert summary["matching_entries_total"] == 1
+        assert summary["entries_returned"] == 1
+        assert summary["latest_question"] == "Bad answer"
+        assert summary["satisfaction_breakdown"] == [{"satisfaction": "dissatisfied", "count": 1}]
+        assert [entry["question"] for entry in summary["entries"]] == ["Bad answer"]
+
+
 def test_query_history_summary_can_filter_to_confirmation_mode():
     query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_confirmation_{uuid.uuid4().hex}")
 

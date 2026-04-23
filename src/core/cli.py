@@ -169,6 +169,7 @@ def main():
     query_history_parser.add_argument("--status", choices=["all", "success", "error", "corrupt"], default="all", help="Filter to a specific query status (default: all).")
     query_history_parser.add_argument("--source", default="all", help="Filter to a specific query source, such as cli.query or openclaw.facade.query.")
     query_history_parser.add_argument("--confirmation", default="all", help="Filter to a specific confirmation mode, such as continue or expand.")
+    query_history_parser.add_argument("--satisfaction", default="all", help="Filter to a specific satisfaction bucket, such as satisfied, neutral, dissatisfied, or unrated.")
     query_history_parser.add_argument("--since-hours", type=float, default=None, help="Only include query records from the last N hours.")
     query_history_parser.add_argument("--contains", default="", help="Only include query records whose question or error text contains this substring.")
     query_history_parser.add_argument("--planned-database", default="all", help="Only include query records whose planned query path used this database, such as vector_db or pdf_db.")
@@ -910,6 +911,7 @@ def handle_query_history_command(args):
         status=getattr(args, "status", "all") or "all",
         source=getattr(args, "source", "all") or "all",
         confirmation=getattr(args, "confirmation", "all") or "all",
+        satisfaction=getattr(args, "satisfaction", "all") or "all",
         since_hours=since_hours,
         contains=getattr(args, "contains", "") or "",
         planned_database=getattr(args, "planned_database", "all") or "all",
@@ -928,6 +930,7 @@ def handle_query_history_command(args):
             "status_filter": snapshot.get("status_filter", "all"),
             "source_filter": snapshot.get("source_filter", "all"),
             "confirmation_filter": snapshot.get("confirmation_filter", "all"),
+            "satisfaction_filter": snapshot.get("satisfaction_filter", "all"),
             "contains_filter": snapshot.get("contains_filter", ""),
             "planned_database_filter": snapshot.get("planned_database_filter", "all"),
             "planned_method_filter": snapshot.get("planned_method_filter", "all"),
@@ -947,6 +950,8 @@ def handle_query_history_command(args):
             print(f"  status filter: {validation['status_filter']}")
             print(f"  source filter: {validation['source_filter']}")
             print(f"  confirmation filter: {validation['confirmation_filter']}")
+            if validation["satisfaction_filter"] != "all":
+                print(f"  satisfaction filter: {validation['satisfaction_filter']}")
             if validation["contains_filter"]:
                 print(f"  contains filter: {validation['contains_filter']}")
             if validation["planned_database_filter"] != "all":
@@ -979,6 +984,9 @@ def handle_query_history_command(args):
     print(f"Status filter: {snapshot.get('status_filter', 'all')}")
     print(f"Source filter: {snapshot.get('source_filter', 'all')}")
     print(f"Confirmation filter: {snapshot.get('confirmation_filter', 'all')}")
+    satisfaction_filter = snapshot.get("satisfaction_filter", "all")
+    if satisfaction_filter != "all":
+        print(f"Satisfaction filter: {satisfaction_filter}")
     contains_filter = snapshot.get("contains_filter", "")
     if contains_filter:
         print(f"Contains filter: {contains_filter}")
@@ -1050,6 +1058,12 @@ def handle_query_history_command(args):
         print("Confirmations:")
         for item in confirmation_breakdown:
             print(f"  - {item['confirmation']}: {item['count']}")
+
+    satisfaction_breakdown = snapshot.get("satisfaction_breakdown") or []
+    if satisfaction_breakdown:
+        print("Satisfaction:")
+        for item in satisfaction_breakdown:
+            print(f"  - {item['satisfaction']}: {item['count']}")
 
     query_plan_database_breakdown = snapshot.get("query_plan_database_breakdown") or []
     if query_plan_database_breakdown:

@@ -20,6 +20,47 @@ DATABASE_ROUTE_MAP = {
     "pdf_db": "pdf_analysis",
 }
 
+SATISFACTION_BUCKETS = {
+    "satisfied",
+    "neutral",
+    "dissatisfied",
+    "unrated",
+}
+
+
+def _normalize_satisfaction(value: Any) -> str:
+    """Collapse raw satisfaction values into a stable diagnostic bucket."""
+    if value is None:
+        return "unrated"
+
+    if isinstance(value, bool):
+        return "satisfied" if value else "dissatisfied"
+
+    if isinstance(value, (int, float)):
+        if value >= 4:
+            return "satisfied"
+        if value <= 2:
+            return "dissatisfied"
+        return "neutral"
+
+    if not isinstance(value, str):
+        return "unrated"
+
+    normalized = value.strip().casefold()
+    if not normalized:
+        return "unrated"
+
+    if normalized in {"satisfied", "satisfaction_high", "positive", "yes", "true", "thumbs_up", "up", "good", "helpful"}:
+        return "satisfied"
+    if normalized in {"dissatisfied", "unsatisfied", "negative", "no", "false", "thumbs_down", "down", "bad", "unhelpful"}:
+        return "dissatisfied"
+    if normalized in {"neutral", "mixed", "partial", "unclear", "ok", "average"}:
+        return "neutral"
+    if normalized in {"unrated", "unknown", "none", "n/a", "na", "null"}:
+        return "unrated"
+
+    return normalized if normalized in SATISFACTION_BUCKETS else "unrated"
+
 
 def _infer_query_plan_routes(entry: Dict[str, Any]) -> List[str]:
     """Return planned routes for an entry, inferring them from databases when needed."""
@@ -76,6 +117,7 @@ class QueryHistoryRecorder:
         status: Optional[str] = None,
         source: Optional[str] = None,
         confirmation: Optional[str] = None,
+        satisfaction: Optional[str] = None,
         since_hours: Optional[float] = None,
         contains: Optional[str] = None,
         planned_database: Optional[str] = None,
@@ -94,6 +136,8 @@ class QueryHistoryRecorder:
             filtered = [entry for entry in filtered if (entry.get("source") or "unknown") == source]
         if confirmation and confirmation != "all":
             filtered = [entry for entry in filtered if (entry.get("confirmation") or "unspecified") == confirmation]
+        if satisfaction and satisfaction != "all":
+            filtered = [entry for entry in filtered if _normalize_satisfaction(entry.get("satisfaction")) == satisfaction]
         if since_hours is not None and since_hours >= 0:
             cutoff = (time.time() if now is None else now) - (since_hours * 3600)
             filtered = [
@@ -161,6 +205,7 @@ class QueryHistoryRecorder:
         status: Optional[str] = None,
         source: Optional[str] = None,
         confirmation: Optional[str] = None,
+        satisfaction: Optional[str] = None,
         since_hours: Optional[float] = None,
         contains: Optional[str] = None,
         planned_database: Optional[str] = None,
@@ -180,6 +225,7 @@ class QueryHistoryRecorder:
             status=status,
             source=source,
             confirmation=confirmation,
+            satisfaction=satisfaction,
             since_hours=since_hours,
             contains=contains,
             planned_database=planned_database,
@@ -199,6 +245,7 @@ class QueryHistoryRecorder:
         status: Optional[str] = None,
         source: Optional[str] = None,
         confirmation: Optional[str] = None,
+        satisfaction: Optional[str] = None,
         since_hours: Optional[float] = None,
         contains: Optional[str] = None,
         planned_database: Optional[str] = None,
@@ -213,6 +260,7 @@ class QueryHistoryRecorder:
         status_filter = status or "all"
         source_filter = source or "all"
         confirmation_filter = confirmation or "all"
+        satisfaction_filter = satisfaction or "all"
         contains_filter = contains or ""
         planned_database_filter = planned_database or "all"
         planned_method_filter = planned_method or "all"
@@ -226,6 +274,7 @@ class QueryHistoryRecorder:
             status=status_filter,
             source=source_filter,
             confirmation=confirmation_filter,
+            satisfaction=satisfaction_filter,
             since_hours=since_hours,
             contains=contains_filter,
             planned_database=planned_database_filter,
@@ -242,6 +291,7 @@ class QueryHistoryRecorder:
             status=status_filter,
             source=source_filter,
             confirmation=confirmation_filter,
+            satisfaction=satisfaction_filter,
             since_hours=since_hours,
             contains=contains_filter,
             planned_database=planned_database_filter,
@@ -262,6 +312,7 @@ class QueryHistoryRecorder:
         latest_error = next((entry for entry in recent if entry.get("status") == "error"), None)
         source_counter = Counter((entry.get("source") or "unknown") for entry in considered)
         confirmation_counter = Counter((entry.get("confirmation") or "unspecified") for entry in considered)
+        satisfaction_counter = Counter(_normalize_satisfaction(entry.get("satisfaction")) for entry in considered)
         query_plan_database_counter = Counter(
             database
             for entry in considered
@@ -286,6 +337,7 @@ class QueryHistoryRecorder:
             "status_filter": status_filter,
             "source_filter": source_filter,
             "confirmation_filter": confirmation_filter,
+            "satisfaction_filter": satisfaction_filter,
             "contains_filter": contains_filter,
             "planned_database_filter": planned_database_filter,
             "planned_method_filter": planned_method_filter,
@@ -329,6 +381,10 @@ class QueryHistoryRecorder:
             "confirmation_breakdown": [
                 {"confirmation": confirmation, "count": count}
                 for confirmation, count in confirmation_counter.most_common()
+            ],
+            "satisfaction_breakdown": [
+                {"satisfaction": satisfaction_name, "count": count}
+                for satisfaction_name, count in satisfaction_counter.most_common()
             ],
             "entries": recent,
         }

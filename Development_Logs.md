@@ -18,6 +18,10 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-04-23**
+- **query-history satisfaction diagnostics**: added satisfaction normalization/bucketing plus `query-history --satisfaction` filtering and satisfaction breakdowns so daily iteration can isolate dissatisfied, neutral, satisfied, or unrated runs instead of leaving the telemetry field unused.
+- **test coverage**: added regression coverage for satisfaction filtering and breakdown reporting in query history summaries.
+
 ## **2026-04-21**
 - **query-history terse-answer filters**: added `--min-response-chars` / `--max-response-chars` so autonomous iteration and local audits can isolate suspiciously short answers or intentionally concise responses without grepping raw JSONL.
 - **test coverage**: added regression coverage for response-size filtering in recorder summaries and CLI output/check flows.
