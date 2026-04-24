@@ -359,3 +359,38 @@ class CiteWeaveKernel:
             min_response_chars=min_response_chars,
             max_response_chars=max_response_chars,
         )
+
+    def list_pending_citations_snapshot(self, limit: int = 10) -> Dict[str, Any]:
+        from src.storage.database_integrator import DatabaseIntegrator
+
+        requested_limit = max(0, limit)
+        integrator = DatabaseIntegrator()
+        if not integrator.initialize_connections():
+            return {
+                "requested_limit": requested_limit,
+                "total_stub_papers": 0,
+                "network_stats": {},
+                "stub_papers": [],
+                "error": "Failed to initialize database connections",
+            }
+
+        try:
+            overview = integrator.get_citation_network_overview()
+            if "error" in overview:
+                return {
+                    "requested_limit": requested_limit,
+                    "total_stub_papers": 0,
+                    "network_stats": {},
+                    "stub_papers": [],
+                    "error": overview["error"],
+                }
+
+            stub_papers = overview.get("stub_papers", [])
+            return {
+                "requested_limit": requested_limit,
+                "total_stub_papers": overview.get("total_stub_papers", len(stub_papers)),
+                "network_stats": overview.get("network_stats", {}),
+                "stub_papers": stub_papers[:requested_limit],
+            }
+        finally:
+            integrator.close_connections()

@@ -18,6 +18,11 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-04-24**
+- **pending citation diagnostics**: added first-class graph accessors for citation-network stats, unresolved stub-paper listing, and stub resolution updates so delayed citation workflows no longer depend on missing GraphDB methods.
+- **CLI coverage**: added `list_pending_citations` to surface the most-cited unresolved stub papers directly from the main CLI, with text/JSON output for local audits and automation.
+- **test coverage**: added regression coverage for the new pending-citation CLI output plus GraphDB stub-support helpers.
+
 ## **2026-04-23**
 - **query-history satisfaction diagnostics**: added satisfaction normalization/bucketing plus `query-history --satisfaction` filtering and satisfaction breakdowns so daily iteration can isolate dissatisfied, neutral, satisfied, or unrated runs instead of leaving the telemetry field unused.
 - **test coverage**: added regression coverage for satisfaction filtering and breakdown reporting in query history summaries.

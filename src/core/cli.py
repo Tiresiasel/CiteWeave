@@ -182,6 +182,10 @@ def main():
     query_history_parser.add_argument("--check-empty", action="store_true", help="Exit non-zero when the filtered query history is not empty. Useful for automation that should fail on recent matching errors.")
     query_history_parser.add_argument("--json", action="store_true", help="Print machine-readable query history as JSON.")
 
+    pending_citations_parser = subparsers.add_parser("list_pending_citations", help="List unresolved stub papers that still need uploaded source documents.")
+    pending_citations_parser.add_argument("--limit", type=int, default=10, help="How many unresolved stub papers to display (default: 10).")
+    pending_citations_parser.add_argument("--json", action="store_true", help="Print machine-readable pending-citation diagnostics as JSON.")
+
     args = parser.parse_args()
 
     if args.command == "upload":
@@ -204,6 +208,8 @@ def main():
         handle_bootstrap_plan_command(args)
     elif args.command == "query-history":
         handle_query_history_command(args)
+    elif args.command == "list_pending_citations":
+        handle_list_pending_citations_command(args)
     else:
         parser.print_help()
 
@@ -856,6 +862,51 @@ def handle_bootstrap_plan_command(args):
             for step in next_steps:
                 print(f"  - {step}")
     print()
+
+
+def handle_list_pending_citations_command(args):
+    """Display unresolved stub papers that still need uploaded source documents."""
+    kernel = CiteWeaveKernel()
+    snapshot = kernel.list_pending_citations_snapshot(limit=max(0, getattr(args, "limit", 10)))
+
+    if getattr(args, "json", False):
+        print(json.dumps(snapshot, indent=2, ensure_ascii=False, sort_keys=True))
+        return
+
+    print("\n=== CiteWeave Pending Citations ===\n")
+    if snapshot.get("error"):
+        print(f"Error: {snapshot['error']}")
+        raise SystemExit(1)
+
+    stats = snapshot.get("network_stats", {})
+    print(f"Requested limit: {snapshot.get('requested_limit', 0)}")
+    if stats:
+        print(f"Total papers: {stats.get('total_papers', 0)}")
+        print(f"Uploaded papers: {stats.get('uploaded_papers', 0)}")
+        print(f"Stub papers: {stats.get('stub_papers', 0)}")
+        print(f"Citation relations: {stats.get('total_citation_relations', 0)}")
+    print(f"Pending citations available: {snapshot.get('total_stub_papers', 0)}")
+
+    stub_papers = snapshot.get("stub_papers", []) or []
+    if not stub_papers:
+        print("No pending citations found.")
+        print()
+        return
+
+    print("\nTop unresolved cited papers:")
+    for index, stub in enumerate(stub_papers, start=1):
+        title = stub.get("title") or "Untitled"
+        year = stub.get("year") or "unknown year"
+        cited_by = stub.get("cited_by_count", 0)
+        print(f"  {index}. {title} ({year})")
+        print(f"     cited by: {cited_by}")
+        if stub.get("authors"):
+            authors = stub["authors"] if isinstance(stub["authors"], str) else ", ".join(stub["authors"])
+            print(f"     authors: {authors}")
+        if stub.get("paper_id"):
+            print(f"     paper_id: {stub['paper_id']}")
+    print()
+
 
 
 def _format_query_history_timestamp(timestamp):

@@ -45,7 +45,7 @@ def _load_cli_module():
                 "addon_config_issues": [],
             }
 
-        def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
+        def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
             return {
                 "log_file": "data/query_history.jsonl",
                 "requested_limit": limit,
@@ -409,7 +409,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
                 assert limit == 5
                 assert status == "error"
                 assert source == "cli.query"
@@ -475,7 +475,8 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
+                assert satisfaction == "all"
                 assert limit == 2
                 assert status == "all"
                 assert source == "all"
@@ -643,6 +644,7 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
                 "planned_database_filter": "vector_db",
                 "planned_method_filter": "search_relevant_sentences",
                 "planned_route_filter": "vector_search",
+                "satisfaction_filter": "all",
                 "since_hours": 12,
                 "source_filter": "cli.query",
                 "status_filter": "error",
@@ -760,7 +762,8 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         cli = _load_cli_module()
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
+                assert satisfaction == "all"
                 assert limit == 5
                 assert status == "error"
                 assert source == "openclaw.facade.query"
@@ -812,7 +815,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=5, status="error", source="openclaw.facade.query", confirmation="expand", since_hours=24, contains="", planned_database="pdf_db", planned_method="get_full_pdf_content", json=False))
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="openclaw.facade.query", confirmation="expand", satisfaction="all", since_hours=24, contains="", planned_database="pdf_db", planned_method="get_full_pdf_content", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None, json=False))
 
         output = buf.getvalue()
         self.assertIn("Time window: last 24 hours", output)
@@ -822,6 +825,83 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         self.assertIn("Planned method filter: get_full_pdf_content", output)
         self.assertIn("recent failure", output)
         self.assertIn("timeout", output)
+
+
+class CliPendingCitationsCommandTests(unittest.TestCase):
+    def test_handle_list_pending_citations_command_supports_json_output(self):
+        cli = _load_cli_module()
+        expected = {
+            "requested_limit": 3,
+            "total_stub_papers": 2,
+            "network_stats": {
+                "total_papers": 5,
+                "uploaded_papers": 3,
+                "stub_papers": 2,
+                "total_citation_relations": 7,
+            },
+            "stub_papers": [
+                {
+                    "paper_id": "porter_1980",
+                    "title": "Competitive Strategy",
+                    "authors": ["Michael Porter"],
+                    "year": 1980,
+                    "cited_by_count": 4,
+                }
+            ],
+        }
+
+        class ExpectedKernel:
+            def list_pending_citations_snapshot(self, limit=10):
+                assert limit == 3
+                return expected
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            cli.handle_list_pending_citations_command(Namespace(limit=3, json=True))
+
+        payload = json.loads(buf.getvalue())
+        self.assertEqual(payload, expected)
+
+    def test_handle_list_pending_citations_command_renders_text_output(self):
+        cli = _load_cli_module()
+
+        class ExpectedKernel:
+            def list_pending_citations_snapshot(self, limit=10):
+                assert limit == 2
+                return {
+                    "requested_limit": 2,
+                    "total_stub_papers": 1,
+                    "network_stats": {
+                        "total_papers": 5,
+                        "uploaded_papers": 4,
+                        "stub_papers": 1,
+                        "total_citation_relations": 8,
+                    },
+                    "stub_papers": [
+                        {
+                            "paper_id": "porter_1980",
+                            "title": "Competitive Strategy",
+                            "authors": ["Michael Porter"],
+                            "year": 1980,
+                            "cited_by_count": 4,
+                        }
+                    ],
+                }
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            cli.handle_list_pending_citations_command(Namespace(limit=2, json=False))
+
+        output = buf.getvalue()
+        self.assertIn("Pending citations available: 1", output)
+        self.assertIn("Competitive Strategy (1980)", output)
+        self.assertIn("cited by: 4", output)
+        self.assertIn("authors: Michael Porter", output)
+        self.assertIn("paper_id: porter_1980", output)
 
 
 class RepoHygieneTests(unittest.TestCase):
