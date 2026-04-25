@@ -120,6 +120,9 @@ class QueryHistoryRecorder:
         satisfaction: Optional[str] = None,
         since_hours: Optional[float] = None,
         contains: Optional[str] = None,
+        question_contains: Optional[str] = None,
+        error_contains: Optional[str] = None,
+        response_contains: Optional[str] = None,
         planned_database: Optional[str] = None,
         planned_method: Optional[str] = None,
         planned_route: Optional[str] = None,
@@ -152,6 +155,24 @@ class QueryHistoryRecorder:
                 or needle in (entry.get("error") or "").casefold()
                 or needle in (entry.get("response_preview") or "").casefold()
                 or needle in (entry.get("raw_line") or "").casefold()
+            ]
+        if question_contains:
+            question_needle = question_contains.casefold()
+            filtered = [
+                entry for entry in filtered
+                if question_needle in (entry.get("question") or "").casefold()
+            ]
+        if error_contains:
+            error_needle = error_contains.casefold()
+            filtered = [
+                entry for entry in filtered
+                if error_needle in (entry.get("error") or "").casefold()
+            ]
+        if response_contains:
+            response_needle = response_contains.casefold()
+            filtered = [
+                entry for entry in filtered
+                if response_needle in (entry.get("response_preview") or "").casefold()
             ]
         if planned_database and planned_database != "all":
             database_needle = planned_database.casefold()
@@ -208,6 +229,9 @@ class QueryHistoryRecorder:
         satisfaction: Optional[str] = None,
         since_hours: Optional[float] = None,
         contains: Optional[str] = None,
+        question_contains: Optional[str] = None,
+        error_contains: Optional[str] = None,
+        response_contains: Optional[str] = None,
         planned_database: Optional[str] = None,
         planned_method: Optional[str] = None,
         planned_route: Optional[str] = None,
@@ -228,6 +252,9 @@ class QueryHistoryRecorder:
             satisfaction=satisfaction,
             since_hours=since_hours,
             contains=contains,
+            question_contains=question_contains,
+            error_contains=error_contains,
+            response_contains=response_contains,
             planned_database=planned_database,
             planned_method=planned_method,
             planned_route=planned_route,
@@ -248,6 +275,9 @@ class QueryHistoryRecorder:
         satisfaction: Optional[str] = None,
         since_hours: Optional[float] = None,
         contains: Optional[str] = None,
+        question_contains: Optional[str] = None,
+        error_contains: Optional[str] = None,
+        response_contains: Optional[str] = None,
         planned_database: Optional[str] = None,
         planned_method: Optional[str] = None,
         planned_route: Optional[str] = None,
@@ -262,6 +292,9 @@ class QueryHistoryRecorder:
         confirmation_filter = confirmation or "all"
         satisfaction_filter = satisfaction or "all"
         contains_filter = contains or ""
+        question_contains_filter = question_contains or ""
+        error_contains_filter = error_contains or ""
+        response_contains_filter = response_contains or ""
         planned_database_filter = planned_database or "all"
         planned_method_filter = planned_method or "all"
         planned_route_filter = planned_route or "all"
@@ -277,6 +310,9 @@ class QueryHistoryRecorder:
             satisfaction=satisfaction_filter,
             since_hours=since_hours,
             contains=contains_filter,
+            question_contains=question_contains_filter,
+            error_contains=error_contains_filter,
+            response_contains=response_contains_filter,
             planned_database=planned_database_filter,
             planned_method=planned_method_filter,
             planned_route=planned_route_filter,
@@ -294,6 +330,9 @@ class QueryHistoryRecorder:
             satisfaction=satisfaction_filter,
             since_hours=since_hours,
             contains=contains_filter,
+            question_contains=question_contains_filter,
+            error_contains=error_contains_filter,
+            response_contains=response_contains_filter,
             planned_database=planned_database_filter,
             planned_method=planned_method_filter,
             planned_route=planned_route_filter,
@@ -339,6 +378,9 @@ class QueryHistoryRecorder:
             "confirmation_filter": confirmation_filter,
             "satisfaction_filter": satisfaction_filter,
             "contains_filter": contains_filter,
+            "question_contains_filter": question_contains_filter,
+            "error_contains_filter": error_contains_filter,
+            "response_contains_filter": response_contains_filter,
             "planned_database_filter": planned_database_filter,
             "planned_method_filter": planned_method_filter,
             "planned_route_filter": planned_route_filter,

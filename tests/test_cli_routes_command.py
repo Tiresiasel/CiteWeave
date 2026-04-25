@@ -45,7 +45,7 @@ def _load_cli_module():
                 "addon_config_issues": [],
             }
 
-        def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
+        def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", question_contains="", error_contains="", response_contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
             return {
                 "log_file": "data/query_history.jsonl",
                 "requested_limit": limit,
@@ -53,6 +53,9 @@ def _load_cli_module():
                 "source_filter": source,
                 "confirmation_filter": confirmation,
                 "contains_filter": contains,
+                "question_contains_filter": question_contains,
+                "error_contains_filter": error_contains,
+                "response_contains_filter": response_contains,
                 "planned_database_filter": planned_database,
                 "planned_method_filter": planned_method,
                 "planned_route_filter": planned_route,
@@ -409,13 +412,16 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", question_contains="", error_contains="", response_contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
                 assert limit == 5
                 assert status == "error"
                 assert source == "cli.query"
                 assert confirmation == "continue"
                 assert since_hours is None
                 assert contains == "retrieval"
+                assert question_contains == ""
+                assert error_contains == ""
+                assert response_contains == ""
                 assert planned_database == "vector_db"
                 assert planned_method == "search_relevant_sentences"
                 assert min_duration_ms == 200
@@ -431,6 +437,72 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="continue", contains="retrieval", planned_database="vector_db", planned_method="search_relevant_sentences", planned_route="all", min_duration_ms=200, min_response_chars=None, max_response_chars=None, json=True, since_hours=None))
 
         self.assertEqual(json.loads(buf.getvalue()), expected)
+
+    def test_handle_query_history_command_passes_specific_text_filters_to_kernel(self):
+        cli = _load_cli_module()
+        expected = {
+            "log_file": "data/query_history.jsonl",
+            "requested_limit": 3,
+            "status_filter": "all",
+            "source_filter": "all",
+            "confirmation_filter": "all",
+            "satisfaction_filter": "all",
+            "contains_filter": "",
+            "question_contains_filter": "why did",
+            "error_contains_filter": "retrieval",
+            "response_contains_filter": "porter evidence",
+            "planned_database_filter": "all",
+            "planned_method_filter": "all",
+            "planned_route_filter": "all",
+            "min_duration_ms_filter": None,
+            "max_duration_ms_filter": None,
+            "min_response_chars_filter": None,
+            "max_response_chars_filter": None,
+            "entries_returned": 1,
+            "matching_entries_total": 1,
+            "entries_considered": 1,
+            "success_count": 0,
+            "error_count": 1,
+            "corrupt_count": 0,
+            "average_duration_ms": 250.0,
+            "max_duration_ms": 250,
+            "average_response_chars": 47.0,
+            "max_response_chars": 47,
+            "latest_status": "error",
+            "latest_question": "Why did retrieval fail?",
+            "latest_source": "cli.query",
+            "latest_error": "retrieval unavailable",
+            "latest_response_preview": "Could not retrieve Porter evidence right now.",
+            "source_breakdown": [{"source": "cli.query", "count": 1}],
+            "confirmation_breakdown": [{"confirmation": "continue", "count": 1}],
+            "query_plan_database_breakdown": [],
+            "query_plan_method_breakdown": [],
+            "query_plan_route_breakdown": [],
+            "entries": [
+                {"status": "error", "source": "cli.query", "confirmation": "continue", "question": "Why did retrieval fail?", "duration_ms": 250, "response_chars": 47, "response_preview": "Could not retrieve Porter evidence right now.", "error": "retrieval unavailable"},
+            ],
+        }
+
+        class ExpectedKernel:
+            def query_history_snapshot(self, **kwargs):
+                assert kwargs["contains"] == ""
+                assert kwargs["question_contains"] == "why did"
+                assert kwargs["error_contains"] == "retrieval"
+                assert kwargs["response_contains"] == "porter evidence"
+                return expected
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            cli.handle_query_history_command(Namespace(limit=3, status="all", source="all", confirmation="all", satisfaction="all", contains="", question_contains="why did", error_contains="retrieval", response_contains="porter evidence", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None, json=False, since_hours=None))
+
+        output = buf.getvalue()
+        self.assertIn("Question filter: why did", output)
+        self.assertIn("Error filter: retrieval", output)
+        self.assertIn("Response filter: porter evidence", output)
+        self.assertIn("Why did retrieval fail?", output)
+
 
     def test_handle_query_history_command_text_output_is_actionable(self):
         cli = _load_cli_module()
@@ -475,7 +547,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", question_contains="", error_contains="", response_contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
                 assert satisfaction == "all"
                 assert limit == 2
                 assert status == "all"
@@ -483,6 +555,9 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
                 assert confirmation == "all"
                 assert since_hours is None
                 assert contains == ""
+                assert question_contains == ""
+                assert error_contains == ""
+                assert response_contains == ""
                 assert planned_database == "all"
                 assert planned_method == "all"
                 assert planned_route == "all"
@@ -541,6 +616,9 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
                     "source_filter": kwargs.get("source", "all"),
                     "confirmation_filter": kwargs.get("confirmation", "all"),
                     "contains_filter": kwargs.get("contains", ""),
+                    "question_contains_filter": kwargs.get("question_contains", ""),
+                    "error_contains_filter": kwargs.get("error_contains", ""),
+                    "response_contains_filter": kwargs.get("response_contains", ""),
                     "planned_database_filter": kwargs.get("planned_database", "all"),
                     "planned_method_filter": kwargs.get("planned_method", "all"),
                     "planned_route_filter": kwargs.get("planned_route", "all"),
@@ -596,6 +674,9 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
                     "source_filter": kwargs.get("source", "all"),
                     "confirmation_filter": kwargs.get("confirmation", "all"),
                     "contains_filter": kwargs.get("contains", ""),
+                    "question_contains_filter": kwargs.get("question_contains", ""),
+                    "error_contains_filter": kwargs.get("error_contains", ""),
+                    "response_contains_filter": kwargs.get("response_contains", ""),
                     "planned_database_filter": kwargs.get("planned_database", "all"),
                     "planned_method_filter": kwargs.get("planned_method", "all"),
                     "planned_route_filter": kwargs.get("planned_route", "all"),
@@ -635,6 +716,9 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
             {
                 "confirmation_filter": "all",
                 "contains_filter": "",
+                "question_contains_filter": "",
+                "error_contains_filter": "",
+                "response_contains_filter": "",
                 "matching_entries_total": 2,
                 "min_duration_ms_filter": 250,
                 "max_duration_ms_filter": 600,
@@ -762,7 +846,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         cli = _load_cli_module()
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", question_contains="", error_contains="", response_contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
                 assert satisfaction == "all"
                 assert limit == 5
                 assert status == "error"
@@ -770,6 +854,9 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
                 assert confirmation == "expand"
                 assert since_hours == 24
                 assert contains == ""
+                assert question_contains == ""
+                assert error_contains == ""
+                assert response_contains == ""
                 assert planned_database == "pdf_db"
                 assert planned_method == "get_full_pdf_content"
                 return {

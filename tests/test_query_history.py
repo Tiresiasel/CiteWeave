@@ -245,6 +245,41 @@ def test_query_history_summary_can_filter_by_question_error_or_response_substrin
         assert [entry["question"] for entry in summary["entries"]] == ["Summarize Porter"]
 
 
+def test_query_history_summary_can_filter_question_error_and_response_text_independently():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_text_filters_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        log_path.write_text(
+            "\n".join(
+                [
+                    json.dumps({"question": "Why did retrieval fail?", "status": "error", "duration_ms": 250, "error": "retrieval unavailable", "response_preview": "Could not retrieve Porter evidence right now."}),
+                    json.dumps({"question": "Summarize Porter", "status": "success", "duration_ms": 100, "response_preview": "Competitive advantage summary"}),
+                    json.dumps({"question": "Why did ranking fail?", "status": "error", "duration_ms": 200, "error": "timeout", "response_preview": "Ranking failed because the request timed out."}),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        summary = recorder.summary(
+            limit=10,
+            question_contains="why did",
+            error_contains="retrieval",
+            response_contains="porter evidence",
+        )
+
+        assert summary["question_contains_filter"] == "why did"
+        assert summary["error_contains_filter"] == "retrieval"
+        assert summary["response_contains_filter"] == "porter evidence"
+        assert summary["matching_entries_total"] == 1
+        assert summary["entries_returned"] == 1
+        assert summary["latest_question"] == "Why did retrieval fail?"
+        assert [entry["question"] for entry in summary["entries"]] == ["Why did retrieval fail?"]
+
+
+
 def test_query_history_summary_reports_query_plan_breakdowns():
     query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_plan_{uuid.uuid4().hex}")
 

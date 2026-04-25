@@ -171,7 +171,10 @@ def main():
     query_history_parser.add_argument("--confirmation", default="all", help="Filter to a specific confirmation mode, such as continue or expand.")
     query_history_parser.add_argument("--satisfaction", default="all", help="Filter to a specific satisfaction bucket, such as satisfied, neutral, dissatisfied, or unrated.")
     query_history_parser.add_argument("--since-hours", type=float, default=None, help="Only include query records from the last N hours.")
-    query_history_parser.add_argument("--contains", default="", help="Only include query records whose question or error text contains this substring.")
+    query_history_parser.add_argument("--contains", default="", help="Only include query records whose question, error, response preview, or raw corrupt row contains this substring.")
+    query_history_parser.add_argument("--question-contains", default="", help="Only include query records whose question text contains this substring.")
+    query_history_parser.add_argument("--error-contains", default="", help="Only include query records whose error text contains this substring.")
+    query_history_parser.add_argument("--response-contains", default="", help="Only include query records whose response preview contains this substring.")
     query_history_parser.add_argument("--planned-database", default="all", help="Only include query records whose planned query path used this database, such as vector_db or pdf_db.")
     query_history_parser.add_argument("--planned-method", default="all", help="Only include query records whose planned query path used this method, such as search_relevant_sentences.")
     query_history_parser.add_argument("--planned-route", default="all", help="Only include query records whose planned query path used this route, such as vector_search or graph_analysis.")
@@ -965,6 +968,9 @@ def handle_query_history_command(args):
         satisfaction=getattr(args, "satisfaction", "all") or "all",
         since_hours=since_hours,
         contains=getattr(args, "contains", "") or "",
+        question_contains=getattr(args, "question_contains", "") or "",
+        error_contains=getattr(args, "error_contains", "") or "",
+        response_contains=getattr(args, "response_contains", "") or "",
         planned_database=getattr(args, "planned_database", "all") or "all",
         planned_method=getattr(args, "planned_method", "all") or "all",
         planned_route=getattr(args, "planned_route", "all") or "all",
@@ -983,6 +989,9 @@ def handle_query_history_command(args):
             "confirmation_filter": snapshot.get("confirmation_filter", "all"),
             "satisfaction_filter": snapshot.get("satisfaction_filter", "all"),
             "contains_filter": snapshot.get("contains_filter", ""),
+            "question_contains_filter": snapshot.get("question_contains_filter", ""),
+            "error_contains_filter": snapshot.get("error_contains_filter", ""),
+            "response_contains_filter": snapshot.get("response_contains_filter", ""),
             "planned_database_filter": snapshot.get("planned_database_filter", "all"),
             "planned_method_filter": snapshot.get("planned_method_filter", "all"),
             "planned_route_filter": snapshot.get("planned_route_filter", "all"),
@@ -1005,6 +1014,12 @@ def handle_query_history_command(args):
                 print(f"  satisfaction filter: {validation['satisfaction_filter']}")
             if validation["contains_filter"]:
                 print(f"  contains filter: {validation['contains_filter']}")
+            if validation["question_contains_filter"]:
+                print(f"  question filter: {validation['question_contains_filter']}")
+            if validation["error_contains_filter"]:
+                print(f"  error filter: {validation['error_contains_filter']}")
+            if validation["response_contains_filter"]:
+                print(f"  response filter: {validation['response_contains_filter']}")
             if validation["planned_database_filter"] != "all":
                 print(f"  planned database filter: {validation['planned_database_filter']}")
             if validation["planned_method_filter"] != "all":
@@ -1041,6 +1056,15 @@ def handle_query_history_command(args):
     contains_filter = snapshot.get("contains_filter", "")
     if contains_filter:
         print(f"Contains filter: {contains_filter}")
+    question_contains_filter = snapshot.get("question_contains_filter", "")
+    if question_contains_filter:
+        print(f"Question filter: {question_contains_filter}")
+    error_contains_filter = snapshot.get("error_contains_filter", "")
+    if error_contains_filter:
+        print(f"Error filter: {error_contains_filter}")
+    response_contains_filter = snapshot.get("response_contains_filter", "")
+    if response_contains_filter:
+        print(f"Response filter: {response_contains_filter}")
     if snapshot.get("since_hours") is not None:
         print(f"Time window: last {snapshot.get('since_hours')} hours")
     planned_database_filter = snapshot.get("planned_database_filter", "all")
