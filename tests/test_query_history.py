@@ -81,6 +81,7 @@ def test_query_history_summary_reports_recent_metrics_and_corrupt_rows():
         assert summary["latest_source"] is None
         assert summary["latest_error"] is None
         assert summary["latest_response_preview"] is None
+        assert summary["error_breakdown"] == []
         assert summary["query_plan_database_breakdown"] == []
         assert summary["query_plan_method_breakdown"] == []
         assert summary["query_plan_route_breakdown"] == []
@@ -117,6 +118,10 @@ def test_query_history_summary_can_filter_to_errors_only():
         assert summary["latest_question"] == "still broken"
         assert summary["latest_source"] == "openclaw.facade.query"
         assert summary["latest_error"] == "rate limit"
+        assert summary["error_breakdown"] == [
+            {"error": "rate limit", "count": 1},
+            {"error": "timeout", "count": 1},
+        ]
         assert summary["source_breakdown"] == [
             {"source": "openclaw.facade.query", "count": 1},
             {"source": "cli.query", "count": 1},
@@ -182,6 +187,7 @@ def test_query_history_summary_can_filter_to_satisfaction_and_report_breakdown()
         assert summary["matching_entries_total"] == 1
         assert summary["entries_returned"] == 1
         assert summary["latest_question"] == "Bad answer"
+        assert summary["error_breakdown"] == [{"error": "not useful", "count": 1}]
         assert summary["satisfaction_breakdown"] == [{"satisfaction": "dissatisfied", "count": 1}]
         assert [entry["question"] for entry in summary["entries"]] == ["Bad answer"]
 

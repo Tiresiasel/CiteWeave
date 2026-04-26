@@ -1140,6 +1140,12 @@ def handle_query_history_command(args):
         for item in satisfaction_breakdown:
             print(f"  - {item['satisfaction']}: {item['count']}")
 
+    error_breakdown = snapshot.get("error_breakdown") or []
+    if error_breakdown:
+        print("Errors:")
+        for item in error_breakdown[:8]:
+            print(f"  - {item['error']}: {item['count']}")
+
     query_plan_database_breakdown = snapshot.get("query_plan_database_breakdown") or []
     if query_plan_database_breakdown:
         print("Planned databases:")

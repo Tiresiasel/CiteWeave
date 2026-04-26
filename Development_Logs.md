@@ -18,6 +18,10 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-04-26**
+- **query-history recurring error diagnostics**: added aggregated error breakdowns to `query-history` summaries/text output so daily iteration can spot repeated failure modes without scanning every entry manually.
+- **test coverage**: added regression coverage for summary-level error aggregation and CLI rendering.
+
 ## **2026-04-24**
 - **pending citation diagnostics**: added first-class graph accessors for citation-network stats, unresolved stub-paper listing, and stub resolution updates so delayed citation workflows no longer depend on missing GraphDB methods.
 - **CLI coverage**: added `list_pending_citations` to surface the most-cited unresolved stub papers directly from the main CLI, with text/JSON output for local audits and automation.

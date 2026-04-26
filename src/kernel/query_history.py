@@ -352,6 +352,12 @@ class QueryHistoryRecorder:
         source_counter = Counter((entry.get("source") or "unknown") for entry in considered)
         confirmation_counter = Counter((entry.get("confirmation") or "unspecified") for entry in considered)
         satisfaction_counter = Counter(_normalize_satisfaction(entry.get("satisfaction")) for entry in considered)
+        error_counter = Counter(
+            error
+            for entry in considered
+            for error in [entry.get("error")]
+            if isinstance(error, str) and error
+        )
         query_plan_database_counter = Counter(
             database
             for entry in considered
@@ -427,6 +433,10 @@ class QueryHistoryRecorder:
             "satisfaction_breakdown": [
                 {"satisfaction": satisfaction_name, "count": count}
                 for satisfaction_name, count in satisfaction_counter.most_common()
+            ],
+            "error_breakdown": [
+                {"error": error_name, "count": count}
+                for error_name, count in error_counter.most_common()
             ],
             "entries": recent,
         }

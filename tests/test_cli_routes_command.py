@@ -401,6 +401,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "latest_source": "cli.query",
             "latest_error": "retrieval unavailable",
             "latest_response_preview": "Could not retrieve Porter evidence right now.",
+            "error_breakdown": [{"error": "retrieval unavailable", "count": 1}, {"error": "timeout", "count": 1}],
             "source_breakdown": [{"source": "cli.query", "count": 2}],
             "confirmation_breakdown": [{"confirmation": "continue", "count": 2}],
             "query_plan_database_breakdown": [{"database": "vector_db", "count": 2}],
@@ -473,6 +474,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "latest_source": "cli.query",
             "latest_error": "retrieval unavailable",
             "latest_response_preview": "Could not retrieve Porter evidence right now.",
+            "error_breakdown": [{"error": "retrieval unavailable", "count": 1}],
             "source_breakdown": [{"source": "cli.query", "count": 1}],
             "confirmation_breakdown": [{"confirmation": "continue", "count": 1}],
             "query_plan_database_breakdown": [],
@@ -535,6 +537,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
             "latest_source": "cli.query",
             "latest_error": "retrieval unavailable",
             "latest_response_preview": "Could not retrieve Porter evidence right now.",
+            "error_breakdown": [{"error": "retrieval unavailable", "count": 1}],
             "source_breakdown": [{"source": "cli.query", "count": 2}],
             "confirmation_breakdown": [{"confirmation": "continue", "count": 2}],
             "query_plan_database_breakdown": [{"database": "vector_db", "count": 2}, {"database": "pdf_db", "count": 1}],
@@ -590,6 +593,8 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         self.assertIn("Latest response preview: Could not retrieve Porter evidence right now.", output)
         self.assertIn("Sources:", output)
         self.assertIn("Confirmations:", output)
+        self.assertIn("Errors:", output)
+        self.assertIn("  - retrieval unavailable: 1", output)
         self.assertIn("Planned databases:", output)
         self.assertIn("Planned methods:", output)
         self.assertIn("Planned routes:", output)
