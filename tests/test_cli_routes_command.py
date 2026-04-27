@@ -637,6 +637,8 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
                     "entries_considered": 0,
                     "success_count": 0,
                     "error_count": 0,
+                    "success_rate": None,
+                    "error_rate": None,
                     "corrupt_count": 0,
                     "average_duration_ms": None,
                     "max_duration_ms": None,
@@ -655,11 +657,12 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="timeout", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=300, max_duration_ms=900, min_response_chars=20, max_response_chars=120, json=False, since_hours=24, check_empty=True))
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="timeout", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=300, max_duration_ms=900, min_response_chars=20, max_response_chars=120, json=False, since_hours=24, check_empty=True, check_max_errors=None, check_max_error_rate=None))
 
         output = buf.getvalue()
         self.assertIn("Query history check: ok", output)
         self.assertIn("matching entries: 0", output)
+        self.assertIn("error count: 0", output)
         self.assertIn("status filter: error", output)
         self.assertIn("minimum duration: 300 ms", output)
         self.assertIn("maximum duration: 900 ms", output)
@@ -695,6 +698,8 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
                     "entries_considered": 2,
                     "success_count": 0,
                     "error_count": 2,
+                    "success_rate": 0.0,
+                    "error_rate": 1.0,
                     "corrupt_count": 0,
                     "average_duration_ms": 123.0,
                     "max_duration_ms": 150,
@@ -713,14 +718,20 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf), self.assertRaises(SystemExit) as exc:
-            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="", planned_database="vector_db", planned_method="search_relevant_sentences", planned_route="vector_search", min_duration_ms=250, max_duration_ms=600, min_response_chars=10, max_response_chars=80, json=True, since_hours=12, check_empty=True))
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="all", contains="", planned_database="vector_db", planned_method="search_relevant_sentences", planned_route="vector_search", min_duration_ms=250, max_duration_ms=600, min_response_chars=10, max_response_chars=80, json=True, since_hours=12, check_empty=True, check_max_errors=None, check_max_error_rate=None))
 
         self.assertEqual(exc.exception.code, 1)
         self.assertEqual(
             json.loads(buf.getvalue()),
             {
+                "check_empty": True,
+                "check_max_error_rate": None,
+                "check_max_errors": None,
                 "confirmation_filter": "all",
                 "contains_filter": "",
+                "error_count": 2,
+                "error_rate": 1.0,
+                "failure_reasons": ["not empty"],
                 "question_contains_filter": "",
                 "error_contains_filter": "",
                 "response_contains_filter": "",
@@ -739,6 +750,55 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
                 "status_filter": "error",
             },
         )
+
+    def test_handle_query_history_command_check_max_error_rate_exits_when_threshold_is_exceeded(self):
+        cli = _load_cli_module()
+
+        class ExpectedKernel:
+            def query_history_snapshot(self, **kwargs):
+                return {
+                    "log_file": "data/query_history.jsonl",
+                    "requested_limit": kwargs.get("limit", 10),
+                    "status_filter": kwargs.get("status", "all"),
+                    "source_filter": kwargs.get("source", "all"),
+                    "confirmation_filter": kwargs.get("confirmation", "all"),
+                    "satisfaction_filter": kwargs.get("satisfaction", "all"),
+                    "contains_filter": kwargs.get("contains", ""),
+                    "question_contains_filter": kwargs.get("question_contains", ""),
+                    "error_contains_filter": kwargs.get("error_contains", ""),
+                    "response_contains_filter": kwargs.get("response_contains", ""),
+                    "planned_database_filter": kwargs.get("planned_database", "all"),
+                    "planned_method_filter": kwargs.get("planned_method", "all"),
+                    "planned_route_filter": kwargs.get("planned_route", "all"),
+                    "min_duration_ms_filter": kwargs.get("min_duration_ms"),
+                    "max_duration_ms_filter": kwargs.get("max_duration_ms"),
+                    "min_response_chars_filter": kwargs.get("min_response_chars"),
+                    "max_response_chars_filter": kwargs.get("max_response_chars"),
+                    "since_hours": kwargs.get("since_hours"),
+                    "matching_entries_total": 4,
+                    "entries_returned": 4,
+                    "entries_considered": 4,
+                    "success_count": 1,
+                    "error_count": 3,
+                    "success_rate": 0.25,
+                    "error_rate": 0.75,
+                    "corrupt_count": 0,
+                    "entries": [],
+                }
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf), self.assertRaises(SystemExit) as exc:
+            cli.handle_query_history_command(Namespace(limit=10, status="all", source="all", confirmation="all", satisfaction="all", contains="", question_contains="", error_contains="", response_contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None, json=False, since_hours=6, check_empty=False, check_max_errors=3, check_max_error_rate=0.5))
+
+        self.assertEqual(exc.exception.code, 1)
+        output = buf.getvalue()
+        self.assertIn("Query history check: error rate too high", output)
+        self.assertIn("error count: 3", output)
+        self.assertIn("error rate: 0.75", output)
+        self.assertIn("max errors check: 3", output)
+        self.assertIn("max error rate check: 0.5", output)
 
 
 class CliHealthAndBootstrapCommandTests(unittest.TestCase):

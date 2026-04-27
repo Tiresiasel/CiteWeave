@@ -18,6 +18,10 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-04-27**
+- **query-history automation thresholds**: added success/error rate metrics plus CLI validation gates for `--check-max-errors` and `--check-max-error-rate`, so cron and CI can tolerate small blips while still failing on sustained query regressions.
+- **test coverage**: added regression coverage for summary-level rate metrics and threshold-based CLI checks.
+
 ## **2026-04-26**
 - **query-history recurring error diagnostics**: added aggregated error breakdowns to `query-history` summaries/text output so daily iteration can spot repeated failure modes without scanning every entry manually.
 - **test coverage**: added regression coverage for summary-level error aggregation and CLI rendering.

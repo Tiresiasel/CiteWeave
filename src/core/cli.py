@@ -183,6 +183,8 @@ def main():
     query_history_parser.add_argument("--min-response-chars", type=int, default=None, help="Only include query records whose response size was at least this many characters.")
     query_history_parser.add_argument("--max-response-chars", type=int, default=None, help="Only include query records whose response size was at most this many characters.")
     query_history_parser.add_argument("--check-empty", action="store_true", help="Exit non-zero when the filtered query history is not empty. Useful for automation that should fail on recent matching errors.")
+    query_history_parser.add_argument("--check-max-errors", type=int, default=None, help="Exit non-zero when the filtered window contains more than this many error rows.")
+    query_history_parser.add_argument("--check-max-error-rate", type=float, default=None, help="Exit non-zero when the filtered window exceeds this error-rate threshold between 0 and 1.")
     query_history_parser.add_argument("--json", action="store_true", help="Print machine-readable query history as JSON.")
 
     pending_citations_parser = subparsers.add_parser("list_pending_citations", help="List unresolved stub papers that still need uploaded source documents.")
@@ -980,10 +982,31 @@ def handle_query_history_command(args):
         max_response_chars=getattr(args, "max_response_chars", None),
     )
 
-    if getattr(args, "check_empty", False):
+    check_empty = getattr(args, "check_empty", False)
+    check_max_errors = getattr(args, "check_max_errors", None)
+    check_max_error_rate = getattr(args, "check_max_error_rate", None)
+    if check_empty or check_max_errors is not None or check_max_error_rate is not None:
+        matching_entries_total = snapshot.get("matching_entries_total", 0)
+        error_count = snapshot.get("error_count", 0)
+        error_rate = snapshot.get("error_rate")
+        failure_reasons = []
+        if check_empty and matching_entries_total != 0:
+            failure_reasons.append("not empty")
+        if check_max_errors is not None and error_count > check_max_errors:
+            failure_reasons.append("too many errors")
+        if check_max_error_rate is not None:
+            normalized_threshold = max(0.0, min(1.0, check_max_error_rate))
+            if error_rate is not None and error_rate > normalized_threshold:
+                failure_reasons.append("error rate too high")
         validation = {
-            "ok": snapshot.get("matching_entries_total", 0) == 0,
-            "matching_entries_total": snapshot.get("matching_entries_total", 0),
+            "ok": not failure_reasons,
+            "failure_reasons": failure_reasons,
+            "matching_entries_total": matching_entries_total,
+            "error_count": error_count,
+            "error_rate": error_rate,
+            "check_empty": check_empty,
+            "check_max_errors": check_max_errors,
+            "check_max_error_rate": max(0.0, min(1.0, check_max_error_rate)) if check_max_error_rate is not None else None,
             "status_filter": snapshot.get("status_filter", "all"),
             "source_filter": snapshot.get("source_filter", "all"),
             "confirmation_filter": snapshot.get("confirmation_filter", "all"),
@@ -1004,12 +1027,21 @@ def handle_query_history_command(args):
         if getattr(args, "json", False):
             print(json.dumps(validation, indent=2, ensure_ascii=False, sort_keys=True))
         else:
-            status_text = "ok" if validation["ok"] else "not empty"
+            status_text = "ok" if validation["ok"] else ", ".join(validation["failure_reasons"])
             print(f"Query history check: {status_text}")
             print(f"  matching entries: {validation['matching_entries_total']}")
+            print(f"  error count: {validation['error_count']}")
+            if validation["error_rate"] is not None:
+                print(f"  error rate: {validation['error_rate']}")
             print(f"  status filter: {validation['status_filter']}")
             print(f"  source filter: {validation['source_filter']}")
             print(f"  confirmation filter: {validation['confirmation_filter']}")
+            if validation["check_empty"]:
+                print("  empty check: enabled")
+            if validation["check_max_errors"] is not None:
+                print(f"  max errors check: {validation['check_max_errors']}")
+            if validation["check_max_error_rate"] is not None:
+                print(f"  max error rate check: {validation['check_max_error_rate']}")
             if validation["satisfaction_filter"] != "all":
                 print(f"  satisfaction filter: {validation['satisfaction_filter']}")
             if validation["contains_filter"]:
@@ -1093,6 +1125,10 @@ def handle_query_history_command(args):
         print(f"Matching entries before limit: {snapshot.get('matching_entries_total', 0)}")
     print(f"Successful queries: {snapshot.get('success_count', 0)}")
     print(f"Failed queries: {snapshot.get('error_count', 0)}")
+    if snapshot.get("success_rate") is not None:
+        print(f"Success rate: {snapshot.get('success_rate')}")
+    if snapshot.get("error_rate") is not None:
+        print(f"Error rate: {snapshot.get('error_rate')}")
     print(f"Corrupt rows skipped into diagnostics: {snapshot.get('corrupt_count', 0)}")
 
     average_duration_ms = snapshot.get("average_duration_ms")

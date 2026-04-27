@@ -345,6 +345,8 @@ class QueryHistoryRecorder:
         considered = [entry for entry in recent if entry.get("status") != "corrupt"]
         success_count = sum(1 for entry in considered if entry.get("status") == "success")
         error_count = sum(1 for entry in considered if entry.get("status") == "error")
+        success_rate = round(success_count / len(considered), 4) if considered else None
+        error_rate = round(error_count / len(considered), 4) if considered else None
         durations = [entry.get("duration_ms") for entry in considered if isinstance(entry.get("duration_ms"), int)]
         response_sizes = [entry.get("response_chars") for entry in considered if isinstance(entry.get("response_chars"), int)]
         latest = considered[0] if considered else None
@@ -400,6 +402,8 @@ class QueryHistoryRecorder:
             "since_hours": since_hours,
             "success_count": success_count,
             "error_count": error_count,
+            "success_rate": success_rate,
+            "error_rate": error_rate,
             "corrupt_count": len(recent) - len(considered),
             "average_duration_ms": round(sum(durations) / len(durations), 2) if durations else None,
             "max_duration_ms": max(durations) if durations else None,

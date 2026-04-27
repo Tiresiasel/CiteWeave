@@ -71,6 +71,8 @@ def test_query_history_summary_reports_recent_metrics_and_corrupt_rows():
         assert summary["entries_considered"] == 2
         assert summary["success_count"] == 1
         assert summary["error_count"] == 1
+        assert summary["success_rate"] == 0.5
+        assert summary["error_rate"] == 0.5
         assert summary["corrupt_count"] == 1
         assert summary["average_duration_ms"] == 175.0
         assert summary["max_duration_ms"] == 250
@@ -114,6 +116,8 @@ def test_query_history_summary_can_filter_to_errors_only():
         assert summary["entries_considered"] == 2
         assert summary["success_count"] == 0
         assert summary["error_count"] == 2
+        assert summary["success_rate"] == 0.0
+        assert summary["error_rate"] == 1.0
         assert summary["latest_status"] == "error"
         assert summary["latest_question"] == "still broken"
         assert summary["latest_source"] == "openclaw.facade.query"
