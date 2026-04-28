@@ -136,6 +136,39 @@ def test_query_history_summary_can_filter_to_errors_only():
         assert [entry["question"] for entry in summary["entries"]] == ["still broken", "broken"]
 
 
+def test_query_history_summary_reports_matching_window_metrics_independent_of_limit():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_matching_metrics_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        log_path.write_text(
+            "\n".join(
+                [
+                    json.dumps({"question": "old error", "status": "error", "duration_ms": 100, "error": "timeout"}),
+                    json.dumps({"question": "old success", "status": "success", "duration_ms": 120}),
+                    json.dumps({"question": "new error", "status": "error", "duration_ms": 140, "error": "llm unavailable"}),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        summary = recorder.summary(limit=1)
+
+        assert summary["entries_returned"] == 1
+        assert summary["entries_considered"] == 1
+        assert summary["error_count"] == 1
+        assert summary["error_rate"] == 1.0
+        assert summary["matching_entries_total"] == 3
+        assert summary["matching_entries_considered"] == 3
+        assert summary["matching_success_count"] == 1
+        assert summary["matching_error_count"] == 2
+        assert summary["matching_success_rate"] == 0.3333
+        assert summary["matching_error_rate"] == 0.6667
+        assert summary["matching_corrupt_count"] == 0
+
+
 def test_query_history_summary_can_filter_to_source_and_recent_time_window():
     query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_recent_{uuid.uuid4().hex}")
 

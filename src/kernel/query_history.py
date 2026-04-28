@@ -343,10 +343,15 @@ class QueryHistoryRecorder:
             now=now,
         )
         considered = [entry for entry in recent if entry.get("status") != "corrupt"]
+        matching_considered = [entry for entry in matching_entries if entry.get("status") != "corrupt"]
         success_count = sum(1 for entry in considered if entry.get("status") == "success")
         error_count = sum(1 for entry in considered if entry.get("status") == "error")
+        matching_success_count = sum(1 for entry in matching_considered if entry.get("status") == "success")
+        matching_error_count = sum(1 for entry in matching_considered if entry.get("status") == "error")
         success_rate = round(success_count / len(considered), 4) if considered else None
         error_rate = round(error_count / len(considered), 4) if considered else None
+        matching_success_rate = round(matching_success_count / len(matching_considered), 4) if matching_considered else None
+        matching_error_rate = round(matching_error_count / len(matching_considered), 4) if matching_considered else None
         durations = [entry.get("duration_ms") for entry in considered if isinstance(entry.get("duration_ms"), int)]
         response_sizes = [entry.get("response_chars") for entry in considered if isinstance(entry.get("response_chars"), int)]
         latest = considered[0] if considered else None
@@ -399,12 +404,18 @@ class QueryHistoryRecorder:
             "entries_returned": len(recent),
             "matching_entries_total": len(matching_entries),
             "entries_considered": len(considered),
+            "matching_entries_considered": len(matching_considered),
             "since_hours": since_hours,
             "success_count": success_count,
             "error_count": error_count,
             "success_rate": success_rate,
             "error_rate": error_rate,
+            "matching_success_count": matching_success_count,
+            "matching_error_count": matching_error_count,
+            "matching_success_rate": matching_success_rate,
+            "matching_error_rate": matching_error_rate,
             "corrupt_count": len(recent) - len(considered),
+            "matching_corrupt_count": len(matching_entries) - len(matching_considered),
             "average_duration_ms": round(sum(durations) / len(durations), 2) if durations else None,
             "max_duration_ms": max(durations) if durations else None,
             "average_response_chars": round(sum(response_sizes) / len(response_sizes), 2) if response_sizes else None,

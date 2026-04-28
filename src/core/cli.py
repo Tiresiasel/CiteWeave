@@ -987,8 +987,8 @@ def handle_query_history_command(args):
     check_max_error_rate = getattr(args, "check_max_error_rate", None)
     if check_empty or check_max_errors is not None or check_max_error_rate is not None:
         matching_entries_total = snapshot.get("matching_entries_total", 0)
-        error_count = snapshot.get("error_count", 0)
-        error_rate = snapshot.get("error_rate")
+        error_count = snapshot.get("matching_error_count", snapshot.get("error_count", 0))
+        error_rate = snapshot.get("matching_error_rate", snapshot.get("error_rate"))
         failure_reasons = []
         if check_empty and matching_entries_total != 0:
             failure_reasons.append("not empty")
