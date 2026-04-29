@@ -169,6 +169,60 @@ def test_query_history_summary_reports_matching_window_metrics_independent_of_li
         assert summary["matching_corrupt_count"] == 0
 
 
+
+def test_query_history_summary_reports_matching_window_breakdowns_independent_of_limit():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_matching_breakdowns_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        log_path.write_text(
+            "\n".join(
+                [
+                    json.dumps({
+                        "question": "old graph error",
+                        "status": "error",
+                        "duration_ms": 100,
+                        "error": "neo4j unavailable",
+                        "source": "cli.query",
+                        "query_plan_databases": ["graph_db"],
+                    }),
+                    json.dumps({
+                        "question": "vector ok",
+                        "status": "success",
+                        "duration_ms": 120,
+                        "source": "openclaw.facade.query",
+                        "query_plan_databases": ["vector_db"],
+                    }),
+                    json.dumps({
+                        "question": "new graph error",
+                        "status": "error",
+                        "duration_ms": 140,
+                        "error": "neo4j unavailable",
+                        "source": "cli.query",
+                        "query_plan_databases": ["graph_db"],
+                    }),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        summary = recorder.summary(limit=1)
+
+        assert summary["error_breakdown"] == [{"error": "neo4j unavailable", "count": 1}]
+        assert summary["matching_error_breakdown"] == [{"error": "neo4j unavailable", "count": 2}]
+        assert summary["source_breakdown"] == [{"source": "cli.query", "count": 1}]
+        assert summary["matching_source_breakdown"] == [
+            {"source": "cli.query", "count": 2},
+            {"source": "openclaw.facade.query", "count": 1},
+        ]
+        assert summary["query_plan_route_breakdown"] == [{"route": "graph_analysis", "count": 1}]
+        assert summary["matching_query_plan_route_breakdown"] == [
+            {"route": "graph_analysis", "count": 2},
+            {"route": "vector_search", "count": 1},
+        ]
+
 def test_query_history_summary_can_filter_to_source_and_recent_time_window():
     query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_recent_{uuid.uuid4().hex}")
 

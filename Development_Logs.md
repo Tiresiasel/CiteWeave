@@ -18,6 +18,11 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-04-29**
+- **query-history full-window breakdowns**: added matching-window source/error/route/plan breakdowns so limited displays still expose repeated failure modes across the complete filtered window.
+- **CLI diagnostics**: text output now distinguishes recent-entry breakdowns from full matching-window breakdowns when `--limit` hides older matching telemetry.
+- **test coverage**: added regression coverage for limit-independent matching-window breakdowns.
+
 ## **2026-04-28**
 - **query-history validation window metrics**: added full filtered-window success/error counts and rates so automation thresholds evaluate every matching query, not only the displayed `--limit` rows.
 - **CLI validation hardening**: `query-history --check-max-errors` and `--check-max-error-rate` now use full-window metrics while preserving limited display output for humans.

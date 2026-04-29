@@ -1129,6 +1129,13 @@ def handle_query_history_command(args):
         print(f"Success rate: {snapshot.get('success_rate')}")
     if snapshot.get("error_rate") is not None:
         print(f"Error rate: {snapshot.get('error_rate')}")
+    if snapshot.get("matching_entries_total") != snapshot.get("entries_returned"):
+        print(f"Matching successful queries: {snapshot.get('matching_success_count', 0)}")
+        print(f"Matching failed queries: {snapshot.get('matching_error_count', 0)}")
+        if snapshot.get("matching_success_rate") is not None:
+            print(f"Matching success rate: {snapshot.get('matching_success_rate')}")
+        if snapshot.get("matching_error_rate") is not None:
+            print(f"Matching error rate: {snapshot.get('matching_error_rate')}")
     print(f"Corrupt rows skipped into diagnostics: {snapshot.get('corrupt_count', 0)}")
 
     average_duration_ms = snapshot.get("average_duration_ms")
@@ -1182,6 +1189,12 @@ def handle_query_history_command(args):
         for item in error_breakdown[:8]:
             print(f"  - {item['error']}: {item['count']}")
 
+    matching_error_breakdown = snapshot.get("matching_error_breakdown") or []
+    if matching_error_breakdown and matching_error_breakdown != error_breakdown:
+        print("Matching-window errors:")
+        for item in matching_error_breakdown[:8]:
+            print(f"  - {item['error']}: {item['count']}")
+
     query_plan_database_breakdown = snapshot.get("query_plan_database_breakdown") or []
     if query_plan_database_breakdown:
         print("Planned databases:")
@@ -1198,6 +1211,12 @@ def handle_query_history_command(args):
     if query_plan_route_breakdown:
         print("Planned routes:")
         for item in query_plan_route_breakdown:
+            print(f"  - {item['route']}: {item['count']}")
+
+    matching_route_breakdown = snapshot.get("matching_query_plan_route_breakdown") or []
+    if matching_route_breakdown and matching_route_breakdown != query_plan_route_breakdown:
+        print("Matching-window planned routes:")
+        for item in matching_route_breakdown:
             print(f"  - {item['route']}: {item['count']}")
 
     entries = snapshot.get("entries", [])

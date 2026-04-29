@@ -356,32 +356,60 @@ class QueryHistoryRecorder:
         response_sizes = [entry.get("response_chars") for entry in considered if isinstance(entry.get("response_chars"), int)]
         latest = considered[0] if considered else None
         latest_error = next((entry for entry in recent if entry.get("status") == "error"), None)
-        source_counter = Counter((entry.get("source") or "unknown") for entry in considered)
-        confirmation_counter = Counter((entry.get("confirmation") or "unspecified") for entry in considered)
-        satisfaction_counter = Counter(_normalize_satisfaction(entry.get("satisfaction")) for entry in considered)
-        error_counter = Counter(
-            error
-            for entry in considered
-            for error in [entry.get("error")]
-            if isinstance(error, str) and error
-        )
-        query_plan_database_counter = Counter(
-            database
-            for entry in considered
-            for database in (entry.get("query_plan_databases") or [])
-            if isinstance(database, str) and database
-        )
-        query_plan_method_counter = Counter(
-            method
-            for entry in considered
-            for method in (entry.get("query_plan_methods") or [])
-            if isinstance(method, str) and method
-        )
-        query_plan_route_counter = Counter(
-            route
-            for entry in considered
-            for route in _infer_query_plan_routes(entry)
-        )
+        def _source_counter(rows: List[Dict[str, Any]]) -> Counter:
+            return Counter((entry.get("source") or "unknown") for entry in rows)
+
+        def _confirmation_counter(rows: List[Dict[str, Any]]) -> Counter:
+            return Counter((entry.get("confirmation") or "unspecified") for entry in rows)
+
+        def _satisfaction_counter(rows: List[Dict[str, Any]]) -> Counter:
+            return Counter(_normalize_satisfaction(entry.get("satisfaction")) for entry in rows)
+
+        def _error_counter(rows: List[Dict[str, Any]]) -> Counter:
+            return Counter(
+                error
+                for entry in rows
+                for error in [entry.get("error")]
+                if isinstance(error, str) and error
+            )
+
+        def _query_plan_database_counter(rows: List[Dict[str, Any]]) -> Counter:
+            return Counter(
+                database
+                for entry in rows
+                for database in (entry.get("query_plan_databases") or [])
+                if isinstance(database, str) and database
+            )
+
+        def _query_plan_method_counter(rows: List[Dict[str, Any]]) -> Counter:
+            return Counter(
+                method
+                for entry in rows
+                for method in (entry.get("query_plan_methods") or [])
+                if isinstance(method, str) and method
+            )
+
+        def _query_plan_route_counter(rows: List[Dict[str, Any]]) -> Counter:
+            return Counter(
+                route
+                for entry in rows
+                for route in _infer_query_plan_routes(entry)
+            )
+
+        source_counter = _source_counter(considered)
+        confirmation_counter = _confirmation_counter(considered)
+        satisfaction_counter = _satisfaction_counter(considered)
+        error_counter = _error_counter(considered)
+        query_plan_database_counter = _query_plan_database_counter(considered)
+        query_plan_method_counter = _query_plan_method_counter(considered)
+        query_plan_route_counter = _query_plan_route_counter(considered)
+        matching_source_counter = _source_counter(matching_considered)
+        matching_confirmation_counter = _confirmation_counter(matching_considered)
+        matching_satisfaction_counter = _satisfaction_counter(matching_considered)
+        matching_error_counter = _error_counter(matching_considered)
+        matching_query_plan_database_counter = _query_plan_database_counter(matching_considered)
+        matching_query_plan_method_counter = _query_plan_method_counter(matching_considered)
+        matching_query_plan_route_counter = _query_plan_route_counter(matching_considered)
 
         return {
             "log_file": str(self.log_file),
@@ -452,6 +480,34 @@ class QueryHistoryRecorder:
             "error_breakdown": [
                 {"error": error_name, "count": count}
                 for error_name, count in error_counter.most_common()
+            ],
+            "matching_query_plan_database_breakdown": [
+                {"database": database, "count": count}
+                for database, count in matching_query_plan_database_counter.most_common()
+            ],
+            "matching_query_plan_method_breakdown": [
+                {"method": method, "count": count}
+                for method, count in matching_query_plan_method_counter.most_common()
+            ],
+            "matching_query_plan_route_breakdown": [
+                {"route": route, "count": count}
+                for route, count in matching_query_plan_route_counter.most_common()
+            ],
+            "matching_source_breakdown": [
+                {"source": source_name, "count": count}
+                for source_name, count in matching_source_counter.most_common()
+            ],
+            "matching_confirmation_breakdown": [
+                {"confirmation": confirmation, "count": count}
+                for confirmation, count in matching_confirmation_counter.most_common()
+            ],
+            "matching_satisfaction_breakdown": [
+                {"satisfaction": satisfaction_name, "count": count}
+                for satisfaction_name, count in matching_satisfaction_counter.most_common()
+            ],
+            "matching_error_breakdown": [
+                {"error": error_name, "count": count}
+                for error_name, count in matching_error_counter.most_common()
             ],
             "entries": recent,
         }
