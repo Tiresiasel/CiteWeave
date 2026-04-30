@@ -18,6 +18,11 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-04-30**
+- **query-history full-window latency/size metrics**: added matching-window average/max duration and response-size diagnostics so limited displays still show full filtered-window performance characteristics.
+- **CLI diagnostics**: text output now surfaces matching-window duration and response-size metrics when `--limit` hides older telemetry.
+- **test coverage**: added regression coverage for limit-independent matching-window duration and response-size summaries.
+
 ## **2026-04-29**
 - **query-history full-window breakdowns**: added matching-window source/error/route/plan breakdowns so limited displays still expose repeated failure modes across the complete filtered window.
 - **CLI diagnostics**: text output now distinguishes recent-entry breakdowns from full matching-window breakdowns when `--limit` hides older matching telemetry.

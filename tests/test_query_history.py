@@ -144,9 +144,9 @@ def test_query_history_summary_reports_matching_window_metrics_independent_of_li
         log_path.write_text(
             "\n".join(
                 [
-                    json.dumps({"question": "old error", "status": "error", "duration_ms": 100, "error": "timeout"}),
-                    json.dumps({"question": "old success", "status": "success", "duration_ms": 120}),
-                    json.dumps({"question": "new error", "status": "error", "duration_ms": 140, "error": "llm unavailable"}),
+                    json.dumps({"question": "old error", "status": "error", "duration_ms": 100, "response_chars": 50, "error": "timeout"}),
+                    json.dumps({"question": "old success", "status": "success", "duration_ms": 120, "response_chars": 100}),
+                    json.dumps({"question": "new error", "status": "error", "duration_ms": 140, "response_chars": 150, "error": "llm unavailable"}),
                 ]
             )
             + "\n",
@@ -167,6 +167,14 @@ def test_query_history_summary_reports_matching_window_metrics_independent_of_li
         assert summary["matching_success_rate"] == 0.3333
         assert summary["matching_error_rate"] == 0.6667
         assert summary["matching_corrupt_count"] == 0
+        assert summary["average_duration_ms"] == 140.0
+        assert summary["max_duration_ms"] == 140
+        assert summary["matching_average_duration_ms"] == 120.0
+        assert summary["matching_max_duration_ms"] == 140
+        assert summary["average_response_chars"] == 150.0
+        assert summary["max_response_chars"] == 150
+        assert summary["matching_average_response_chars"] == 100.0
+        assert summary["matching_max_response_chars"] == 150
 
 
 

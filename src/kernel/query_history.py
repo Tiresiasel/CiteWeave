@@ -353,7 +353,9 @@ class QueryHistoryRecorder:
         matching_success_rate = round(matching_success_count / len(matching_considered), 4) if matching_considered else None
         matching_error_rate = round(matching_error_count / len(matching_considered), 4) if matching_considered else None
         durations = [entry.get("duration_ms") for entry in considered if isinstance(entry.get("duration_ms"), int)]
+        matching_durations = [entry.get("duration_ms") for entry in matching_considered if isinstance(entry.get("duration_ms"), int)]
         response_sizes = [entry.get("response_chars") for entry in considered if isinstance(entry.get("response_chars"), int)]
+        matching_response_sizes = [entry.get("response_chars") for entry in matching_considered if isinstance(entry.get("response_chars"), int)]
         latest = considered[0] if considered else None
         latest_error = next((entry for entry in recent if entry.get("status") == "error"), None)
         def _source_counter(rows: List[Dict[str, Any]]) -> Counter:
@@ -446,8 +448,12 @@ class QueryHistoryRecorder:
             "matching_corrupt_count": len(matching_entries) - len(matching_considered),
             "average_duration_ms": round(sum(durations) / len(durations), 2) if durations else None,
             "max_duration_ms": max(durations) if durations else None,
+            "matching_average_duration_ms": round(sum(matching_durations) / len(matching_durations), 2) if matching_durations else None,
+            "matching_max_duration_ms": max(matching_durations) if matching_durations else None,
             "average_response_chars": round(sum(response_sizes) / len(response_sizes), 2) if response_sizes else None,
             "max_response_chars": max(response_sizes) if response_sizes else None,
+            "matching_average_response_chars": round(sum(matching_response_sizes) / len(matching_response_sizes), 2) if matching_response_sizes else None,
+            "matching_max_response_chars": max(matching_response_sizes) if matching_response_sizes else None,
             "latest_status": latest.get("status") if latest else None,
             "latest_question": latest.get("question") if latest else None,
             "latest_source": latest.get("source") if latest else None,

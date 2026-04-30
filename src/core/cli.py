@@ -1140,8 +1140,12 @@ def handle_query_history_command(args):
 
     average_duration_ms = snapshot.get("average_duration_ms")
     max_duration_ms = snapshot.get("max_duration_ms")
+    matching_average_duration_ms = snapshot.get("matching_average_duration_ms")
+    matching_max_duration_ms = snapshot.get("matching_max_duration_ms")
     average_response_chars = snapshot.get("average_response_chars")
     max_response_chars = snapshot.get("max_response_chars")
+    matching_average_response_chars = snapshot.get("matching_average_response_chars")
+    matching_max_response_chars = snapshot.get("matching_max_response_chars")
     if average_duration_ms is not None:
         print(f"Average duration: {average_duration_ms} ms")
     if max_duration_ms is not None:
@@ -1150,6 +1154,15 @@ def handle_query_history_command(args):
         print(f"Average response size: {average_response_chars} chars")
     if max_response_chars is not None:
         print(f"Longest response: {max_response_chars} chars")
+    if snapshot.get("matching_entries_total") != snapshot.get("entries_returned"):
+        if matching_average_duration_ms is not None:
+            print(f"Matching average duration: {matching_average_duration_ms} ms")
+        if matching_max_duration_ms is not None:
+            print(f"Matching slowest query: {matching_max_duration_ms} ms")
+        if matching_average_response_chars is not None:
+            print(f"Matching average response size: {matching_average_response_chars} chars")
+        if matching_max_response_chars is not None:
+            print(f"Matching longest response: {matching_max_response_chars} chars")
 
     latest_status = snapshot.get("latest_status")
     latest_question = snapshot.get("latest_question")
