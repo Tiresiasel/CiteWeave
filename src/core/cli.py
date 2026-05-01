@@ -1184,16 +1184,34 @@ def handle_query_history_command(args):
         for item in source_breakdown:
             print(f"  - {item['source']}: {item['count']}")
 
+    matching_source_breakdown = snapshot.get("matching_source_breakdown") or []
+    if matching_source_breakdown and matching_source_breakdown != source_breakdown:
+        print("Matching-window sources:")
+        for item in matching_source_breakdown:
+            print(f"  - {item['source']}: {item['count']}")
+
     confirmation_breakdown = snapshot.get("confirmation_breakdown") or []
     if confirmation_breakdown:
         print("Confirmations:")
         for item in confirmation_breakdown:
             print(f"  - {item['confirmation']}: {item['count']}")
 
+    matching_confirmation_breakdown = snapshot.get("matching_confirmation_breakdown") or []
+    if matching_confirmation_breakdown and matching_confirmation_breakdown != confirmation_breakdown:
+        print("Matching-window confirmations:")
+        for item in matching_confirmation_breakdown:
+            print(f"  - {item['confirmation']}: {item['count']}")
+
     satisfaction_breakdown = snapshot.get("satisfaction_breakdown") or []
     if satisfaction_breakdown:
         print("Satisfaction:")
         for item in satisfaction_breakdown:
+            print(f"  - {item['satisfaction']}: {item['count']}")
+
+    matching_satisfaction_breakdown = snapshot.get("matching_satisfaction_breakdown") or []
+    if matching_satisfaction_breakdown and matching_satisfaction_breakdown != satisfaction_breakdown:
+        print("Matching-window satisfaction:")
+        for item in matching_satisfaction_breakdown:
             print(f"  - {item['satisfaction']}: {item['count']}")
 
     error_breakdown = snapshot.get("error_breakdown") or []
@@ -1214,10 +1232,22 @@ def handle_query_history_command(args):
         for item in query_plan_database_breakdown:
             print(f"  - {item['database']}: {item['count']}")
 
+    matching_database_breakdown = snapshot.get("matching_query_plan_database_breakdown") or []
+    if matching_database_breakdown and matching_database_breakdown != query_plan_database_breakdown:
+        print("Matching-window planned databases:")
+        for item in matching_database_breakdown:
+            print(f"  - {item['database']}: {item['count']}")
+
     query_plan_method_breakdown = snapshot.get("query_plan_method_breakdown") or []
     if query_plan_method_breakdown:
         print("Planned methods:")
         for item in query_plan_method_breakdown[:8]:
+            print(f"  - {item['method']}: {item['count']}")
+
+    matching_method_breakdown = snapshot.get("matching_query_plan_method_breakdown") or []
+    if matching_method_breakdown and matching_method_breakdown != query_plan_method_breakdown:
+        print("Matching-window planned methods:")
+        for item in matching_method_breakdown[:8]:
             print(f"  - {item['method']}: {item['count']}")
 
     query_plan_route_breakdown = snapshot.get("query_plan_route_breakdown") or []

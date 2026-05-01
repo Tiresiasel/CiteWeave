@@ -18,6 +18,10 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-05-01**
+- **query-history full-window CLI labels**: expanded text diagnostics to label matching-window source, confirmation, satisfaction, database, method, and route breakdowns separately from the recent rows shown by `--limit`.
+- **test coverage**: added regression coverage for the matching-window labels so limited query-history output cannot silently hide older matching telemetry.
+
 ## **2026-04-30**
 - **query-history full-window latency/size metrics**: added matching-window average/max duration and response-size diagnostics so limited displays still show full filtered-window performance characteristics.
 - **CLI diagnostics**: text output now surfaces matching-window duration and response-size metrics when `--limit` hides older telemetry.

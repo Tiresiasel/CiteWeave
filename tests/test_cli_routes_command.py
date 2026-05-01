@@ -607,6 +607,87 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         self.assertIn("response: Porter links firm advantage to activity fit.", output)
         self.assertIn("plan: routes=vector_search, pdf_analysis | db=vector_db, pdf_db | methods=search_relevant_sentences, get_full_pdf_content", output)
 
+    def test_handle_query_history_command_labels_matching_window_breakdowns(self):
+        cli = _load_cli_module()
+        expected = {
+            "log_file": "data/query_history.jsonl",
+            "requested_limit": 1,
+            "status_filter": "all",
+            "source_filter": "all",
+            "confirmation_filter": "all",
+            "satisfaction_filter": "all",
+            "contains_filter": "",
+            "planned_database_filter": "all",
+            "planned_method_filter": "all",
+            "planned_route_filter": "all",
+            "entries_returned": 1,
+            "matching_entries_total": 3,
+            "entries_considered": 1,
+            "matching_entries_considered": 3,
+            "success_count": 1,
+            "error_count": 0,
+            "matching_success_count": 2,
+            "matching_error_count": 1,
+            "corrupt_count": 0,
+            "source_breakdown": [{"source": "cli.query", "count": 1}],
+            "matching_source_breakdown": [
+                {"source": "cli.query", "count": 2},
+                {"source": "openclaw.facade.query", "count": 1},
+            ],
+            "confirmation_breakdown": [{"confirmation": "continue", "count": 1}],
+            "matching_confirmation_breakdown": [
+                {"confirmation": "continue", "count": 2},
+                {"confirmation": "expand", "count": 1},
+            ],
+            "satisfaction_breakdown": [{"satisfaction": "satisfied", "count": 1}],
+            "matching_satisfaction_breakdown": [
+                {"satisfaction": "satisfied", "count": 2},
+                {"satisfaction": "dissatisfied", "count": 1},
+            ],
+            "query_plan_database_breakdown": [{"database": "vector_db", "count": 1}],
+            "matching_query_plan_database_breakdown": [
+                {"database": "vector_db", "count": 2},
+                {"database": "graph_db", "count": 1},
+            ],
+            "query_plan_method_breakdown": [{"method": "search_relevant_sentences", "count": 1}],
+            "matching_query_plan_method_breakdown": [
+                {"method": "search_relevant_sentences", "count": 2},
+                {"method": "get_papers_citing_paper", "count": 1},
+            ],
+            "query_plan_route_breakdown": [{"route": "vector_search", "count": 1}],
+            "matching_query_plan_route_breakdown": [
+                {"route": "vector_search", "count": 2},
+                {"route": "graph_analysis", "count": 1},
+            ],
+            "entries": [
+                {"status": "success", "source": "cli.query", "confirmation": "continue", "question": "Recent vector query"},
+            ],
+        }
+
+        class ExpectedKernel:
+            def query_history_snapshot(self, **kwargs):
+                return expected
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            cli.handle_query_history_command(Namespace(limit=1, status="all", source="all", confirmation="all", satisfaction="all", contains="", question_contains="", error_contains="", response_contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None, json=False, since_hours=None))
+
+        output = buf.getvalue()
+        self.assertIn("Matching-window sources:", output)
+        self.assertIn("  - openclaw.facade.query: 1", output)
+        self.assertIn("Matching-window confirmations:", output)
+        self.assertIn("  - expand: 1", output)
+        self.assertIn("Matching-window satisfaction:", output)
+        self.assertIn("  - dissatisfied: 1", output)
+        self.assertIn("Matching-window planned databases:", output)
+        self.assertIn("  - graph_db: 1", output)
+        self.assertIn("Matching-window planned methods:", output)
+        self.assertIn("  - get_papers_citing_paper: 1", output)
+        self.assertIn("Matching-window planned routes:", output)
+        self.assertIn("  - graph_analysis: 1", output)
+
 
 class CliQueryHistoryCheckCommandTests(unittest.TestCase):
     def test_handle_query_history_command_check_empty_reports_success(self):
