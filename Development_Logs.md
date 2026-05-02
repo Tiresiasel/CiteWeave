@@ -18,6 +18,10 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-05-02**
+- **query-history quality gates**: added full-window automation checks for slowest query duration and shortest successful response size so daily audits can fail on latency spikes or suspiciously terse answers without hand-reading JSONL telemetry.
+- **test coverage**: added regression coverage for shortest-success response metrics and CLI validation gates that evaluate the full matching window rather than only displayed rows.
+
 ## **2026-05-01**
 - **query-history full-window CLI labels**: expanded text diagnostics to label matching-window source, confirmation, satisfaction, database, method, and route breakdowns separately from the recent rows shown by `--limit`.
 - **test coverage**: added regression coverage for the matching-window labels so limited query-history output cannot silently hide older matching telemetry.

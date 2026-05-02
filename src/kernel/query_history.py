@@ -356,6 +356,16 @@ class QueryHistoryRecorder:
         matching_durations = [entry.get("duration_ms") for entry in matching_considered if isinstance(entry.get("duration_ms"), int)]
         response_sizes = [entry.get("response_chars") for entry in considered if isinstance(entry.get("response_chars"), int)]
         matching_response_sizes = [entry.get("response_chars") for entry in matching_considered if isinstance(entry.get("response_chars"), int)]
+        success_response_sizes = [
+            entry.get("response_chars")
+            for entry in considered
+            if entry.get("status") == "success" and isinstance(entry.get("response_chars"), int)
+        ]
+        matching_success_response_sizes = [
+            entry.get("response_chars")
+            for entry in matching_considered
+            if entry.get("status") == "success" and isinstance(entry.get("response_chars"), int)
+        ]
         latest = considered[0] if considered else None
         latest_error = next((entry for entry in recent if entry.get("status") == "error"), None)
         def _source_counter(rows: List[Dict[str, Any]]) -> Counter:
@@ -452,8 +462,10 @@ class QueryHistoryRecorder:
             "matching_max_duration_ms": max(matching_durations) if matching_durations else None,
             "average_response_chars": round(sum(response_sizes) / len(response_sizes), 2) if response_sizes else None,
             "max_response_chars": max(response_sizes) if response_sizes else None,
+            "min_success_response_chars": min(success_response_sizes) if success_response_sizes else None,
             "matching_average_response_chars": round(sum(matching_response_sizes) / len(matching_response_sizes), 2) if matching_response_sizes else None,
             "matching_max_response_chars": max(matching_response_sizes) if matching_response_sizes else None,
+            "matching_min_success_response_chars": min(matching_success_response_sizes) if matching_success_response_sizes else None,
             "latest_status": latest.get("status") if latest else None,
             "latest_question": latest.get("question") if latest else None,
             "latest_source": latest.get("source") if latest else None,

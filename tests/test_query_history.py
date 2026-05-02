@@ -173,8 +173,34 @@ def test_query_history_summary_reports_matching_window_metrics_independent_of_li
         assert summary["matching_max_duration_ms"] == 140
         assert summary["average_response_chars"] == 150.0
         assert summary["max_response_chars"] == 150
+        assert summary["min_success_response_chars"] is None
         assert summary["matching_average_response_chars"] == 100.0
         assert summary["matching_max_response_chars"] == 150
+        assert summary["matching_min_success_response_chars"] == 100
+
+
+def test_query_history_summary_reports_shortest_success_response_for_quality_gates():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_success_response_min_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        log_path.write_text(
+            "\n".join(
+                [
+                    json.dumps({"question": "terse success", "status": "success", "response_chars": 12}),
+                    json.dumps({"question": "empty error", "status": "error", "response_chars": 0, "error": "timeout"}),
+                    json.dumps({"question": "rich success", "status": "success", "response_chars": 240}),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        summary = recorder.summary(limit=1)
+
+        assert summary["min_success_response_chars"] == 240
+        assert summary["matching_min_success_response_chars"] == 12
 
 
 
