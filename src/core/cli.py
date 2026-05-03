@@ -187,6 +187,7 @@ def main():
     query_history_parser.add_argument("--check-max-error-rate", type=float, default=None, help="Exit non-zero when the filtered window exceeds this error-rate threshold between 0 and 1.")
     query_history_parser.add_argument("--check-max-duration-ms", type=int, default=None, help="Exit non-zero when the full matching window contains a query slower than this many milliseconds.")
     query_history_parser.add_argument("--check-min-response-chars", type=int, default=None, help="Exit non-zero when the full matching window contains a successful query response shorter than this many characters.")
+    query_history_parser.add_argument("--check-min-success-rate", type=float, default=None, help="Exit non-zero when the filtered window falls below this success-rate threshold between 0 and 1.")
     query_history_parser.add_argument("--json", action="store_true", help="Print machine-readable query history as JSON.")
 
     pending_citations_parser = subparsers.add_parser("list_pending_citations", help="List unresolved stub papers that still need uploaded source documents.")
@@ -989,16 +990,19 @@ def handle_query_history_command(args):
     check_max_error_rate = getattr(args, "check_max_error_rate", None)
     check_max_duration_ms = getattr(args, "check_max_duration_ms", None)
     check_min_response_chars = getattr(args, "check_min_response_chars", None)
+    check_min_success_rate = getattr(args, "check_min_success_rate", None)
     if (
         check_empty
         or check_max_errors is not None
         or check_max_error_rate is not None
         or check_max_duration_ms is not None
         or check_min_response_chars is not None
+        or check_min_success_rate is not None
     ):
         matching_entries_total = snapshot.get("matching_entries_total", 0)
         error_count = snapshot.get("matching_error_count", snapshot.get("error_count", 0))
         error_rate = snapshot.get("matching_error_rate", snapshot.get("error_rate"))
+        success_rate = snapshot.get("matching_success_rate", snapshot.get("success_rate"))
         max_duration_ms = snapshot.get("matching_max_duration_ms", snapshot.get("max_duration_ms"))
         shortest_success_response_chars = snapshot.get("matching_min_success_response_chars", snapshot.get("min_success_response_chars"))
         failure_reasons = []
@@ -1018,12 +1022,17 @@ def handle_query_history_command(args):
             and shortest_success_response_chars < check_min_response_chars
         ):
             failure_reasons.append("response too short")
+        if check_min_success_rate is not None:
+            normalized_success_threshold = max(0.0, min(1.0, check_min_success_rate))
+            if success_rate is not None and success_rate < normalized_success_threshold:
+                failure_reasons.append("success rate too low")
         validation = {
             "ok": not failure_reasons,
             "failure_reasons": failure_reasons,
             "matching_entries_total": matching_entries_total,
             "error_count": error_count,
             "error_rate": error_rate,
+            "success_rate": success_rate,
             "max_duration_ms": max_duration_ms,
             "shortest_success_response_chars": shortest_success_response_chars,
             "check_empty": check_empty,
@@ -1031,6 +1040,7 @@ def handle_query_history_command(args):
             "check_max_error_rate": max(0.0, min(1.0, check_max_error_rate)) if check_max_error_rate is not None else None,
             "check_max_duration_ms": check_max_duration_ms,
             "check_min_response_chars": check_min_response_chars,
+            "check_min_success_rate": max(0.0, min(1.0, check_min_success_rate)) if check_min_success_rate is not None else None,
             "status_filter": snapshot.get("status_filter", "all"),
             "source_filter": snapshot.get("source_filter", "all"),
             "confirmation_filter": snapshot.get("confirmation_filter", "all"),
@@ -1057,6 +1067,8 @@ def handle_query_history_command(args):
             print(f"  error count: {validation['error_count']}")
             if validation["error_rate"] is not None:
                 print(f"  error rate: {validation['error_rate']}")
+            if validation["success_rate"] is not None:
+                print(f"  success rate: {validation['success_rate']}")
             if validation["max_duration_ms"] is not None:
                 print(f"  slowest query: {validation['max_duration_ms']} ms")
             if validation["shortest_success_response_chars"] is not None:
@@ -1074,6 +1086,8 @@ def handle_query_history_command(args):
                 print(f"  max duration check: {validation['check_max_duration_ms']} ms")
             if validation["check_min_response_chars"] is not None:
                 print(f"  minimum successful response check: {validation['check_min_response_chars']} chars")
+            if validation["check_min_success_rate"] is not None:
+                print(f"  min success rate check: {validation['check_min_success_rate']}")
             if validation["satisfaction_filter"] != "all":
                 print(f"  satisfaction filter: {validation['satisfaction_filter']}")
             if validation["contains_filter"]:
