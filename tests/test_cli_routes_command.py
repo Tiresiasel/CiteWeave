@@ -115,6 +115,32 @@ def _load_cli_module():
     return module
 
 
+
+
+class CliQueryPlanSummaryTests(unittest.TestCase):
+    def test_query_plan_summary_labels_routes_inferred_from_database_names(self):
+        cli = _load_cli_module()
+
+        self.assertEqual(
+            cli._format_query_plan_summary({
+                "query_plan_databases": ["graph_db", "vector_db"],
+                "query_plan_methods": ["get_papers_citing_paper"],
+            }),
+            "routes=graph_analysis, vector_search (inferred from db) | db=graph_db, vector_db | methods=get_papers_citing_paper",
+        )
+
+    def test_query_plan_summary_marks_mixed_explicit_and_inferred_routes(self):
+        cli = _load_cli_module()
+
+        self.assertEqual(
+            cli._format_query_plan_summary({
+                "query_plan_routes": ["vector_search"],
+                "query_plan_databases": ["vector_db", "pdf_db"],
+                "query_plan_methods": ["search_relevant_sentences", "get_full_pdf_content"],
+            }),
+            "routes=vector_search, pdf_analysis (+1 inferred from db) | db=vector_db, pdf_db | methods=search_relevant_sentences, get_full_pdf_content",
+        )
+
 class CliRoutesCommandTests(unittest.TestCase):
     def test_handle_routes_command_supports_json_output(self):
         cli = _load_cli_module()

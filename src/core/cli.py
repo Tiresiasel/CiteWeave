@@ -945,12 +945,32 @@ def _format_relative_age(timestamp):
 
 
 def _format_query_plan_summary(entry):
+    database_route_map = {
+        "graph_db": "graph_analysis",
+        "vector_db": "vector_search",
+        "pdf_db": "pdf_analysis",
+    }
     databases = [value for value in (entry.get("query_plan_databases") or []) if isinstance(value, str) and value]
     methods = [value for value in (entry.get("query_plan_methods") or []) if isinstance(value, str) and value]
-    routes = [value for value in (entry.get("query_plan_routes") or []) if isinstance(value, str) and value]
+    explicit_routes = [value for value in (entry.get("query_plan_routes") or []) if isinstance(value, str) and value]
+    routes = []
+    for route in explicit_routes:
+        if route not in routes:
+            routes.append(route)
+    inferred_routes = []
+    for database in databases:
+        route = database_route_map.get(database)
+        if route and route not in routes and route not in inferred_routes:
+            inferred_routes.append(route)
+    routes.extend(inferred_routes)
     parts = []
     if routes:
-        parts.append("routes=" + ", ".join(routes))
+        route_label = "routes=" + ", ".join(routes)
+        if inferred_routes and not explicit_routes:
+            route_label += " (inferred from db)"
+        elif inferred_routes:
+            route_label += f" (+{len(inferred_routes)} inferred from db)"
+        parts.append(route_label)
     if databases:
         parts.append("db=" + ", ".join(databases))
     if methods:

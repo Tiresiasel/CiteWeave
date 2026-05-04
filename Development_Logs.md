@@ -18,6 +18,10 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-05-04**
+- **query-history route labels**: recent-entry plan summaries now infer and label planned routes from database names when telemetry lacks explicit route labels, keeping per-entry diagnostics consistent with matching-window route breakdowns.
+- **test coverage**: added regression coverage for inferred and mixed explicit/inferred route labels in CLI query-history plan summaries.
+
 ## **2026-05-03**
 - **query-history success-rate gate**: added `--check-min-success-rate` so daily automation can fail on degraded successful-query ratios directly, without manually inverting the error-rate threshold.
 - **CLI validation output**: query-history checks now report matching-window success rate alongside error rate when available.
