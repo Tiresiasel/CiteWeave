@@ -18,6 +18,11 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-05-05**
+- **query-history route-plan gaps**: summaries now count recent and full matching-window entries with empty query plans or no resolved planned routes, making router telemetry regressions visible without hand-scanning JSONL rows.
+- **CLI diagnostics**: query-history text output surfaces route-less and empty-plan counts, including matching-window totals when `--limit` hides older affected records.
+- **test coverage**: added regression coverage for recent vs. matching-window route-plan gap counts.
+
 ## **2026-05-04**
 - **query-history route labels**: recent-entry plan summaries now infer and label planned routes from database names when telemetry lacks explicit route labels, keeping per-entry diagnostics consistent with matching-window route breakdowns.
 - **test coverage**: added regression coverage for inferred and mixed explicit/inferred route labels in CLI query-history plan summaries.

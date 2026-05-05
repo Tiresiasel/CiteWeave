@@ -1322,11 +1322,25 @@ def handle_query_history_command(args):
         for item in query_plan_route_breakdown:
             print(f"  - {item['route']}: {item['count']}")
 
+    no_planned_route_count = snapshot.get("no_planned_route_count", 0)
+    empty_query_plan_count = snapshot.get("empty_query_plan_count", 0)
+    if no_planned_route_count:
+        print(f"Entries without planned routes: {no_planned_route_count}")
+    if empty_query_plan_count:
+        print(f"Entries with empty query plans: {empty_query_plan_count}")
+
     matching_route_breakdown = snapshot.get("matching_query_plan_route_breakdown") or []
     if matching_route_breakdown and matching_route_breakdown != query_plan_route_breakdown:
         print("Matching-window planned routes:")
         for item in matching_route_breakdown:
             print(f"  - {item['route']}: {item['count']}")
+
+    matching_no_planned_route_count = snapshot.get("matching_no_planned_route_count", 0)
+    matching_empty_query_plan_count = snapshot.get("matching_empty_query_plan_count", 0)
+    if matching_no_planned_route_count and matching_no_planned_route_count != no_planned_route_count:
+        print(f"Matching-window entries without planned routes: {matching_no_planned_route_count}")
+    if matching_empty_query_plan_count and matching_empty_query_plan_count != empty_query_plan_count:
+        print(f"Matching-window entries with empty query plans: {matching_empty_query_plan_count}")
 
     entries = snapshot.get("entries", [])
     if not entries:

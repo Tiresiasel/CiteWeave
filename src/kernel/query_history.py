@@ -408,6 +408,12 @@ class QueryHistoryRecorder:
                 for route in _infer_query_plan_routes(entry)
             )
 
+        def _empty_query_plan_count(rows: List[Dict[str, Any]]) -> int:
+            return sum(1 for entry in rows if entry.get("query_plan_step_count") == 0)
+
+        def _no_planned_route_count(rows: List[Dict[str, Any]]) -> int:
+            return sum(1 for entry in rows if not _infer_query_plan_routes(entry))
+
         source_counter = _source_counter(considered)
         confirmation_counter = _confirmation_counter(considered)
         satisfaction_counter = _satisfaction_counter(considered)
@@ -415,6 +421,8 @@ class QueryHistoryRecorder:
         query_plan_database_counter = _query_plan_database_counter(considered)
         query_plan_method_counter = _query_plan_method_counter(considered)
         query_plan_route_counter = _query_plan_route_counter(considered)
+        empty_query_plan_count = _empty_query_plan_count(considered)
+        no_planned_route_count = _no_planned_route_count(considered)
         matching_source_counter = _source_counter(matching_considered)
         matching_confirmation_counter = _confirmation_counter(matching_considered)
         matching_satisfaction_counter = _satisfaction_counter(matching_considered)
@@ -422,6 +430,8 @@ class QueryHistoryRecorder:
         matching_query_plan_database_counter = _query_plan_database_counter(matching_considered)
         matching_query_plan_method_counter = _query_plan_method_counter(matching_considered)
         matching_query_plan_route_counter = _query_plan_route_counter(matching_considered)
+        matching_empty_query_plan_count = _empty_query_plan_count(matching_considered)
+        matching_no_planned_route_count = _no_planned_route_count(matching_considered)
 
         return {
             "log_file": str(self.log_file),
@@ -483,6 +493,8 @@ class QueryHistoryRecorder:
                 {"route": route, "count": count}
                 for route, count in query_plan_route_counter.most_common()
             ],
+            "empty_query_plan_count": empty_query_plan_count,
+            "no_planned_route_count": no_planned_route_count,
             "source_breakdown": [
                 {"source": source_name, "count": count}
                 for source_name, count in source_counter.most_common()
@@ -511,6 +523,8 @@ class QueryHistoryRecorder:
                 {"route": route, "count": count}
                 for route, count in matching_query_plan_route_counter.most_common()
             ],
+            "matching_empty_query_plan_count": matching_empty_query_plan_count,
+            "matching_no_planned_route_count": matching_no_planned_route_count,
             "matching_source_breakdown": [
                 {"source": source_name, "count": count}
                 for source_name, count in matching_source_counter.most_common()

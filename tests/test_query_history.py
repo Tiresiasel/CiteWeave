@@ -791,3 +791,45 @@ def test_query_history_summary_can_filter_by_planned_route_and_infer_from_databa
         assert summary["latest_question"] == "Graph lookup"
         assert summary["query_plan_route_breakdown"] == [{"route": "graph_analysis", "count": 1}]
         assert [entry["question"] for entry in summary["entries"]] == ["Graph lookup"]
+
+
+def test_query_history_summary_counts_entries_without_route_plans():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_no_routes_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        log_path.write_text(
+            "\n".join(
+                [
+                    json.dumps({
+                        "question": "empty router output",
+                        "status": "success",
+                        "query_plan_step_count": 0,
+                        "query_plan_databases": [],
+                    }),
+                    json.dumps({
+                        "question": "unknown database route",
+                        "status": "success",
+                        "query_plan_step_count": 1,
+                        "query_plan_databases": ["custom_db"],
+                    }),
+                    json.dumps({
+                        "question": "vector route",
+                        "status": "success",
+                        "query_plan_step_count": 1,
+                        "query_plan_databases": ["vector_db"],
+                    }),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        summary = recorder.summary(limit=2)
+
+        assert summary["empty_query_plan_count"] == 0
+        assert summary["no_planned_route_count"] == 1
+        assert summary["matching_empty_query_plan_count"] == 1
+        assert summary["matching_no_planned_route_count"] == 2
+        assert summary["query_plan_route_breakdown"] == [{"route": "vector_search", "count": 1}]
