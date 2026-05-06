@@ -18,6 +18,11 @@ This document tracks the development progress of all major modules in the projec
 
 ## Recent Development Progress
 
+## **2026-05-06**
+- **query-history route-plan quality gates**: added automation checks for empty query plans and entries without resolved planned routes, using the full matching telemetry window rather than only displayed rows.
+- **CLI diagnostics**: query-history check output now includes route-plan gap counts and configured thresholds so cron failures explain whether routing coverage or route inference regressed.
+- **test coverage**: added regression coverage for route-plan quality gates in CLI query-history checks.
+
 ## **2026-05-05**
 - **query-history route-plan gaps**: summaries now count recent and full matching-window entries with empty query plans or no resolved planned routes, making router telemetry regressions visible without hand-scanning JSONL rows.
 - **CLI diagnostics**: query-history text output surfaces route-less and empty-plan counts, including matching-window totals when `--limit` hides older affected records.

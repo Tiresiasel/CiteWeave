@@ -832,13 +832,16 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
             json.loads(buf.getvalue()),
             {
                 "check_empty": True,
+                "check_max_empty_query_plans": None,
                 "check_max_duration_ms": None,
                 "check_max_error_rate": None,
                 "check_max_errors": None,
+                "check_max_no_planned_routes": None,
                 "check_min_response_chars": None,
                 "check_min_success_rate": None,
                 "confirmation_filter": "all",
                 "contains_filter": "",
+                "empty_query_plan_count": 0,
                 "error_count": 2,
                 "error_rate": 1.0,
                 "success_rate": 0.0,
@@ -852,6 +855,7 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
                 "max_duration_ms_filter": 600,
                 "min_response_chars_filter": 10,
                 "max_response_chars_filter": 80,
+                "no_planned_route_count": 0,
                 "ok": False,
                 "planned_database_filter": "vector_db",
                 "planned_method_filter": "search_relevant_sentences",
@@ -1058,6 +1062,60 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
         self.assertIn("shortest successful response: 18 chars", output)
         self.assertIn("max duration check: 1000 ms", output)
         self.assertIn("minimum successful response check: 50 chars", output)
+
+    def test_handle_query_history_command_route_plan_quality_gates_use_full_matching_window(self):
+        cli = _load_cli_module()
+
+        class ExpectedKernel:
+            def query_history_snapshot(self, **kwargs):
+                return {
+                    "log_file": "data/query_history.jsonl",
+                    "requested_limit": kwargs.get("limit", 10),
+                    "status_filter": kwargs.get("status", "all"),
+                    "source_filter": kwargs.get("source", "all"),
+                    "confirmation_filter": kwargs.get("confirmation", "all"),
+                    "satisfaction_filter": kwargs.get("satisfaction", "all"),
+                    "contains_filter": kwargs.get("contains", ""),
+                    "question_contains_filter": kwargs.get("question_contains", ""),
+                    "error_contains_filter": kwargs.get("error_contains", ""),
+                    "response_contains_filter": kwargs.get("response_contains", ""),
+                    "planned_database_filter": kwargs.get("planned_database", "all"),
+                    "planned_method_filter": kwargs.get("planned_method", "all"),
+                    "planned_route_filter": kwargs.get("planned_route", "all"),
+                    "min_duration_ms_filter": kwargs.get("min_duration_ms"),
+                    "max_duration_ms_filter": kwargs.get("max_duration_ms"),
+                    "min_response_chars_filter": kwargs.get("min_response_chars"),
+                    "max_response_chars_filter": kwargs.get("max_response_chars"),
+                    "since_hours": kwargs.get("since_hours"),
+                    "matching_entries_total": 9,
+                    "matching_error_count": 0,
+                    "matching_error_rate": 0.0,
+                    "matching_success_rate": 1.0,
+                    "matching_empty_query_plan_count": 2,
+                    "matching_no_planned_route_count": 3,
+                    "entries_returned": 1,
+                    "entries_considered": 1,
+                    "success_count": 1,
+                    "error_count": 0,
+                    "success_rate": 1.0,
+                    "error_rate": 0.0,
+                    "corrupt_count": 0,
+                    "entries": [],
+                }
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf), self.assertRaises(SystemExit) as exc:
+            cli.handle_query_history_command(Namespace(limit=1, status="all", source="all", confirmation="all", satisfaction="all", contains="", question_contains="", error_contains="", response_contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None, json=False, since_hours=None, check_empty=False, check_max_errors=None, check_max_error_rate=None, check_max_empty_query_plans=1, check_max_no_planned_routes=2))
+
+        self.assertEqual(exc.exception.code, 1)
+        output = buf.getvalue()
+        self.assertIn("Query history check: too many empty query plans, too many entries without planned routes", output)
+        self.assertIn("empty query plans: 2", output)
+        self.assertIn("entries without planned routes: 3", output)
+        self.assertIn("max empty query plans check: 1", output)
+        self.assertIn("max entries without planned routes check: 2", output)
 
 
 class CliHealthAndBootstrapCommandTests(unittest.TestCase):
