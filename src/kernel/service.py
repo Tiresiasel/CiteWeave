@@ -344,6 +344,7 @@ class CiteWeaveKernel:
         max_duration_ms: Optional[int] = None,
         min_response_chars: Optional[int] = None,
         max_response_chars: Optional[int] = None,
+        sort_order: str = "recent",
     ) -> Dict[str, Any]:
         recorder = QueryHistoryRecorder()
         return recorder.summary(
@@ -364,6 +365,7 @@ class CiteWeaveKernel:
             max_duration_ms=max_duration_ms,
             min_response_chars=min_response_chars,
             max_response_chars=max_response_chars,
+            sort_order=sort_order,
         )
 
     def list_pending_citations_snapshot(self, limit: int = 10) -> Dict[str, Any]:

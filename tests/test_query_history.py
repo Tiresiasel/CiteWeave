@@ -833,3 +833,32 @@ def test_query_history_summary_counts_entries_without_route_plans():
         assert summary["matching_empty_query_plan_count"] == 1
         assert summary["matching_no_planned_route_count"] == 2
         assert summary["query_plan_route_breakdown"] == [{"route": "vector_search", "count": 1}]
+
+
+def test_query_history_summary_can_sort_display_window_before_limit():
+    query_history = _load_module(QUERY_HISTORY_PATH, f"query_history_sort_{uuid.uuid4().hex}")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        log_path = Path(tmpdir) / "query_history.jsonl"
+        log_path.write_text(
+            "\n".join(
+                [
+                    json.dumps({"question": "old slow", "status": "success", "duration_ms": 900, "response_chars": 80}),
+                    json.dumps({"question": "middle fast", "status": "success", "duration_ms": 100, "response_chars": 40}),
+                    json.dumps({"question": "new medium", "status": "success", "duration_ms": 500, "response_chars": 120}),
+                ]
+            )
+            + "\n",
+            encoding="utf-8",
+        )
+
+        recorder = query_history.QueryHistoryRecorder(log_file=str(log_path))
+        slowest = recorder.summary(limit=2, sort_order="slowest")
+        shortest_response = recorder.summary(limit=2, sort_order="shortest-response")
+
+        assert slowest["sort_order"] == "slowest"
+        assert slowest["matching_entries_total"] == 3
+        assert [entry["question"] for entry in slowest["entries"]] == ["old slow", "new medium"]
+        assert slowest["latest_question"] == "new medium"
+        assert shortest_response["sort_order"] == "shortest-response"
+        assert [entry["question"] for entry in shortest_response["entries"]] == ["middle fast", "old slow"]

@@ -80,6 +80,37 @@ def _infer_query_plan_routes(entry: Dict[str, Any]) -> List[str]:
     return routes
 
 
+def _sort_entries(entries: List[Dict[str, Any]], sort_order: str) -> List[Dict[str, Any]]:
+    """Return entries ordered for display without changing the filtered metric window."""
+    normalized_order = sort_order or "recent"
+    if normalized_order == "oldest":
+        return list(entries)
+    if normalized_order == "recent":
+        return list(reversed(entries))
+
+    numeric_fields = {
+        "slowest": ("duration_ms", True),
+        "fastest": ("duration_ms", False),
+        "longest-response": ("response_chars", True),
+        "shortest-response": ("response_chars", False),
+    }
+    field_config = numeric_fields.get(normalized_order)
+    if field_config is None:
+        return list(reversed(entries))
+
+    field_name, descending = field_config
+
+    def sort_key(item: tuple[int, Dict[str, Any]]) -> tuple[int, float, int]:
+        index, entry = item
+        value = entry.get(field_name)
+        if not isinstance(value, int):
+            return (1, 0, index)
+        sortable_value = -value if descending else value
+        return (0, sortable_value, index)
+
+    return [entry for _, entry in sorted(enumerate(entries), key=sort_key)]
+
+
 class QueryHistoryRecorder:
     """Append query interaction records to a local JSONL log file."""
 
@@ -239,6 +270,7 @@ class QueryHistoryRecorder:
         max_duration_ms: Optional[int] = None,
         min_response_chars: Optional[int] = None,
         max_response_chars: Optional[int] = None,
+        sort_order: str = "recent",
         now: Optional[float] = None,
     ) -> List[Dict[str, Any]]:
         if limit <= 0:
@@ -264,7 +296,7 @@ class QueryHistoryRecorder:
             max_response_chars=max_response_chars,
             now=now,
         )
-        return list(reversed(entries[-limit:]))
+        return _sort_entries(entries, sort_order)[:limit]
 
     def summary(
         self,
@@ -285,6 +317,7 @@ class QueryHistoryRecorder:
         max_duration_ms: Optional[int] = None,
         min_response_chars: Optional[int] = None,
         max_response_chars: Optional[int] = None,
+        sort_order: str = "recent",
         now: Optional[float] = None,
     ) -> Dict[str, Any]:
         status_filter = status or "all"
@@ -302,6 +335,8 @@ class QueryHistoryRecorder:
         max_duration_filter = max_duration_ms if isinstance(max_duration_ms, int) and max_duration_ms >= 0 else None
         min_response_filter = min_response_chars if isinstance(min_response_chars, int) and min_response_chars >= 0 else None
         max_response_filter = max_response_chars if isinstance(max_response_chars, int) and max_response_chars >= 0 else None
+        valid_sort_orders = {"recent", "oldest", "slowest", "fastest", "longest-response", "shortest-response"}
+        sort_order_filter = sort_order if sort_order in valid_sort_orders else "recent"
         matching_entries = self._apply_filters(
             self.load_entries(),
             status=status_filter,
@@ -340,6 +375,7 @@ class QueryHistoryRecorder:
             max_duration_ms=max_duration_filter,
             min_response_chars=min_response_filter,
             max_response_chars=max_response_filter,
+            sort_order=sort_order_filter,
             now=now,
         )
         considered = [entry for entry in recent if entry.get("status") != "corrupt"]
@@ -366,8 +402,8 @@ class QueryHistoryRecorder:
             for entry in matching_considered
             if entry.get("status") == "success" and isinstance(entry.get("response_chars"), int)
         ]
-        latest = considered[0] if considered else None
-        latest_error = next((entry for entry in recent if entry.get("status") == "error"), None)
+        latest = next((entry for entry in reversed(matching_entries) if entry.get("status") != "corrupt"), None)
+        latest_error = next((entry for entry in reversed(matching_entries) if entry.get("status") == "error"), None)
         def _source_counter(rows: List[Dict[str, Any]]) -> Counter:
             return Counter((entry.get("source") or "unknown") for entry in rows)
 
@@ -451,6 +487,7 @@ class QueryHistoryRecorder:
             "max_duration_ms_filter": max_duration_filter,
             "min_response_chars_filter": min_response_filter,
             "max_response_chars_filter": max_response_filter,
+            "sort_order": sort_order_filter,
             "entries_returned": len(recent),
             "matching_entries_total": len(matching_entries),
             "entries_considered": len(considered),

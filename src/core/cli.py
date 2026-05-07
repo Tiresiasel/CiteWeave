@@ -182,6 +182,7 @@ def main():
     query_history_parser.add_argument("--max-duration-ms", type=int, default=None, help="Only include query records whose duration was at most this many milliseconds.")
     query_history_parser.add_argument("--min-response-chars", type=int, default=None, help="Only include query records whose response size was at least this many characters.")
     query_history_parser.add_argument("--max-response-chars", type=int, default=None, help="Only include query records whose response size was at most this many characters.")
+    query_history_parser.add_argument("--sort", choices=["recent", "oldest", "slowest", "fastest", "longest-response", "shortest-response"], default="recent", help="Order displayed query records before applying --limit (default: recent).")
     query_history_parser.add_argument("--check-empty", action="store_true", help="Exit non-zero when the filtered query history is not empty. Useful for automation that should fail on recent matching errors.")
     query_history_parser.add_argument("--check-max-errors", type=int, default=None, help="Exit non-zero when the filtered window contains more than this many error rows.")
     query_history_parser.add_argument("--check-max-error-rate", type=float, default=None, help="Exit non-zero when the filtered window exceeds this error-rate threshold between 0 and 1.")
@@ -1005,6 +1006,7 @@ def handle_query_history_command(args):
         max_duration_ms=getattr(args, "max_duration_ms", None),
         min_response_chars=getattr(args, "min_response_chars", None),
         max_response_chars=getattr(args, "max_response_chars", None),
+        sort_order=getattr(args, "sort", "recent"),
     )
 
     check_empty = getattr(args, "check_empty", False)
@@ -1092,6 +1094,7 @@ def handle_query_history_command(args):
             "max_duration_ms_filter": snapshot.get("max_duration_ms_filter"),
             "min_response_chars_filter": snapshot.get("min_response_chars_filter"),
             "max_response_chars_filter": snapshot.get("max_response_chars_filter"),
+            "sort_order": snapshot.get("sort_order", "recent"),
             "since_hours": snapshot.get("since_hours"),
         }
         if getattr(args, "json", False):
@@ -1114,6 +1117,8 @@ def handle_query_history_command(args):
             print(f"  status filter: {validation['status_filter']}")
             print(f"  source filter: {validation['source_filter']}")
             print(f"  confirmation filter: {validation['confirmation_filter']}")
+            if validation["sort_order"] != "recent":
+                print(f"  sort order: {validation['sort_order']}")
             if validation["check_empty"]:
                 print("  empty check: enabled")
             if validation["check_max_errors"] is not None:
@@ -1187,6 +1192,9 @@ def handle_query_history_command(args):
         print(f"Response filter: {response_contains_filter}")
     if snapshot.get("since_hours") is not None:
         print(f"Time window: last {snapshot.get('since_hours')} hours")
+    sort_order = snapshot.get("sort_order", "recent")
+    if sort_order != "recent":
+        print(f"Sort order: {sort_order}")
     planned_database_filter = snapshot.get("planned_database_filter", "all")
     planned_method_filter = snapshot.get("planned_method_filter", "all")
     planned_route_filter = snapshot.get("planned_route_filter", "all")
