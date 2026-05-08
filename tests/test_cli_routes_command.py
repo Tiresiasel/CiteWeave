@@ -23,6 +23,18 @@ def _stub_module(name: str, **attrs):
 
 def _load_cli_module():
     module_name = f"citeweave_cli_{uuid.uuid4().hex}"
+    stub_names = [
+        "prompt_toolkit",
+        "src",
+        "src.processing",
+        "src.processing.pdf",
+        "src.processing.pdf.document_processor",
+        "src.agents",
+        "src.agents.multi_agent_research_system",
+        "src.agents.routing",
+        "src.kernel",
+    ]
+    original_modules = {name: sys.modules.get(name) for name in stub_names}
 
     class DummyDocumentProcessor:
         pass
@@ -45,7 +57,7 @@ def _load_cli_module():
                 "addon_config_issues": [],
             }
 
-        def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", question_contains="", error_contains="", response_contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
+        def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", question_contains="", error_contains="", response_contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None, sort_order="recent"):
             return {
                 "log_file": "data/query_history.jsonl",
                 "requested_limit": limit,
@@ -64,6 +76,7 @@ def _load_cli_module():
                 "max_duration_ms_filter": max_duration_ms,
                 "min_response_chars_filter": min_response_chars,
                 "max_response_chars_filter": max_response_chars,
+                "sort_order": sort_order,
                 "entries_returned": 0,
                 "matching_entries_total": 0,
                 "entries_considered": 0,
@@ -111,7 +124,14 @@ def _load_cli_module():
     spec = importlib.util.spec_from_file_location(module_name, CLI_PATH)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
-    spec.loader.exec_module(module)
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        for name, original in original_modules.items():
+            if original is None:
+                sys.modules.pop(name, None)
+            else:
+                sys.modules[name] = original
     return module
 
 
@@ -439,7 +459,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", question_contains="", error_contains="", response_contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", question_contains="", error_contains="", response_contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None, sort_order="recent"):
                 assert limit == 5
                 assert status == "error"
                 assert source == "cli.query"
@@ -576,7 +596,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         }
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", question_contains="", error_contains="", response_contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", question_contains="", error_contains="", response_contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None, sort_order="recent"):
                 assert satisfaction == "all"
                 assert limit == 2
                 assert status == "all"
@@ -863,6 +883,7 @@ class CliQueryHistoryCheckCommandTests(unittest.TestCase):
                 "satisfaction_filter": "all",
                 "shortest_success_response_chars": None,
                 "since_hours": 12,
+                "sort_order": "recent",
                 "source_filter": "cli.query",
                 "status_filter": "error",
             },
@@ -1228,7 +1249,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
         cli = _load_cli_module()
 
         class ExpectedKernel:
-            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", question_contains="", error_contains="", response_contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None):
+            def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", question_contains="", error_contains="", response_contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None, sort_order="recent"):
                 assert satisfaction == "all"
                 assert limit == 5
                 assert status == "error"
@@ -1241,6 +1262,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
                 assert response_contains == ""
                 assert planned_database == "pdf_db"
                 assert planned_method == "get_full_pdf_content"
+                assert sort_order == "recent"
                 return {
                     "log_file": "data/query_history.jsonl",
                     "requested_limit": limit,
@@ -1250,6 +1272,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
                     "confirmation_filter": confirmation,
                     "planned_database_filter": "pdf_db",
                     "planned_method_filter": "get_full_pdf_content",
+                    "sort_order": sort_order,
                     "entries_returned": 1,
                     "entries_considered": 1,
                     "success_count": 0,

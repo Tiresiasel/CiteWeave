@@ -1,4 +1,5 @@
 import importlib.util
+import sys
 import unittest
 from pathlib import Path
 
@@ -7,6 +8,22 @@ MODULE_PATH = Path(__file__).resolve().parents[1] / "src" / "adapters" / "opencl
 
 
 def load_facade_module():
+    for name in [
+        "src",
+        "src.processing",
+        "src.processing.pdf",
+        "src.processing.pdf.document_processor",
+        "src.agents",
+        "src.agents.multi_agent_research_system",
+        "src.agents.routing",
+        "src.kernel",
+        "src.kernel.service",
+        "src.kernel.batch_tracker",
+        "src.kernel.query_history",
+    ]:
+        if name in sys.modules and getattr(sys.modules[name], "__file__", None) is None:
+            sys.modules.pop(name, None)
+
     spec = importlib.util.spec_from_file_location("openclaw_facade_test_module", MODULE_PATH)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
