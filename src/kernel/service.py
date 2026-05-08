@@ -178,7 +178,7 @@ class CiteWeaveKernel:
         if clear_progress:
             tracker.clear_progress(directory)
 
-        all_files = glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True)
+        all_files = [path for path in glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True) if os.path.isfile(path)]
         pending_files = tracker.get_pending_files(all_files, force_restart=force_restart or not resume)
 
         processed = []
@@ -305,7 +305,7 @@ class CiteWeaveKernel:
         if clear:
             tracker.clear_progress(directory)
 
-        all_files = glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True)
+        all_files = [path for path in glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True) if os.path.isfile(path)]
         summary = tracker.get_progress_summary()
         pending_files = tracker.get_pending_files(all_files, force_restart=False)
         failed_files = summary["failed_files"]

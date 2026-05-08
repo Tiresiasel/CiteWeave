@@ -446,7 +446,11 @@ def handle_batch_upload_command(args):
     # Find all PDF files (recursively)
     print(f"Searching for PDF files in {directory}...")
     logging.info(f"START: Searching for PDF files in {directory}")
-    pdf_files = glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True)
+    pdf_files = [
+        path
+        for path in glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True)
+        if os.path.isfile(path)
+    ]
     logging.info(f"FINISH: Found {len(pdf_files)} PDF files in {directory}")
     
     if not pdf_files:
