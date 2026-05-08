@@ -3,7 +3,6 @@ import json
 import os
 import sys
 import tempfile
-import types
 import uuid
 from pathlib import Path
 
@@ -21,12 +20,22 @@ def _load_module(path: Path, module_name: str):
     return module
 
 
-def _stub_module(name: str, **attrs):
-    module = types.ModuleType(name)
-    for key, value in attrs.items():
-        setattr(module, key, value)
-    sys.modules[name] = module
-    return module
+from module_isolation import ModuleSandbox
+
+
+def _load_service_with_stubs(query_history, document_processor_cls, research_system_cls, suffix: str):
+    with ModuleSandbox() as sandbox:
+        sandbox.stub("src", __path__=[])
+        sandbox.stub("src.processing", __path__=[])
+        sandbox.stub("src.processing.pdf", __path__=[])
+        sandbox.stub("src.processing.pdf.document_processor", DocumentProcessor=document_processor_cls)
+        sandbox.stub("src.agents", __path__=[])
+        sandbox.stub("src.agents.multi_agent_research_system", LangGraphResearchSystem=research_system_cls)
+        sandbox.stub("src.agents.routing", active_route_configuration=lambda: {"default_route": "vector_search"})
+        sandbox.stub("src.kernel", __path__=[])
+        sandbox.stub("src.kernel.batch_tracker", BatchUploadTracker=object)
+        sandbox.set("src.kernel.query_history", query_history)
+        return sandbox.load(SERVICE_PATH, f"src.kernel.service_{suffix}_{uuid.uuid4().hex}")
 
 
 def test_query_history_recorder_appends_jsonl_entries():
@@ -611,18 +620,7 @@ def test_kernel_query_records_success_metrics_to_history_file():
             assert confirmation == "continue"
             return "Competitive advantage summary"
 
-    _stub_module("src", __path__=[])
-    _stub_module("src.processing", __path__=[])
-    _stub_module("src.processing.pdf", __path__=[])
-    _stub_module("src.processing.pdf.document_processor", DocumentProcessor=DummyDocumentProcessor)
-    _stub_module("src.agents", __path__=[])
-    _stub_module("src.agents.multi_agent_research_system", LangGraphResearchSystem=DummyResearchSystem)
-    _stub_module("src.agents.routing", active_route_configuration=lambda: {"default_route": "vector_search"})
-    _stub_module("src.kernel", __path__=[])
-    _stub_module("src.kernel.batch_tracker", BatchUploadTracker=object)
-    sys.modules["src.kernel.query_history"] = query_history
-
-    service = _load_module(SERVICE_PATH, f"src.kernel.service_{uuid.uuid4().hex}")
+    service = _load_service_with_stubs(query_history, DummyDocumentProcessor, DummyResearchSystem, "success")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         log_path = Path(tmpdir) / "query_history.jsonl"
@@ -673,18 +671,7 @@ def test_kernel_query_records_query_plan_details_when_available():
                 },
             }
 
-    _stub_module("src", __path__=[])
-    _stub_module("src.processing", __path__=[])
-    _stub_module("src.processing.pdf", __path__=[])
-    _stub_module("src.processing.pdf.document_processor", DocumentProcessor=DummyDocumentProcessor)
-    _stub_module("src.agents", __path__=[])
-    _stub_module("src.agents.multi_agent_research_system", LangGraphResearchSystem=DummyResearchSystem)
-    _stub_module("src.agents.routing", active_route_configuration=lambda: {"default_route": "vector_search"})
-    _stub_module("src.kernel", __path__=[])
-    _stub_module("src.kernel.batch_tracker", BatchUploadTracker=object)
-    sys.modules["src.kernel.query_history"] = query_history
-
-    service = _load_module(SERVICE_PATH, f"src.kernel.service_plan_{uuid.uuid4().hex}")
+    service = _load_service_with_stubs(query_history, DummyDocumentProcessor, DummyResearchSystem, "plan")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         log_path = Path(tmpdir) / "query_history.jsonl"
@@ -714,18 +701,7 @@ def test_kernel_query_records_failures_before_reraising():
         def research_question(self, question, confirmation):
             raise RuntimeError("llm unavailable")
 
-    _stub_module("src", __path__=[])
-    _stub_module("src.processing", __path__=[])
-    _stub_module("src.processing.pdf", __path__=[])
-    _stub_module("src.processing.pdf.document_processor", DocumentProcessor=DummyDocumentProcessor)
-    _stub_module("src.agents", __path__=[])
-    _stub_module("src.agents.multi_agent_research_system", LangGraphResearchSystem=DummyResearchSystem)
-    _stub_module("src.agents.routing", active_route_configuration=lambda: {"default_route": "vector_search"})
-    _stub_module("src.kernel", __path__=[])
-    _stub_module("src.kernel.batch_tracker", BatchUploadTracker=object)
-    sys.modules["src.kernel.query_history"] = query_history
-
-    service = _load_module(SERVICE_PATH, f"src.kernel.service_failure_{uuid.uuid4().hex}")
+    service = _load_service_with_stubs(query_history, DummyDocumentProcessor, DummyResearchSystem, "failure")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         log_path = Path(tmpdir) / "query_history.jsonl"
