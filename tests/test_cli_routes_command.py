@@ -1,8 +1,5 @@
-import importlib.util
 import io
 import json
-import sys
-import types
 import unittest
 import uuid
 from argparse import Namespace
@@ -13,28 +10,11 @@ from pathlib import Path
 CLI_PATH = Path(__file__).resolve().parents[1] / "src" / "core" / "cli.py"
 
 
-def _stub_module(name: str, **attrs):
-    module = types.ModuleType(name)
-    for key, value in attrs.items():
-        setattr(module, key, value)
-    sys.modules[name] = module
-    return module
+from module_isolation import ModuleSandbox
 
 
 def _load_cli_module():
     module_name = f"citeweave_cli_{uuid.uuid4().hex}"
-    stub_names = [
-        "prompt_toolkit",
-        "src",
-        "src.processing",
-        "src.processing.pdf",
-        "src.processing.pdf.document_processor",
-        "src.agents",
-        "src.agents.multi_agent_research_system",
-        "src.agents.routing",
-        "src.kernel",
-    ]
-    original_modules = {name: sys.modules.get(name) for name in stub_names}
 
     class DummyDocumentProcessor:
         pass
@@ -97,42 +77,31 @@ def _load_cli_module():
                 "entries": [],
             }
 
-    _stub_module("prompt_toolkit", prompt=lambda *args, **kwargs: "")
-    _stub_module("src", __path__=[])
-    _stub_module("src.processing", __path__=[])
-    _stub_module("src.processing.pdf", __path__=[])
-    _stub_module("src.processing.pdf.document_processor", DocumentProcessor=DummyDocumentProcessor)
-    _stub_module("src.agents", __path__=[])
-    _stub_module("src.agents.multi_agent_research_system", LangGraphResearchSystem=DummyLangGraphResearchSystem)
-    _stub_module(
-        "src.agents.routing",
-        active_route_configuration=lambda: {
-            "default_route": "vector_search",
-            "valid_routes": [],
-            "aliases": {},
-            "priority_map": {},
-            "alias_overrides": {},
-            "priority_overrides": {},
-            "ignored_alias_overrides": [],
-            "ignored_priority_overrides": [],
-            "addon_config_paths": [],
-            "addon_config_issues": [],
-        },
-    )
-    _stub_module("src.kernel", CiteWeaveKernel=FakeKernel, BatchUploadTracker=object)
-
-    spec = importlib.util.spec_from_file_location(module_name, CLI_PATH)
-    module = importlib.util.module_from_spec(spec)
-    assert spec.loader is not None
-    try:
-        spec.loader.exec_module(module)
-    finally:
-        for name, original in original_modules.items():
-            if original is None:
-                sys.modules.pop(name, None)
-            else:
-                sys.modules[name] = original
-    return module
+    with ModuleSandbox() as sandbox:
+        sandbox.stub("prompt_toolkit", prompt=lambda *args, **kwargs: "")
+        sandbox.stub("src", __path__=[])
+        sandbox.stub("src.processing", __path__=[])
+        sandbox.stub("src.processing.pdf", __path__=[])
+        sandbox.stub("src.processing.pdf.document_processor", DocumentProcessor=DummyDocumentProcessor)
+        sandbox.stub("src.agents", __path__=[])
+        sandbox.stub("src.agents.multi_agent_research_system", LangGraphResearchSystem=DummyLangGraphResearchSystem)
+        sandbox.stub(
+            "src.agents.routing",
+            active_route_configuration=lambda: {
+                "default_route": "vector_search",
+                "valid_routes": [],
+                "aliases": {},
+                "priority_map": {},
+                "alias_overrides": {},
+                "priority_overrides": {},
+                "ignored_alias_overrides": [],
+                "ignored_priority_overrides": [],
+                "addon_config_paths": [],
+                "addon_config_issues": [],
+            },
+        )
+        sandbox.stub("src.kernel", CiteWeaveKernel=FakeKernel, BatchUploadTracker=object)
+        return sandbox.load(CLI_PATH, module_name)
 
 
 

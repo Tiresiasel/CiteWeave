@@ -1,8 +1,6 @@
 import importlib.util
 import json
-import sys
 import tempfile
-import types
 import uuid
 from pathlib import Path
 
@@ -17,17 +15,31 @@ def _load_module(path: Path, prefix: str, module_name: str | None = None):
     spec = importlib.util.spec_from_file_location(effective_name, path)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
+    # Unique module names are used for standalone modules that do not shadow the
+    # package under test.  Tests that need package stubs use ModuleSandbox below.
+    import sys
     sys.modules[effective_name] = module
     spec.loader.exec_module(module)
     return module
 
 
-def _stub_module(name: str, **attrs):
-    module = types.ModuleType(name)
-    for key, value in attrs.items():
-        setattr(module, key, value)
-    sys.modules[name] = module
-    return module
+from module_isolation import ModuleSandbox
+
+
+def _load_service_with_stubs(batch_tracker, document_processor_cls, research_system_cls, suffix: str):
+    with ModuleSandbox() as sandbox:
+        sandbox.stub("src", __path__=[])
+        sandbox.stub("src.processing", __path__=[])
+        sandbox.stub("src.processing.pdf", __path__=[])
+        sandbox.stub("src.processing.pdf.document_processor", DocumentProcessor=document_processor_cls)
+        sandbox.stub("src.agents", __path__=[])
+        sandbox.stub("src.agents.multi_agent_research_system", LangGraphResearchSystem=research_system_cls)
+        sandbox.stub("src.agents.routing", active_route_configuration=lambda: {"default_route": "vector_search"})
+        sandbox.stub("src.kernel", __path__=[])
+        sandbox.set("src.kernel.batch_tracker", batch_tracker)
+        query_history = sandbox.load(QUERY_HISTORY_PATH, f"src.kernel.query_history_{suffix}_{uuid.uuid4().hex}")
+        sandbox.set("src.kernel.query_history", query_history)
+        return sandbox.load(SERVICE_PATH, f"src.kernel.service_{suffix}_{uuid.uuid4().hex}")
 
 
 def test_batch_tracker_summary_includes_completed_and_failed_files():
@@ -98,27 +110,7 @@ def test_kernel_batch_upload_preserves_tracker_aggregate_stats():
     class DummyResearchSystem:
         pass
 
-    _stub_module("src", __path__=[])
-    _stub_module("src.processing", __path__=[])
-    _stub_module("src.processing.pdf", __path__=[])
-    _stub_module("src.processing.pdf.document_processor", DocumentProcessor=DummyDocumentProcessor)
-    _stub_module("src.agents", __path__=[])
-    _stub_module("src.agents.multi_agent_research_system", LangGraphResearchSystem=DummyResearchSystem)
-    _stub_module("src.agents.routing", active_route_configuration=lambda: {"default_route": "vector_search"})
-    _stub_module("src.kernel", __path__=[])
-    sys.modules["src.kernel.batch_tracker"] = batch_tracker
-    query_history = _load_module(
-        QUERY_HISTORY_PATH,
-        "query_history",
-        module_name=f"src.kernel.query_history_upload_{uuid.uuid4().hex}",
-    )
-    sys.modules["src.kernel.query_history"] = query_history
-
-    service = _load_module(
-        SERVICE_PATH,
-        "kernel_service_upload",
-        module_name=f"src.kernel.service_upload_{uuid.uuid4().hex}",
-    )
+    service = _load_service_with_stubs(batch_tracker, DummyDocumentProcessor, DummyResearchSystem, "upload")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         pdf_dir = Path(tmpdir) / "papers"
@@ -161,27 +153,7 @@ def test_kernel_progress_summary_returns_actionable_breakdown():
     class DummyResearchSystem:
         pass
 
-    _stub_module("src", __path__=[])
-    _stub_module("src.processing", __path__=[])
-    _stub_module("src.processing.pdf", __path__=[])
-    _stub_module("src.processing.pdf.document_processor", DocumentProcessor=DummyDocumentProcessor)
-    _stub_module("src.agents", __path__=[])
-    _stub_module("src.agents.multi_agent_research_system", LangGraphResearchSystem=DummyResearchSystem)
-    _stub_module("src.agents.routing", active_route_configuration=lambda: {"default_route": "vector_search"})
-    _stub_module("src.kernel", __path__=[])
-    sys.modules["src.kernel.batch_tracker"] = batch_tracker
-    query_history = _load_module(
-        QUERY_HISTORY_PATH,
-        "query_history",
-        module_name=f"src.kernel.query_history_test_{uuid.uuid4().hex}",
-    )
-    sys.modules["src.kernel.query_history"] = query_history
-
-    service = _load_module(
-        SERVICE_PATH,
-        "kernel_service",
-        module_name=f"src.kernel.service_test_{uuid.uuid4().hex}",
-    )
+    service = _load_service_with_stubs(batch_tracker, DummyDocumentProcessor, DummyResearchSystem, "progress")
 
     with tempfile.TemporaryDirectory() as tmpdir:
         pdf_dir = Path(tmpdir) / "papers"
