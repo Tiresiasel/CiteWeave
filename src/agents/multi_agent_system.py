@@ -8,17 +8,12 @@ import json
 import logging
 import asyncio
 import os
-from typing import List, Dict, Optional, Any, Union, Tuple
+from typing import List, Dict, Any
 from dataclasses import dataclass, field
 from enum import Enum
 from datetime import datetime
-import sys
-
-sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
-from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
@@ -210,49 +205,6 @@ class EnhancedMultiAgentSystem:
             return result
         return wrapper
 
-    # --- Decorator for DB retrieval tracing ---
-    def db_trace_decorator(db_func):
-        def wrapper(self, *args, **kwargs):
-            query_info = {"args": args, "kwargs": kwargs}
-            result = db_func(self, *args, **kwargs)
-            # Try to serialize result (truncate if too long)
-            try:
-                result_repr = result
-                if isinstance(result, (list, dict)):
-                    result_repr = json.dumps(result, ensure_ascii=False)[:1000]
-                else:
-                    result_repr = str(result)[:1000]
-            except Exception:
-                result_repr = str(type(result))
-            if hasattr(self, 'log_agent_trace'):
-                self.log_agent_trace(db_func.__name__, input_data=query_info, output_data=result_repr)
-            return result
-        return wrapper
-
-    # --- Apply agent trace decorator to all agent methods ---
-    _language_processor_agent = agent_trace_decorator(_language_processor_agent)
-    _fuzzy_matcher_agent = agent_trace_decorator(_fuzzy_matcher_agent)
-    _smart_router_agent = agent_trace_decorator(_smart_router_agent)
-    _route_coordinator_agent = agent_trace_decorator(_route_coordinator_agent)
-    _sufficiency_judge_agent = agent_trace_decorator(_sufficiency_judge_agent)
-    _query_analyzer_agent = agent_trace_decorator(_query_analyzer_agent)
-    _paper_disambiguator_agent = agent_trace_decorator(_paper_disambiguator_agent)
-    _graph_citation_analyzer_agent = agent_trace_decorator(_graph_citation_analyzer_agent)
-    _vector_concept_searcher_agent = agent_trace_decorator(_vector_concept_searcher_agent)
-    _pdf_content_analyzer_agent = agent_trace_decorator(_pdf_content_analyzer_agent)
-    _author_collection_handler_agent = agent_trace_decorator(_author_collection_handler_agent)
-    _clarification_handler_agent = agent_trace_decorator(_clarification_handler_agent)
-    _fuzzy_confirmation_handler_agent = agent_trace_decorator(_fuzzy_confirmation_handler_agent)
-    _response_generator_agent = agent_trace_decorator(_response_generator_agent)
-
-    # --- Patch DB retrieval methods for tracing ---
-    GraphDB.find_papers_by_author_year = db_trace_decorator(GraphDB.find_papers_by_author_year)
-    GraphDB.find_papers_by_author = db_trace_decorator(GraphDB.find_papers_by_author)
-    GraphDB.find_citations = db_trace_decorator(GraphDB.find_citations)
-    VectorIndexer.search = db_trace_decorator(VectorIndexer.search)
-    AuthorPaperIndex.find_papers_by_author = db_trace_decorator(AuthorPaperIndex.find_papers_by_author)
-    AuthorPaperIndex.get_papers_pdf_paths = db_trace_decorator(AuthorPaperIndex.get_papers_pdf_paths)
-    AuthorPaperIndex.get_paper_pdf_path = db_trace_decorator(AuthorPaperIndex.get_paper_pdf_path)
 
     def _build_workflow(self) -> StateGraph:
         """Build the enhanced LangGraph workflow with multi-route parallel processing"""
@@ -370,7 +322,7 @@ class EnhancedMultiAgentSystem:
                 state.translation_used = False
                 
                 state.debug_messages.append(
-                    f"Language detected: English, No translation needed"
+                    "Language detected: English, No translation needed"
                 )
             
         except Exception as e:
@@ -580,8 +532,6 @@ class EnhancedMultiAgentSystem:
         logger.info("Query analyzer agent started")
         
         try:
-            model = self.llm_manager.get_agent_model("query_analyzer")
-            
             # Enhanced entity extraction with LLM assistance
             entities = await self._enhanced_entity_extraction(state.processed_query)
             state.extracted_entities = entities
@@ -864,8 +814,6 @@ class EnhancedMultiAgentSystem:
         logger.info("Response generator agent started")
         
         try:
-            model = self.llm_manager.get_agent_model("response_generator")
-            
             # Generate response based on action type
             if state.next_action == ActionType.ASK_CLARIFICATION:
                 response = await self._generate_clarification_response(state)
@@ -904,7 +852,6 @@ class EnhancedMultiAgentSystem:
             error_msg = f"Response generation failed: {str(e)}\nTraceback:\n{traceback.format_exc()}"
             # 打印 summary 内容（如果有）
             try:
-                from src.enhanced_llm_manager import EnhancedLLMManager
                 if hasattr(self.llm_manager, 'get_memory'):
                     mem = self.llm_manager.get_memory(state.thread_id, state.user_id)
                     logger.error(f"Current memory.summary: {getattr(mem, 'summary', None)}")
@@ -968,7 +915,7 @@ For all key academic terms, author names, paper titles, and technical keywords, 
                     return filtered_routes if filtered_routes else [DEFAULT_ROUTE]  # fallback
                 else:
                     return [DEFAULT_ROUTE]  # fallback
-            except:
+            except Exception:
                 # Fallback to pattern matching if JSON parsing fails
                 return self._fallback_route_analysis(query, entities)
                 
@@ -1034,9 +981,9 @@ For all key academic terms, author names, paper titles, and technical keywords, 
             try:
                 ai_confidence = float(result.strip())
                 return min(1.0, (base_confidence + ai_confidence) / 2)
-            except:
+            except Exception:
                 return base_confidence
-        except:
+        except Exception:
             return base_confidence
 
     def _needs_disambiguation(self, entities: Dict[str, Any], routes: List[str]) -> bool:
@@ -1094,7 +1041,7 @@ For all key academic terms, author names, paper titles, and technical keywords, 
                 return "zh"
             else:
                 return "en"
-        except:
+        except Exception:
             return "en"  # Default fallback
 
     async def _translate_to_english(self, query: str, source_lang: str) -> str:
@@ -1789,6 +1736,41 @@ Return JSON format:
                 "missing_aspects": []
             }
 
+
+def _apply_enhanced_multi_agent_tracing() -> None:
+    """Attach trace wrappers after class creation.
+
+    The wrapped methods are defined later in the class body, so decorating them
+    inside the class before their definitions would raise NameError at import
+    time. Python class bodies are not magic. Sadly.
+    """
+    agent_methods = [
+        "_language_processor_agent",
+        "_fuzzy_matcher_agent",
+        "_smart_router_agent",
+        "_route_coordinator_agent",
+        "_sufficiency_judge_agent",
+        "_query_analyzer_agent",
+        "_paper_disambiguator_agent",
+        "_graph_citation_analyzer_agent",
+        "_vector_concept_searcher_agent",
+        "_pdf_content_analyzer_agent",
+        "_author_collection_handler_agent",
+        "_clarification_handler_agent",
+        "_fuzzy_confirmation_handler_agent",
+        "_response_generator_agent",
+    ]
+    for method_name in agent_methods:
+        original = getattr(EnhancedMultiAgentSystem, method_name)
+        setattr(
+            EnhancedMultiAgentSystem,
+            method_name,
+            EnhancedMultiAgentSystem.agent_trace_decorator(original),
+        )
+
+
+_apply_enhanced_multi_agent_tracing()
+
 if __name__ == "__main__":
     import os
     import json
@@ -1801,13 +1783,13 @@ if __name__ == "__main__":
     test_case_path = os.path.join(project_root, "test_data", "simplified_test_cases.json")
 
     # Import required modules
-    from src.graph_builder import GraphDB
+    from src.storage.graph_builder import GraphDB
     from src.storage.vector_indexer import VectorIndexer
-    from src.author_paper_index import AuthorPaperIndex
+    from src.storage.author_paper_index import AuthorPaperIndex
 
     # Load Neo4j configuration
-    with open(os.path.join(config_dir, "neo4j_config.json"), "r", encoding="utf-8") as f:
-        neo4j_config = json.load(f)
+    from src.utils.config_manager import ConfigManager
+    neo4j_config = ConfigManager(config_dir).neo4j_config
 
     # Initialize GraphDB
     graph_db = GraphDB(
@@ -1816,10 +1798,10 @@ if __name__ == "__main__":
         password=neo4j_config["password"]
     )
 
-    # Initialize MultiLevelVectorIndexer
+    # Initialize VectorIndexer
     vector_indexer = VectorIndexer(
         paper_root=os.path.join(data_dir, "papers"),
-        index_path=os.path.join(data_dir, "vector_index")
+        config_path=os.path.join(config_dir, "qdrant_config.json"),
     )
 
     # Initialize AuthorPaperIndex

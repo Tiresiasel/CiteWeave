@@ -82,6 +82,25 @@ class OpenClawCiteWeaveFacade:
             clear_progress=clear_progress,
         )
 
+    def query_history(
+        self,
+        limit: int = 10,
+        status: str = "all",
+        source: str = "all",
+        planned_route: str = "all",
+        since_hours: Optional[float] = None,
+    ) -> Dict[str, Any]:
+        return self.kernel.query_history_snapshot(
+            limit=limit,
+            status=status,
+            source=source,
+            planned_route=planned_route,
+            since_hours=since_hours,
+        )
+
+    def list_pending_citations(self, limit: int = 10) -> Dict[str, Any]:
+        return self.kernel.list_pending_citations_snapshot(limit=limit)
+
     def health(self) -> Dict[str, Any]:
         return self.kernel.health_snapshot()
 

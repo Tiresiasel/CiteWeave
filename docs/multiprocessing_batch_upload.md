@@ -19,22 +19,22 @@ The batch upload command now supports multiprocessing to significantly speed up 
 
 ### Default multiprocessing (4 processors)
 ```bash
-python -m src.core.cli batch-upload /path/to/papers/
+citeweave batch-upload /path/to/papers/
 ```
 
 ### Custom number of processors
 ```bash
-python -m src.core.cli batch-upload /path/to/papers/ --processors 8
+citeweave batch-upload /path/to/papers/ --processors 8
 ```
 
 ### Sequential processing (original behavior)
 ```bash
-python -m src.core.cli batch-upload /path/to/papers/ --sequential
+citeweave batch-upload /path/to/papers/ --sequential
 ```
 
 ### Force sequential with custom processors (processors will be ignored)
 ```bash
-python -m src.core.cli batch-upload /path/to/papers/ --processors 8 --sequential
+citeweave batch-upload /path/to/papers/ --processors 8 --sequential
 ```
 
 ## Features

@@ -17,10 +17,9 @@ import json
 import logging
 from typing import List, Dict, Optional, Set
 from datetime import datetime
-import hashlib
 
 from src.storage.graph_builder import GraphDB
-from src.storage.vector_indexer import VectorIndexer as MultiLevelVectorIndexer
+from src.storage.vector_indexer import VectorIndexer
 from src.utils.config_manager import ConfigManager
 from src.utils.paper_id_utils import PaperIDGenerator
 
@@ -41,6 +40,7 @@ class DatabaseIntegrator:
             config_path: Path to configuration files
             storage_root: Root directory where processed documents are stored
         """
+        self.config_path = config_path
         self.storage_root = storage_root
         self.config_manager = ConfigManager(config_path)
         self.paper_id_generator = PaperIDGenerator()
@@ -85,10 +85,9 @@ class DatabaseIntegrator:
             logging.info("Neo4j connection initialized")
             
             # Initialize vector database connection
-            vector_config = self.config_manager.get_qdrant_config()
-            self.vector_indexer = MultiLevelVectorIndexer(
+            self.vector_indexer = VectorIndexer(
                 paper_root=self.storage_root,
-                index_path="./data/vector_index"
+                config_path=os.path.join(self.config_path, "qdrant_config.json"),
             )
             logging.info("Vector database connection initialized")
             

@@ -212,7 +212,7 @@ The LangGraph system now uses an enhanced strategy:
 ### Example 1: Finding Specific Content in Porter's Work
 
 ```python
-from query_db_agent import QueryDBAgent
+from src.agents.query_db_agent import QueryDBAgent
 
 agent = QueryDBAgent()
 
@@ -271,7 +271,7 @@ if full_content["found"]:
 ### Example 4: LangGraph Integration
 
 ```python
-from multi_agent_research_system import LangGraphResearchSystem
+from src.agents.multi_agent_research_system import LangGraphResearchSystem
 
 system = LangGraphResearchSystem()
 

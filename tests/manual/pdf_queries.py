@@ -4,12 +4,10 @@ Test script for PDF-based query functionality
 Tests direct PDF content access and analysis
 """
 
-import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
-from multi_agent_research_system import LangGraphResearchSystem
-from query_db_agent import QueryDBAgent
+from src.agents.multi_agent_research_system import LangGraphResearchSystem
+from src.agents.query_db_agent import QueryDBAgent
 import json
 
 def test_pdf_queries():
@@ -29,7 +27,7 @@ def test_pdf_queries():
         return
     
     # Get available papers
-    print(f"\n📄 Available papers in directory:")
+    print("\n📄 Available papers in directory:")
     papers_dir = os.path.join(os.path.dirname(__file__), "data", "papers")
     if os.path.exists(papers_dir):
         paper_ids = [d for d in os.listdir(papers_dir) if os.path.isdir(os.path.join(papers_dir, d))]
@@ -44,7 +42,7 @@ def test_pdf_queries():
         return
     
     # Test 1: Get full PDF content
-    print(f"\n🔬 Test 1: Getting full PDF content")
+    print("\n🔬 Test 1: Getting full PDF content")
     print("-" * 40)
     test_paper_id = paper_ids[0]  # Use first available paper
     
@@ -59,7 +57,7 @@ def test_pdf_queries():
             print(f"📝 Word count: {full_content.get('total_word_count', 0)}")
             
             # Show section summaries
-            print(f"\n📑 Section overview:")
+            print("\n📑 Section overview:")
             for section in full_content.get("section_summaries", [])[:3]:
                 print(f"  - {section['section_title']} ({section['word_count']} words)")
                 print(f"    Preview: {section['preview'][:100]}...")
@@ -69,7 +67,7 @@ def test_pdf_queries():
         print(f"❌ Error in full content test: {e}")
     
     # Test 2: Query specific content in PDF
-    print(f"\n🔍 Test 2: Querying specific content in PDF")
+    print("\n🔍 Test 2: Querying specific content in PDF")
     print("-" * 40)
     
     search_terms = ["strategy", "imitation", "complexity", "model"]
@@ -92,7 +90,7 @@ def test_pdf_queries():
             print(f"❌ Error searching for '{term}': {e}")
     
     # Test 3: Author-based PDF content search
-    print(f"\n👤 Test 3: Author-based PDF content search")
+    print("\n👤 Test 3: Author-based PDF content search")
     print("-" * 40)
     
     try:
@@ -116,7 +114,7 @@ def test_pdf_queries():
         print(f"❌ Error in author content search: {e}")
     
     # Test 4: Semantic search within PDF
-    print(f"\n🧠 Test 4: Semantic search within PDF")
+    print("\n🧠 Test 4: Semantic search within PDF")
     print("-" * 40)
     
     try:
@@ -127,7 +125,7 @@ def test_pdf_queries():
         )
         
         if semantic_result.get("found"):
-            print(f"✅ Semantic search successful!")
+            print("✅ Semantic search successful!")
             print(f"🔍 Chunks searched: {semantic_result.get('total_chunks_searched', 0)}")
             print(f"📊 Relevant chunks: {semantic_result.get('relevant_chunks_found', 0)}")
             
@@ -146,7 +144,7 @@ def test_pdf_queries():
         print(f"❌ Error in semantic search: {e}")
     
     # Test 5: LangGraph integration with PDF queries
-    print(f"\n🤖 Test 5: LangGraph system with PDF queries")
+    print("\n🤖 Test 5: LangGraph system with PDF queries")
     print("-" * 40)
     
     test_questions = [
@@ -164,7 +162,7 @@ def test_pdf_queries():
         except Exception as e:
             print(f"❌ Error in LangGraph query: {e}")
     
-    print(f"\n🎉 PDF Query Testing Completed!")
+    print("\n🎉 PDF Query Testing Completed!")
     print("=" * 60)
 
 def test_paper_availability():
@@ -215,4 +213,4 @@ if __name__ == "__main__":
         test_pdf_queries()
     else:
         print("\n❌ No papers available for testing")
-        print("Please ensure papers are properly processed and stored in data/papers/") 
+        print("Please ensure papers are properly processed and stored in data/papers/")

@@ -8,22 +8,32 @@
   "prefix": null,
   "timeout": 60.0,
   "host_override": null,
+  "embedding": {
+    "provider": "local",
+    "local": {
+      "model": "all-MiniLM-L6-v2",
+      "vector_size": 384,
+      "normalize": true
+    },
+    "openai": {
+      "model": "text-embedding-3-small",
+      "vector_size": 1536,
+      "dimensions": null,
+      "batch_size": 128
+    }
+  },
   "collections": {
     "sentences": {
-      "vector_size": 384,
       "distance": "Cosine"
     },
     "paragraphs": {
-      "vector_size": 384,
       "distance": "Cosine"
     },
     "sections": {
-      "vector_size": 384,
       "distance": "Cosine"
     },
     "citations": {
-      "vector_size": 384,
       "distance": "Cosine"
     }
   }
-} 
+}

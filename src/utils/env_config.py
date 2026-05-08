@@ -15,8 +15,10 @@ from typing import Optional
 #
 # When using openclaw provider:
 #   - CITEWEAVE_LLM_API_BASE defaults to http://localhost:18789/v1
-#   - CITEWEAVE_LLM_API_KEY can be any placeholder (OpenClaw authenticates via session)
-#   - CITEWEAVE_LLM_MODEL defaults to openai-codex/gpt-5.4
+#   - CITEWEAVE_LLM_API_KEY can be any placeholder when gateway auth is none
+#   - CITEWEAVE_LLM_MODEL is the OpenClaw agent target, default openclaw/default
+#   - CITEWEAVE_OPENCLAW_BACKEND_MODEL optionally overrides the gateway backend
+#     provider/model through the x-openclaw-model request header
 #
 # When using openai provider:
 #   - Set OPENAI_API_KEY (or CITEWEAVE_LLM_API_KEY) to your key
@@ -24,7 +26,10 @@ from typing import Optional
 # ---------------------------------------------------------------------------
 
 OPENCLAW_DEFAULT_BASE = "http://localhost:18789/v1"
-OPENCLAW_DEFAULT_MODEL = "openai-codex/gpt-5.4"
+OPENCLAW_DEFAULT_MODEL = "openclaw/default"
+
+LOCAL_EMBEDDING_DEFAULT_MODEL = "all-MiniLM-L6-v2"
+OPENAI_EMBEDDING_DEFAULT_MODEL = "text-embedding-3-small"
 
 
 def get_llm_provider() -> str:
@@ -34,18 +39,49 @@ def get_llm_provider() -> str:
 
 def get_llm_model(agent_name: Optional[str] = None) -> str:
     """
-    Returns the model name.
-    Priority: CITEWEAVE_LLM_MODEL > config file value.
+    Returns the chat model name.
+
+    In OpenClaw mode this must be an OpenClaw agent target such as
+    ``openclaw/default``. For backwards compatibility, if a raw provider model
+    is supplied in CITEWEAVE_LLM_MODEL (for example ``openai-codex/gpt-5.4``),
+    it is treated as the backend override and the request still targets
+    ``openclaw/default``.
     """
     env_model = os.environ.get("CITEWEAVE_LLM_MODEL", "").strip()
+    if get_llm_provider() == "openclaw":
+        if not env_model or not env_model.startswith("openclaw"):
+            return OPENCLAW_DEFAULT_MODEL
     return env_model if env_model else ""
+
+
+def get_openclaw_backend_model(agent_name: Optional[str] = None) -> str:
+    """
+    Returns the optional OpenClaw backend provider/model override.
+
+    OpenClaw's OpenAI-compatible endpoint treats the OpenAI ``model`` field as
+    an agent target. Backend provider model selection belongs in the
+    ``x-openclaw-model`` header.
+    """
+    explicit = (
+        os.environ.get("CITEWEAVE_OPENCLAW_BACKEND_MODEL", "").strip()
+        or os.environ.get("CITEWEAVE_LLM_BACKEND_MODEL", "").strip()
+    )
+    if explicit:
+        return explicit
+
+    legacy_model = os.environ.get("CITEWEAVE_LLM_MODEL", "").strip()
+    if legacy_model and not legacy_model.startswith("openclaw"):
+        return legacy_model
+
+    return ""
 
 
 def get_llm_api_base() -> str:
     """Returns the API base URL for the LLM provider."""
+    configured_base = os.environ.get("CITEWEAVE_LLM_API_BASE", "").strip()
     if get_llm_provider() == "openclaw":
-        return os.environ.get("CITEWEAVE_LLM_API_BASE", OPENCLAW_DEFAULT_BASE).rstrip("/")
-    return os.environ.get("CITEWEAVE_LLM_API_BASE", "").strip()
+        return (configured_base or OPENCLAW_DEFAULT_BASE).rstrip("/")
+    return configured_base
 
 
 def get_llm_api_key() -> str:
@@ -69,16 +105,78 @@ def is_openclaw_mode() -> bool:
 
 
 # ---------------------------------------------------------------------------
+# Embedding Provider Overrides
+# ---------------------------------------------------------------------------
+# Embeddings are separate from LLM calls. OpenClaw can coordinate deployment
+# and query flow, while CiteWeave still owns the local vector index.
+#
+# Supported providers:
+#   - local  : sentence-transformers model, default all-MiniLM-L6-v2 (384 dims)
+#   - openai : OpenAI Embeddings API, default text-embedding-3-small (1536 dims)
+# ---------------------------------------------------------------------------
+
+def get_embedding_provider() -> str:
+    """Returns the embedding provider override: 'local' or 'openai'."""
+    return os.environ.get("CITEWEAVE_EMBEDDING_PROVIDER", "").strip().lower()
+
+
+def get_embedding_model() -> str:
+    """Returns the embedding model override, if set."""
+    return os.environ.get("CITEWEAVE_EMBEDDING_MODEL", "").strip()
+
+
+def get_embedding_dimensions() -> Optional[int]:
+    """Returns an explicit embedding dimension override, if set."""
+    raw = os.environ.get("CITEWEAVE_EMBEDDING_DIMENSIONS", "").strip()
+    if not raw:
+        return None
+    return int(raw)
+
+
+def get_embedding_api_key() -> str:
+    """Returns the API key for remote embedding providers."""
+    explicit = os.environ.get("CITEWEAVE_EMBEDDING_API_KEY", "").strip()
+    if explicit:
+        return explicit
+    return os.environ.get("OPENAI_API_KEY", "").strip()
+
+
+# ---------------------------------------------------------------------------
 # Neo4j / Database Overrides
 # ---------------------------------------------------------------------------
 
+def get_neo4j_uri() -> str:
+    """Returns the Neo4j Bolt URI override, if set."""
+    return os.environ.get("CITEWEAVE_NEO4J_URI", "").strip()
+
+
+def get_neo4j_username() -> str:
+    """Returns the Neo4j username override, if set."""
+    return os.environ.get("CITEWEAVE_NEO4J_USERNAME", "").strip()
+
+
+def get_neo4j_database() -> str:
+    """Returns the Neo4j database override, if set."""
+    return os.environ.get("CITEWEAVE_NEO4J_DATABASE", "").strip()
+
+
 def get_neo4j_password() -> str:
-    """
-    Returns the Neo4j password.
-    When CITEWEAVE_NEO4J_PASSWORD is set it takes precedence.
-    Falls back to the value in config/neo4j_config.json (or config/default.yaml).
-    """
+    """Returns the Neo4j password override, if set."""
     return os.environ.get("CITEWEAVE_NEO4J_PASSWORD", "").strip()
+
+
+def apply_neo4j_env_overrides(config: dict) -> dict:
+    """Return a Neo4j config dict with environment variables applied."""
+    merged = dict(config)
+    if get_neo4j_uri():
+        merged["uri"] = get_neo4j_uri()
+    if get_neo4j_username():
+        merged["username"] = get_neo4j_username()
+    if get_neo4j_password():
+        merged["password"] = get_neo4j_password()
+    if get_neo4j_database():
+        merged["database"] = get_neo4j_database()
+    return merged
 
 
 # ---------------------------------------------------------------------------
@@ -100,5 +198,10 @@ def chatopenai_kwargs(agent_name: Optional[str] = None) -> dict:
         kwargs["openai_api_base"] = api_base
     if api_key and api_key != "not-set":
         kwargs["openai_api_key"] = api_key
+
+    if is_openclaw_mode():
+        backend_model = get_openclaw_backend_model(agent_name)
+        if backend_model:
+            kwargs["default_headers"] = {"x-openclaw-model": backend_model}
 
     return kwargs

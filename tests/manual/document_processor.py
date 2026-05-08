@@ -4,14 +4,10 @@ Test script for the new DocumentProcessor integration.
 Demonstrates unified sentence-level citation analysis.
 """
 
-import sys
 import logging
 from pathlib import Path
 
-# Add src to path for testing
-sys.path.insert(0, str(Path(__file__).parent / "src"))
-
-from src.document_processor import DocumentProcessor
+from src.processing.pdf.document_processor import DocumentProcessor
 
 def test_document_processor():
     """Test the DocumentProcessor with sentence-level citation analysis."""
@@ -47,12 +43,12 @@ def test_document_processor():
                 print(f"     - {rec}")
         
         # Step 2: Process the document for sentence-level citation analysis
-        print(f"\n3. Processing document with sentence-level citation analysis...")
+        print("\n3. Processing document with sentence-level citation analysis...")
         results = doc_processor.process_document(pdf_path, save_results=True)
         
         # Display processing statistics
         stats = results['processing_stats']
-        print(f"\n=== Processing Results ===")
+        print("\n=== Processing Results ===")
         print(f"Paper ID: {results['paper_id']}")
         print(f"Document Title: {results['metadata'].get('title', 'Unknown')}")
         print(f"Total Sentences: {stats['total_sentences']}")
@@ -64,7 +60,7 @@ def test_document_processor():
         sentences_with_cites = [s for s in results['sentences_with_citations'] if s['citations']]
         
         if sentences_with_cites:
-            print(f"\n=== Example Sentences with Citations ===")
+            print("\n=== Example Sentences with Citations ===")
             for i, sentence in enumerate(sentences_with_cites[:5]):  # Show first 5
                 print(f"\n{i+1}. Sentence {sentence['sentence_index']}:")
                 print(f"   Text: {sentence['sentence_text'][:150]}...")
@@ -82,7 +78,7 @@ def test_document_processor():
             print("\nNo citations found in any sentences.")
         
         # Step 3: Test loading cached results
-        print(f"\n4. Testing cached results loading...")
+        print("\n4. Testing cached results loading...")
         cached_results = doc_processor.load_processed_document(pdf_path)
         if cached_results:
             print("   ✓ Successfully loaded cached results")
@@ -91,13 +87,13 @@ def test_document_processor():
             print("   ✗ Failed to load cached results")
         
         # Step 4: Test the simplified interface
-        print(f"\n5. Testing simplified interface...")
+        print("\n5. Testing simplified interface...")
         simple_results = doc_processor.get_sentences_with_citations(pdf_path, force_reprocess=False)
         print(f"   ✓ Retrieved {len(simple_results)} sentences via simplified interface")
         
-        print(f"\n=== Integration Test Completed Successfully ===")
-        print(f"The new DocumentProcessor successfully coordinates PDFProcessor and CitationParser")
-        print(f"to provide unified sentence-level citation analysis.")
+        print("\n=== Integration Test Completed Successfully ===")
+        print("The new DocumentProcessor successfully coordinates PDFProcessor and CitationParser")
+        print("to provide unified sentence-level citation analysis.")
         
     except Exception as e:
         print(f"\nError during document processing: {e}")
@@ -106,9 +102,9 @@ def test_document_processor():
 
 def demo_architecture_benefits():
     """Demonstrate the benefits of the new architecture."""
-    print(f"\n=== Architecture Benefits Demonstration ===")
+    print("\n=== Architecture Benefits Demonstration ===")
     
-    print(f"""
+    print("""
 New DocumentProcessor Architecture Benefits:
 
 1. **Unified Interface**: Single point of entry for document processing

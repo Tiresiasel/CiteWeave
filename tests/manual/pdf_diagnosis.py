@@ -6,7 +6,7 @@ Tests and analyzes PDF documents to determine the best processing approach.
 
 import sys
 import json
-from src.pdf_processor import PDFProcessor
+from src.processing.pdf.pdf_processor import PDFProcessor
 
 def main():
     if len(sys.argv) != 2:

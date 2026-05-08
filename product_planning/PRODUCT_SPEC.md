@@ -388,7 +388,7 @@ DocumentProcessor (Enhanced)
 + Neo4jKnowledgeGraph
 + AcademicQueryEngine
 + TemporalEvolutionTracker
-+ MultiLevelVectorIndexer
++ VectorIndexer
 ```
 
 ### 8.4 Expected Query Capability Evolution

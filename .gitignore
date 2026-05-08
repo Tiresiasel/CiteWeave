@@ -94,18 +94,12 @@ ipython_config.py
 #   install all needed dependencies.
 #Pipfile.lock
 
-# UV
-#   Similar to Pipfile.lock, it is generally recommended to include uv.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#uv.lock
-
-# poetry
-#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
-#   This is especially recommended for binary packages to ensure reproducibility, and is more
-#   commonly ignored for libraries.
-#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file-to-version-control
-#poetry.lock
+# Package-manager lockfiles
+# CiteWeave currently treats pyproject.toml plus requirements.txt as the
+# source of truth. Do not track generated uv/Poetry locks until one resolver is
+# selected and the lock is intentionally refreshed.
+uv.lock
+poetry.lock
 #poetry.toml
 
 # pdm
@@ -147,6 +141,7 @@ venv.bak/
 # Local runtime config (keep examples tracked, keep real values local)
 config/*.local.json
 config/*_local.json
+config/neo4j_config.json
 
 # Spyder project settings
 .spyderproject
@@ -228,12 +223,15 @@ rng_state.pth
 trainer_state.json
 training_args.bin
 
-# OpenClaw local artifacts
+# OpenClaw/local build artifacts
 .openclaw/
+.artifacts/
 
 # Runtime data should stay out of git (code/data separation)
 data/*
 !data/README.md
+src/data/*
+!src/data/README.md
 
 # Local test PDFs should stay out of git.
 # Canonical ignore rule is `test_files/*` while keeping the tracked README.

@@ -7,6 +7,8 @@ import json
 import os
 from typing import Any, Dict, Optional
 
+from src.utils.env_config import apply_neo4j_env_overrides
+
 CONFIG_DIR = "config"
 class ConfigManager:
     """
@@ -16,19 +18,30 @@ class ConfigManager:
         self.config_dir = config_dir or CONFIG_DIR
         self._model_config = None
         self._neo4j_config = None
+        self._qdrant_config = None
         self._paths_config = None
 
     def load_json(self, filename: str) -> Dict[str, Any]:
         """
         Load a JSON configuration file from the config directory.
         Prefers an ignored local override like `name.local.json` when present.
+        Falls back to `name.example.json` so real local config files do not need
+        to be tracked.
         """
         stem, ext = os.path.splitext(filename)
-        local_name = f"{stem}.local{ext}"
-        local_path = os.path.join(self.config_dir, local_name)
-        path = local_path if os.path.exists(local_path) else os.path.join(self.config_dir, filename)
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
+        candidates = [
+            os.path.join(self.config_dir, f"{stem}.local{ext}"),
+            os.path.join(self.config_dir, filename),
+            os.path.join(self.config_dir, f"{stem}.example{ext}"),
+        ]
+        for path in candidates:
+            if os.path.exists(path):
+                with open(path, "r", encoding="utf-8") as f:
+                    return json.load(f)
+        raise FileNotFoundError(
+            f"No config file found for {filename}; looked for: "
+            + ", ".join(candidates)
+        )
 
     @property
     def model_config(self) -> Dict[str, Any]:
@@ -45,8 +58,22 @@ class ConfigManager:
         Get the Neo4j configuration as a dictionary.
         """
         if self._neo4j_config is None:
-            self._neo4j_config = self.load_json("neo4j_config.json")
+            self._neo4j_config = apply_neo4j_env_overrides(self.load_json("neo4j_config.json"))
         return self._neo4j_config
+
+
+    @property
+    def qdrant_config(self) -> Dict[str, Any]:
+        """
+        Get the Qdrant configuration as a dictionary.
+        """
+        if self._qdrant_config is None:
+            self._qdrant_config = self.load_json("qdrant_config.json")
+        return self._qdrant_config
+
+    def get_qdrant_config(self) -> Dict[str, Any]:
+        """Backward-compatible method wrapper for qdrant_config."""
+        return self.qdrant_config
 
     @property
     def paths_config(self) -> Dict[str, Any]:

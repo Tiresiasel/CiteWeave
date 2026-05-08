@@ -107,9 +107,14 @@ def extract_reference_tail(full_doc_text: str, max_tokens: int = 14000) -> str:
 
 
 if __name__ == "__main__":
+    import argparse
+
     from PyPDF2 import PdfReader
-    pdf_path = "test_files/Rivkin - 2000 - Imitation of Complex Strategies.pdf"
-    pdf_reader = PdfReader(pdf_path)
-    pdf_text = "\n".join([page.extract_text() for page in pdf_reader.pages])
-    a = extract_reference_section_via_llm(pdf_text)
-    print(a)
+
+    parser = argparse.ArgumentParser(description="Extract a reference section from a PDF with the configured LLM.")
+    parser.add_argument("pdf_path", help="Path to the PDF to inspect")
+    args = parser.parse_args()
+
+    pdf_reader = PdfReader(args.pdf_path)
+    pdf_text = "\n".join([page.extract_text() or "" for page in pdf_reader.pages])
+    print(extract_reference_section_via_llm(pdf_text))

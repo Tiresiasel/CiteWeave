@@ -12,7 +12,7 @@ import glob
 import os
 import time
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Callable, Dict, Optional
 from urllib import request, error
 
 from src.processing.pdf.document_processor import DocumentProcessor
@@ -25,20 +25,26 @@ from .query_history import QueryHistoryRecorder, DATABASE_ROUTE_MAP
 class CiteWeaveKernel:
     """Stable application service boundary for CiteWeave."""
 
-    def __init__(self):
+    def __init__(
+        self,
+        document_processor_factory: Callable[[], DocumentProcessor] = DocumentProcessor,
+        research_system_factory: Callable[[], LangGraphResearchSystem] = LangGraphResearchSystem,
+    ):
+        self._document_processor_factory = document_processor_factory
+        self._research_system_factory = research_system_factory
         self._document_processor = None
         self._research_system = None
 
     @property
     def document_processor(self) -> DocumentProcessor:
         if self._document_processor is None:
-            self._document_processor = DocumentProcessor()
+            self._document_processor = self._document_processor_factory()
         return self._document_processor
 
     @property
     def research_system(self) -> LangGraphResearchSystem:
         if self._research_system is None:
-            self._research_system = LangGraphResearchSystem()
+            self._research_system = self._research_system_factory()
         return self._research_system
 
     def upload_document(self, pdf_path: str, save_results: bool = True) -> Dict[str, Any]:
@@ -227,7 +233,8 @@ class CiteWeaveKernel:
             ".env": Path('.env').exists(),
             "docker_compose": Path('docker-compose.yml').exists(),
             "model_config": Path('config/model_config.json').exists(),
-            "neo4j_config": Path('config/neo4j_config.json').exists(),
+            "qdrant_config": Path('config/qdrant_config.json').exists(),
+            "neo4j_config_template": Path('config/neo4j_config.example.json').exists(),
         }
         services = {
             "qdrant": probe("http://localhost:6333/collections"),
@@ -242,12 +249,14 @@ class CiteWeaveKernel:
         action_items = []
         if missing_files:
             action_items.append(f"Create or restore required config files: {', '.join(missing_files)}")
+        if not os.environ.get("CITEWEAVE_NEO4J_PASSWORD"):
+            action_items.append("Set CITEWEAVE_NEO4J_PASSWORD in .env or the environment before using Neo4j")
         if down_services:
             action_items.append(f"Start or fix backend services: {', '.join(down_services)}")
         if not action_items:
             action_items.append("System looks healthy. Continue with upload/query/chat commands.")
 
-        if missing_files or down_services:
+        if missing_files or down_services or not os.environ.get("CITEWEAVE_NEO4J_PASSWORD"):
             overall_status = "degraded"
         else:
             overall_status = "ok"
@@ -274,16 +283,18 @@ class CiteWeaveKernel:
             "local_cli": {
                 "script": "bash scripts/bootstrap_local.sh",
                 "next_steps": [
-                    ".venv/bin/python -m src.core.cli upload path/to/paper.pdf",
-                    '.venv/bin/python -m src.core.cli query "<question>"',
-                    ".venv/bin/python -m src.core.cli chat",
+                    ".venv/bin/citeweave upload path/to/paper.pdf",
+                    '.venv/bin/citeweave query "<question>"',
+                    ".venv/bin/citeweave chat",
                 ],
             },
             "openclaw": {
                 "script": "bash scripts/bootstrap_openclaw.sh",
+                "infrastructure_script": "bash scripts/deploy_local_stack.sh",
                 "next_steps": [
                     "openclaw gateway status",
-                    ".venv/bin/python -m src.core.cli routes",
+                    "bash scripts/deploy_local_stack.sh",
+                    ".venv/bin/citeweave routes",
                     "bash scripts/deployment_check.sh",
                 ],
             },

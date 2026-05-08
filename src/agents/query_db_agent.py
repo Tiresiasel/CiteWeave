@@ -5,7 +5,7 @@ Module for querying graph and vector databases with structured functions.
 
 import logging
 import re
-from typing import List, Dict, Optional, Union
+from typing import List, Dict, Optional
 from difflib import SequenceMatcher
 from src.storage.graph_builder import GraphDB
 from src.storage.vector_indexer import VectorIndexer
@@ -15,7 +15,11 @@ import json
 from typing import Any
 import warnings
 import atexit
-import sys
+
+try:
+    from dotenv import load_dotenv
+except ImportError:  # pragma: no cover - optional dependency guard
+    load_dotenv = None
 
 # Suppress Neo4j driver warnings and errors
 warnings.filterwarnings("ignore", category=DeprecationWarning, module="neo4j")
@@ -50,6 +54,9 @@ class QueryDBAgent:
         Args:
             config_path: Path to configuration files
         """
+        if load_dotenv:
+            load_dotenv()
+
         self.config_manager = ConfigManager(config_path)
         
         # Initialize Graph Database
@@ -276,6 +283,114 @@ class QueryDBAgent:
         except Exception as e:
             logging.error(f"Error getting papers cited by {source_paper_id}: {e}")
             return []
+
+    def get_sentences_with_citations_from_paper(self, source_paper_id: str, count: int = -1) -> List[Dict]:
+        """Return citation-bearing sentences extracted from a source paper.
+
+        This is the outgoing-citation counterpart to ``get_sentences_citing_paper``.
+        Use it for questions like "what citations were extracted from this paper?".
+        """
+        if not source_paper_id:
+            logging.error("source_paper_id cannot be None or empty")
+            return []
+
+        if not self.graph_db:
+            logging.error("Graph database not available")
+            return []
+
+        try:
+            query = """
+            MATCH (source_paper:Paper {id: $source_paper_id})<-[:BELONGS_TO]-(sentence:Sentence)-[citation:CITES]->(cited_paper:Paper)
+            OPTIONAL MATCH (sentence)-[:BELONGS_TO]->(paragraph:Paragraph)
+            RETURN sentence.id as sentence_id,
+                   sentence.text as text,
+                   sentence.sentence_index as sentence_index,
+                   citation.citation_text as citation_text,
+                   citation.citation_context as citation_context,
+                   citation.confidence as confidence,
+                   paragraph.id as paragraph_id,
+                   paragraph.section as section,
+                   cited_paper.id as cited_paper_id,
+                   cited_paper.title as cited_paper_title,
+                   cited_paper.authors as cited_paper_authors,
+                   cited_paper.year as cited_paper_year,
+                   cited_paper.journal as cited_paper_journal,
+                   cited_paper.doi as cited_paper_doi,
+                   coalesce(cited_paper.stub, false) as cited_paper_is_stub
+            ORDER BY sentence.sentence_index ASC, cited_paper.title ASC
+            """ + (f"LIMIT {count}" if count > 0 else "")
+
+            with self.graph_db.driver.session() as session:
+                result = session.run(query, source_paper_id=source_paper_id)
+
+                citation_sentences = []
+                for record in result:
+                    citation_sentences.append({
+                        "sentence_id": record["sentence_id"],
+                        "text": record["text"],
+                        "sentence_index": record["sentence_index"],
+                        "citation_text": record["citation_text"],
+                        "citation_context": record["citation_context"],
+                        "confidence": record["confidence"],
+                        "paragraph_id": record["paragraph_id"],
+                        "section": record["section"],
+                        "cited_paper": {
+                            "paper_id": record["cited_paper_id"],
+                            "title": record["cited_paper_title"],
+                            "authors": record["cited_paper_authors"],
+                            "year": record["cited_paper_year"],
+                            "journal": record["cited_paper_journal"],
+                            "doi": record["cited_paper_doi"],
+                            "is_stub": record["cited_paper_is_stub"],
+                        },
+                    })
+
+                logging.info(f"Found {len(citation_sentences)} citation sentences from {source_paper_id}")
+                return citation_sentences
+
+        except Exception as e:
+            logging.error(f"Error getting citation sentences from {source_paper_id}: {e}")
+            return []
+
+    def list_uploaded_papers(self, limit: int = 20) -> List[Dict]:
+        """Return non-stub papers currently uploaded into the graph.
+
+        The graph does not currently persist an upload timestamp, so ordering uses
+        the most useful operational proxy: papers with extracted citation evidence
+        first, then papers with more text, then publication year/title.
+        """
+        if not self.graph_db:
+            logging.error("Graph database not available")
+            return []
+
+        try:
+            query = """
+            MATCH (p:Paper)
+            WHERE coalesce(p.stub, false) = false
+            OPTIONAL MATCH (p)<-[:BELONGS_TO]-(s:Sentence)
+            OPTIONAL MATCH (p)<-[:BELONGS_TO]-(citation_sentence:Sentence)-[c:CITES]->(:Paper)
+            RETURN p.id as paper_id,
+                   p.title as title,
+                   p.authors as authors,
+                   p.year as year,
+                   p.journal as journal,
+                   p.doi as doi,
+                   count(DISTINCT s) as sentence_count,
+                   count(DISTINCT citation_sentence) as citation_sentence_count,
+                   count(DISTINCT c) as citation_relation_count
+            ORDER BY citation_relation_count DESC,
+                     citation_sentence_count DESC,
+                     sentence_count DESC,
+                     coalesce(p.year, 0) DESC,
+                     coalesce(p.title, "") ASC
+            LIMIT $limit
+            """
+            with self.graph_db.driver.session() as session:
+                result = session.run(query, limit=limit)
+                return [dict(record) for record in result]
+        except Exception as e:
+            logging.error(f"Error listing uploaded papers: {e}")
+            return []
     
     def get_paragraphs_citing_paper(self, target_paper_id: str, count: int = -1) -> List[Dict]:
         """
@@ -488,7 +603,7 @@ class QueryDBAgent:
             if not all_papers:
                 return {
                     "status": "no_match",
-                    "message": f"No papers found with the given criteria"
+                    "message": "No papers found with the given criteria"
                 }
             
             # 计算标题相似度和子串匹配
@@ -1611,7 +1726,7 @@ class QueryDBAgent:
             }
     
     def semantic_search_pdf_content(self, paper_id: str, query: str, similarity_threshold: float = 0.5) -> Dict[str, Any]:
-        """Perform semantic search within a specific PDF using sentence transformers
+        """Perform semantic search within a specific PDF using the configured embedding provider.
         
         Args:
             paper_id: The paper ID to search within
@@ -1636,15 +1751,13 @@ class QueryDBAgent:
             if not pdf_result.get("found"):
                 return pdf_result
             
-            # Try to use sentence transformers for semantic search
+            # Try to use the configured embedding provider for semantic search.
             try:
-                from sentence_transformers import SentenceTransformer
-                import numpy as np
                 from sklearn.metrics.pairwise import cosine_similarity
-                
-                # Initialize the model (use a lightweight model)
-                model = SentenceTransformer('all-MiniLM-L6-v2')
-                
+
+                if not self.vector_indexer:
+                    return self.query_pdf_content(paper_id, query)
+
                 # Split content into chunks for semantic search
                 sections = pdf_result["data"].get("sections", [])
                 chunks = []
@@ -1683,9 +1796,9 @@ class QueryDBAgent:
                         "data": []
                     }
                 
-                # Encode query and chunks
-                query_embedding = model.encode([query])
-                chunk_embeddings = model.encode(chunks)
+                # Encode query and chunks using the same provider as Qdrant indexing.
+                query_embedding = self.vector_indexer._embed_texts([query])
+                chunk_embeddings = self.vector_indexer._embed_texts(chunks)
                 
                 # Calculate similarities
                 similarities = cosine_similarity(query_embedding, chunk_embeddings)[0]

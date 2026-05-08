@@ -9,16 +9,14 @@ import os
 import json
 import logging
 import re
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 from datetime import datetime
 import shutil  # Add this at the top if not already present
 
-from src.processing.pdf.pdf_processor import PDFProcessor
 from src.processing.citation_parser import CitationParser
 from src.storage.graph_builder import GraphDB
 from src.utils.config_manager import ConfigManager
 from src.utils.paper_id_utils import PaperIDGenerator
-from src.storage.vector_indexer import VectorIndexer
 
 logging.basicConfig(level=logging.INFO)
 
@@ -444,7 +442,6 @@ class DocumentProcessor:
         
         def normalize_text(text: str) -> str:
             """标准化文本用于比较"""
-            import re
             # 移除多余空白、换行符和特殊字符
             normalized = re.sub(r'\s+', ' ', text.strip())
             normalized = re.sub(r'[^\w\s\(\)\[\],.]', ' ', normalized)
@@ -906,111 +903,41 @@ class DocumentProcessor:
             self.graph_db.close()
 
 
-# Example usage and integration
 if __name__ == "__main__":
+    import argparse
+
+    cli_parser = argparse.ArgumentParser(description="Process one or more PDFs through DocumentProcessor.")
+    cli_parser.add_argument("pdf_paths", nargs="+", help="PDF file(s) to process")
+    cli_parser.add_argument("--no-graph", action="store_true", help="Skip Neo4j graph writes")
+    cli_parser.add_argument("--no-embeddings", action="store_true", help="Skip vector embedding writes")
+    args = cli_parser.parse_args()
+
     logging.basicConfig(level=logging.INFO)
-    
-    # Initialize the unified document processor with both graph and vector databases
-    doc_processor = DocumentProcessor(enable_graph_db=True)
-    
-    # Test files to process
-    test_files = [
-        "test_files/Rivkin - 2000 - Imitation of Complex Strategies.pdf",
-        "test_files/Porter - Competitive Strategy.pdf",
-        "test_files/Business Model Innovation Research 2016.pdf"
-    ]
-    
-    print("=== Starting full database import test ===\n")
-    
-    for pdf_path in test_files:
+    doc_processor = DocumentProcessor(enable_graph_db=not args.no_graph)
+
+    print("=== Starting document processing ===\n")
+
+    for pdf_path in args.pdf_paths:
         try:
             print(f"📄 Processing document: {pdf_path}")
             print("-" * 50)
-            
-            # Complete processing: structure parsing + graph DB + vector DB
             results = doc_processor.process_document(
-                pdf_path=pdf_path, 
-                create_graph=True,      # Create graph DB entries
-                create_embeddings=True, # Create vector embeddings
-                save_results=True       # Save processing results
+                pdf_path=pdf_path,
+                create_graph=not args.no_graph,
+                create_embeddings=not args.no_embeddings,
+                save_results=True,
             )
-            
-            # Print processing stats
+
             stats = results["processing_stats"]
-            print(f"✅ Document structure:")
+            print("✅ Document structure:")
             print(f"   📚 Number of sections: {stats['total_sections']}")
             print(f"   📝 Number of paragraphs: {stats['total_paragraphs']}")
             print(f"   📄 Number of sentences: {stats['total_sentences']}")
             print(f"   🔗 Number of citations: {stats['total_citations']}")
             print(f"   📖 Number of references: {stats['total_references']}")
-            
-            # Graph DB stats
-            if 'graph_db_stats' in stats and stats['graph_db_stats']:
-                graph_stats = stats['graph_db_stats']
-                print(f"\n✅ Graph DB creation:")
-                print(f"   📊 Section nodes: {graph_stats.get('sections_created', 0)}")
-                print(f"   📝 Paragraph nodes: {graph_stats.get('paragraphs_created', 0)}")
-                print(f"   📄 Sentence nodes: {graph_stats.get('sentences_created', 0)}")
-                print(f"   🔗 Citation relations: {graph_stats.get('citation_relations_created', 0)}")
-            
-            # Vector DB stats
-            if 'embedding_stats' in stats and stats['embedding_stats']:
-                embedding_stats = stats['embedding_stats']
-                print(f"\n✅ Vector DB indexing:")
-                print(f"   📄 Sentence vectors: {embedding_stats.get('sentences_indexed', 0)}")
-                print(f"   📝 Paragraph vectors: {embedding_stats.get('paragraphs_indexed', 0)}")
-                print(f"   📚 Section vectors: {embedding_stats.get('sections_indexed', 0)}")
-                print(f"   🔗 Citation vectors: {embedding_stats.get('citations_indexed', 0)}")
-            
-            print(f"\n📋 Paper ID: {results['paper_id']}")
-            print(f"📋 Paper title: {results['metadata']['title']}")
-            
+            print(f"✅ Processing complete for {pdf_path}\n")
+
         except Exception as e:
-            print(f"❌ Processing failed: {e}")
-        
-        print("\n" + "="*70 + "\n")
-    
-    print("🏆 Testing vector DB search functionality:")
-    print("-" * 40)
-    
-    # Test vector search
-    if doc_processor.vector_indexer:
-        try:
-            # Cross-collection search
-            search_results = doc_processor.vector_indexer.search_all_collections(
-                "strategic competitive advantage", 
-                limit_per_collection=2
-            )
-            
-            for collection, results in search_results.items():
-                print(f"\n📚 {collection.upper()} search results:")
-                if results:
-                    for result in results:
-                        print(f"   Similarity: {result['score']:.3f}")
-                        print(f"   Text: {result['text'][:100]}...")
-                        print(f"   Paper: {result.get('title', 'Unknown')}")
-                        print("   ---")
-                else:
-                    print("   No results")
-        except Exception as e:
-            print(f"❌ Vector search test failed: {e}")
-    
-    print("\n🏆 Testing graph DB query functionality:")
-    print("-" * 40)
-    
-    # Test graph DB query
-    if doc_processor.graph_db:
-        try:
-            # Test citation network query
-            citation_context = doc_processor.get_citation_analysis_context("competitive strategy")
-            if citation_context:
-                print(f"📖 Found citation context: {len(citation_context.get('citing_sentences', []))} sentences")
-                for sentence in citation_context.get('citing_sentences', [])[:3]:
-                    print(f"   - {sentence['text'][:100]}...")
-            else:
-                print("📖 No citation context data available")
-        except Exception as e:
-            print(f"❌ Graph DB query test failed: {e}")
-    
-    print("\n🏁 Full database import test completed!")
-    print("All test documents have been imported into the graph DB and vector DB") 
+            print(f"❌ Error processing {pdf_path}: {e}")
+
+    doc_processor.close()

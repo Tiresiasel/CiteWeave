@@ -3,16 +3,13 @@
 Test script for the new Function Calling based QueryPlanningAgent
 """
 
-import sys
-import os
-sys.path.append('/Users/tiresias/Documents/projects/CiteWeave/src')
 
 def test_function_calling_planning():
     """Test the new function calling based query planning"""
     print("🚀 Testing Function Calling Based Query Planning\n")
     
     try:
-        from multi_agent_research_system import LangGraphResearchSystem
+        from src.agents.multi_agent_research_system import LangGraphResearchSystem
         
         # Initialize the system
         print("📝 Initializing Multi-Agent Research System...")
@@ -49,10 +46,10 @@ def test_function_calling_planning():
             
             try:
                 # Use the new LangGraph workflow
-                print(f"🤖 Using LangGraph workflow to research question...")
+                print("🤖 Using LangGraph workflow to research question...")
                 response = system.research_question(test_case["question"])
                 
-                print(f"✅ Research completed!")
+                print("✅ Research completed!")
                 print(f"📝 Response preview: {response[:200]}...")
                 
                 # Check if any expected functions would have been relevant
@@ -78,4 +75,4 @@ def test_function_calling_planning():
         traceback.print_exc()
 
 if __name__ == "__main__":
-    test_function_calling_planning() 
+    test_function_calling_planning()

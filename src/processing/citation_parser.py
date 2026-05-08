@@ -4,14 +4,11 @@ Module for detecting and parsing citations in text.
 """
 
 import re
-import difflib
 import unicodedata
 from typing import List, Dict, Optional
-from PyPDF2 import PdfReader
 import requests
 from lxml import etree
 import logging
-import hashlib
 from src.utils.paper_id_utils import PaperIDGenerator
 
 logging.basicConfig(level=logging.INFO)
@@ -51,10 +48,10 @@ class CitationParser:
                     timeout=30  # Add timeout
                 )
         except requests.exceptions.ConnectionError:
-            logging.warning(f"GROBID service not available at localhost:8070 - skipping reference extraction")
+            logging.warning("GROBID service not available at localhost:8070 - skipping reference extraction")
             return []
         except requests.exceptions.Timeout:
-            logging.warning(f"GROBID request timed out - skipping reference extraction")
+            logging.warning("GROBID request timed out - skipping reference extraction")
             return []
         except Exception as e:
             logging.warning(f"Failed to connect to GROBID: {e}")
@@ -542,17 +539,20 @@ class CitationParser:
 
 
 if __name__ == "__main__":
-    # Example usage
-    pdf_path = "test_files/Rivkin - 2000 - Imitation of Complex Strategies.pdf"
-    pdf_reader = PdfReader(pdf_path)
-    pdf_text = "\n".join([page.extract_text() or "" for page in pdf_reader.pages])
-    parser = CitationParser(pdf_path)
+    import argparse
+    from pprint import pprint
+
+    cli_parser = argparse.ArgumentParser(description="Inspect in-text citation extraction for a PDF.")
+    cli_parser.add_argument("pdf_path", help="Path to the PDF to inspect")
+    cli_parser.add_argument(
+        "--sentence",
+        default="In their discussion of fit and complementarity, Milgrom and Roberts (1995) suggest that rich interactions among choices may explain success.",
+        help="Sentence to parse after references are loaded",
+    )
+    args = cli_parser.parse_args()
+
+    parser = CitationParser(args.pdf_path)
     reference_section = parser._extract_references_with_grobid()
     print(reference_section)
-
     print(parser.references)
-    test_sentence = "In their discussion of \u201c\ufb01t\u201d\nand complementarity, Milgrom and Roberts (1995)suggest informally that rich interactions among Lin-coln Electric \u2019s many choices may explain why rivals\nhave not replicated that \ufb01rm\u2019s well-documented suc-\ncess.."
-    result = parser.parse_sentence(test_sentence)
-
-    from pprint import pprint
-    pprint(result)
+    pprint(parser.parse_sentence(args.sentence))

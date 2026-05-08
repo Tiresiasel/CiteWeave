@@ -53,6 +53,12 @@ class FakeKernel:
     def batch_upload(self, directory, resume=True, force_restart=False, clear_progress=False):
         return {"directory": directory, "processed_count": 3, "failed_count": 0}
 
+    def query_history_snapshot(self, **kwargs):
+        return {"query_history_args": kwargs, "entries": []}
+
+    def list_pending_citations_snapshot(self, limit=10):
+        return {"requested_limit": limit, "stub_papers": []}
+
     def health_snapshot(self):
         return {"services": {"openclaw_gateway": {"ok": True}}}
 
@@ -69,11 +75,14 @@ class OpenClawFacadeTests(unittest.TestCase):
         chat_result = facade.chat_turn("hi")
         self.assertEqual(chat_result["text"], "chat:hi")
 
-    def test_facade_exposes_health_and_bootstrap(self):
+    def test_facade_exposes_health_bootstrap_and_telemetry(self):
         mod = load_facade_module()
         facade = mod.OpenClawCiteWeaveFacade(kernel=FakeKernel())
         self.assertTrue(facade.health()["services"]["openclaw_gateway"]["ok"])
         self.assertEqual(facade.bootstrap_plan()["local_cli"]["script"], "bash scripts/bootstrap_local.sh")
+        self.assertEqual(facade.query_history(limit=5, planned_route="vector_search")["query_history_args"]["limit"], 5)
+        self.assertEqual(facade.query_history(limit=5, planned_route="vector_search")["query_history_args"]["planned_route"], "vector_search")
+        self.assertEqual(facade.list_pending_citations(limit=3)["requested_limit"], 3)
 
 
 if __name__ == "__main__":

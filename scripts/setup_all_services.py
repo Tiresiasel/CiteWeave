@@ -5,6 +5,8 @@ Setup script for initializing Neo4j and Qdrant services using project config fil
 import os
 import json
 from pathlib import Path
+
+from src.utils.config_manager import ConfigManager
 from neo4j import GraphDatabase
 from qdrant_client import QdrantClient
 from qdrant_client.models import VectorParams, Distance
@@ -56,15 +58,11 @@ def setup_qdrant(config):
 
 def main():
     print("\n🚀 Setting up all services (Neo4j + Qdrant)...")
-    neo4j_config_path = os.path.join(CONFIG_DIR, "neo4j_config.json")
     qdrant_config_path = os.path.join(CONFIG_DIR, "qdrant_config.json")
-    if not os.path.exists(neo4j_config_path):
-        print(f"❌ Neo4j config not found: {neo4j_config_path}")
-        return
     if not os.path.exists(qdrant_config_path):
         print(f"❌ Qdrant config not found: {qdrant_config_path}")
         return
-    neo4j_config = load_json(neo4j_config_path)
+    neo4j_config = ConfigManager(CONFIG_DIR).neo4j_config
     qdrant_config = load_json(qdrant_config_path)
     setup_neo4j(neo4j_config)
     setup_qdrant(qdrant_config)
