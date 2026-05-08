@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import glob
 import os
+import time
 from pathlib import Path
 from typing import Any, Dict, Optional
 from urllib import request, error
@@ -18,6 +19,7 @@ from src.processing.pdf.document_processor import DocumentProcessor
 from src.agents.multi_agent_research_system import LangGraphResearchSystem
 from src.agents.routing import active_route_configuration
 from .batch_tracker import BatchUploadTracker
+from .query_history import QueryHistoryRecorder, DATABASE_ROUTE_MAP
 
 
 class CiteWeaveKernel:
@@ -45,8 +47,111 @@ class CiteWeaveKernel:
     def diagnose_document(self, pdf_path: str) -> Dict[str, Any]:
         return self.document_processor.diagnose_document_processing(pdf_path)
 
-    def query(self, question: str, confirmation: str = "continue") -> str:
-        return self.research_system.research_question(question, confirmation)
+    def query(self, question: str, confirmation: str = "continue", source: str = "kernel.query") -> str:
+        started_at = time.time()
+        recorder = QueryHistoryRecorder()
+
+        def summarize_query_plan(query_plan: Any) -> Dict[str, Any]:
+            if not isinstance(query_plan, dict):
+                return {
+                    "query_plan_step_count": 0,
+                    "query_plan_databases": [],
+                    "query_plan_methods": [],
+                    "query_plan_routes": [],
+                }
+
+            query_sequence = query_plan.get("query_sequence")
+            if not isinstance(query_sequence, list):
+                query_sequence = []
+
+            databases = []
+            methods = []
+            routes = []
+            for step in query_sequence:
+                if not isinstance(step, dict):
+                    continue
+                database = step.get("database")
+                method = step.get("method")
+                if isinstance(database, str) and database not in databases:
+                    databases.append(database)
+                if isinstance(method, str) and method not in methods:
+                    methods.append(method)
+                route = DATABASE_ROUTE_MAP.get(database) if isinstance(database, str) else None
+                if route and route not in routes:
+                    routes.append(route)
+
+            return {
+                "query_plan_step_count": len(query_sequence),
+                "query_plan_databases": databases,
+                "query_plan_methods": methods,
+                "query_plan_routes": routes,
+            }
+
+        try:
+            research_details_fn = getattr(self.research_system, "research_question_details", None)
+            if callable(research_details_fn):
+                details = research_details_fn(question, confirmation)
+                response = details.get("final_response", "No response generated")
+                error_message = details.get("error")
+                plan_summary = summarize_query_plan(details.get("query_plan"))
+            else:
+                response = self.research_system.research_question(question, confirmation)
+                error_message = None
+                plan_summary = summarize_query_plan(None)
+        except Exception as exc:
+            recorder.record(
+                {
+                    "timestamp": started_at,
+                    "question": question,
+                    "confirmation": confirmation,
+                    "status": "error",
+                    "source": source,
+                    "duration_ms": int((time.time() - started_at) * 1000),
+                    "response_chars": 0,
+                    "response_preview": "",
+                    "error": str(exc),
+                    "satisfaction": None,
+                    "query_plan_step_count": 0,
+                    "query_plan_databases": [],
+                    "query_plan_methods": [],
+                    "query_plan_routes": [],
+                }
+            )
+            raise
+
+        if error_message:
+            recorder.record(
+                {
+                    "timestamp": started_at,
+                    "question": question,
+                    "confirmation": confirmation,
+                    "status": "error",
+                    "source": source,
+                    "duration_ms": int((time.time() - started_at) * 1000),
+                    "response_chars": len(response),
+                    "response_preview": response[:500],
+                    "error": error_message,
+                    "satisfaction": None,
+                    **plan_summary,
+                }
+            )
+            return response
+
+        recorder.record(
+            {
+                "timestamp": started_at,
+                "question": question,
+                "confirmation": confirmation,
+                "status": "success",
+                "source": source,
+                "duration_ms": int((time.time() - started_at) * 1000),
+                "response_chars": len(response),
+                "response_preview": response[:500],
+                "satisfaction": None,
+                **plan_summary,
+            }
+        )
+        return response
 
     def start_chat_system(self) -> LangGraphResearchSystem:
         return self.research_system
@@ -73,14 +178,21 @@ class CiteWeaveKernel:
         processed = []
         failed = []
         for pdf_path in pending_files:
+            started_at = time.time()
             try:
                 result = self.upload_document(pdf_path, save_results=True)
+                finished_at = time.time()
                 stats = result.get("processing_stats", {})
                 compact = {
                     "pdf_path": pdf_path,
                     "paper_id": result.get("paper_id"),
+                    "processed_at": finished_at,
+                    "processing_time": finished_at,
+                    "duration_seconds": round(finished_at - started_at, 3),
                     "total_sentences": stats.get("total_sentences", 0),
+                    "sentences_with_citations": stats.get("sentences_with_citations", 0),
                     "total_citations": stats.get("total_citations", 0),
+                    "total_references": stats.get("total_references", 0),
                 }
                 tracker.mark_file_completed(pdf_path, compact)
                 processed.append(compact)
@@ -111,25 +223,50 @@ class CiteWeaveKernel:
         env_mode = os.environ.get("CITEWEAVE_LLM_PROVIDER", "openai")
         gateway_url = os.environ.get("CITEWEAVE_LLM_API_BASE", "http://localhost:18789/v1").rstrip("/")
 
+        files = {
+            ".env": Path('.env').exists(),
+            "docker_compose": Path('docker-compose.yml').exists(),
+            "model_config": Path('config/model_config.json').exists(),
+            "neo4j_config": Path('config/neo4j_config.json').exists(),
+        }
+        services = {
+            "qdrant": probe("http://localhost:6333/collections"),
+            "grobid": probe("http://localhost:8070/api/isalive"),
+            "neo4j_http": probe("http://localhost:7474"),
+            "openclaw_gateway": probe(gateway_url + "/models") if env_mode == "openclaw" else None,
+        }
+
+        missing_files = [name for name, exists in files.items() if not exists]
+        down_services = [name for name, result in services.items() if result is not None and not result.get("ok")]
+
+        action_items = []
+        if missing_files:
+            action_items.append(f"Create or restore required config files: {', '.join(missing_files)}")
+        if down_services:
+            action_items.append(f"Start or fix backend services: {', '.join(down_services)}")
+        if not action_items:
+            action_items.append("System looks healthy. Continue with upload/query/chat commands.")
+
+        if missing_files or down_services:
+            overall_status = "degraded"
+        else:
+            overall_status = "ok"
+
         return {
             "project_root": str(Path.cwd()),
+            "summary": {
+                "overall_status": overall_status,
+                "missing_files": missing_files,
+                "down_services": down_services,
+                "action_items": action_items,
+            },
             "env": {
                 "llm_provider": env_mode,
                 "llm_model": os.environ.get("CITEWEAVE_LLM_MODEL", ""),
                 "gateway_base": gateway_url if env_mode == "openclaw" else None,
             },
-            "files": {
-                ".env": Path('.env').exists(),
-                "docker_compose": Path('docker-compose.yml').exists(),
-                "model_config": Path('config/model_config.json').exists(),
-                "neo4j_config": Path('config/neo4j_config.json').exists(),
-            },
-            "services": {
-                "qdrant": probe("http://localhost:6333/collections"),
-                "grobid": probe("http://localhost:8070/api/isalive"),
-                "neo4j_http": probe("http://localhost:7474"),
-                "openclaw_gateway": probe(gateway_url + "/models") if env_mode == "openclaw" else None,
-            },
+            "files": files,
+            "services": services,
         }
 
     def bootstrap_plan(self) -> Dict[str, Any]:
@@ -160,6 +297,14 @@ class CiteWeaveKernel:
         all_files = glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True)
         summary = tracker.get_progress_summary()
         pending_files = tracker.get_pending_files(all_files, force_restart=False)
+        failed_files = summary["failed_files"]
+        failed_paths = set(failed_files.keys())
+        not_started_files = sorted(pdf_path for pdf_path in all_files if pdf_path not in tracker.progress_data)
+        retryable_failed_files = sorted(pdf_path for pdf_path in all_files if pdf_path in failed_paths)
+        average_completed_duration_seconds = summary.get("average_completed_duration_seconds")
+        estimated_remaining_seconds = None
+        if average_completed_duration_seconds is not None and pending_files:
+            estimated_remaining_seconds = round(float(average_completed_duration_seconds) * len(pending_files), 3)
 
         return {
             "directory": directory,
@@ -168,8 +313,92 @@ class CiteWeaveKernel:
             "summary": summary,
             "pending_count": len(pending_files),
             "pending_files": sorted(pending_files),
+            "not_started_count": len(not_started_files),
+            "not_started_files": not_started_files,
+            "retryable_failed_count": len(retryable_failed_files),
+            "retryable_failed_files": retryable_failed_files,
             "completed_count": summary["completed"],
             "completed_files": summary["completed_files"],
             "failed_count": summary["failed"],
-            "failed_files": summary["failed_files"],
+            "failed_files": failed_files,
+            "average_completed_duration_seconds": average_completed_duration_seconds,
+            "estimated_remaining_seconds": estimated_remaining_seconds,
         }
+
+    def query_history_snapshot(
+        self,
+        limit: int = 10,
+        status: str = "all",
+        source: str = "all",
+        confirmation: str = "all",
+        satisfaction: str = "all",
+        since_hours: Optional[float] = None,
+        contains: str = "",
+        question_contains: str = "",
+        error_contains: str = "",
+        response_contains: str = "",
+        planned_database: str = "all",
+        planned_method: str = "all",
+        planned_route: str = "all",
+        min_duration_ms: Optional[int] = None,
+        max_duration_ms: Optional[int] = None,
+        min_response_chars: Optional[int] = None,
+        max_response_chars: Optional[int] = None,
+        sort_order: str = "recent",
+    ) -> Dict[str, Any]:
+        recorder = QueryHistoryRecorder()
+        return recorder.summary(
+            limit=limit,
+            status=status,
+            source=source,
+            confirmation=confirmation,
+            satisfaction=satisfaction,
+            since_hours=since_hours,
+            contains=contains,
+            question_contains=question_contains,
+            error_contains=error_contains,
+            response_contains=response_contains,
+            planned_database=planned_database,
+            planned_method=planned_method,
+            planned_route=planned_route,
+            min_duration_ms=min_duration_ms,
+            max_duration_ms=max_duration_ms,
+            min_response_chars=min_response_chars,
+            max_response_chars=max_response_chars,
+            sort_order=sort_order,
+        )
+
+    def list_pending_citations_snapshot(self, limit: int = 10) -> Dict[str, Any]:
+        from src.storage.database_integrator import DatabaseIntegrator
+
+        requested_limit = max(0, limit)
+        integrator = DatabaseIntegrator()
+        if not integrator.initialize_connections():
+            return {
+                "requested_limit": requested_limit,
+                "total_stub_papers": 0,
+                "network_stats": {},
+                "stub_papers": [],
+                "error": "Failed to initialize database connections",
+            }
+
+        try:
+            overview = integrator.get_citation_network_overview()
+            if "error" in overview:
+                return {
+                    "requested_limit": requested_limit,
+                    "total_stub_papers": 0,
+                    "network_stats": {},
+                    "stub_papers": [],
+                    "error": overview["error"],
+                }
+
+            stub_papers = overview.get("stub_papers", [])
+            return {
+                "requested_limit": requested_limit,
+                "total_stub_papers": overview.get("total_stub_papers", len(stub_papers)),
+                "network_stats": overview.get("network_stats", {}),
+                "stub_papers": stub_papers[:requested_limit],
+            }
+        finally:
+            integrator.close_connections()

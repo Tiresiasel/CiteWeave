@@ -9,6 +9,7 @@ from pathlib import Path
 
 BATCH_TRACKER_PATH = Path(__file__).resolve().parents[1] / "src" / "kernel" / "batch_tracker.py"
 SERVICE_PATH = Path(__file__).resolve().parents[1] / "src" / "kernel" / "service.py"
+QUERY_HISTORY_PATH = Path(__file__).resolve().parents[1] / "src" / "kernel" / "query_history.py"
 
 
 def _load_module(path: Path, prefix: str, module_name: str | None = None):
@@ -41,6 +42,7 @@ def test_batch_tracker_summary_includes_completed_and_failed_files():
             {
                 "paper_id": "paper-1",
                 "processing_time": 1234567890,
+                "duration_seconds": 3.5,
                 "total_sentences": 20,
                 "sentences_with_citations": 5,
                 "total_citations": 8,
@@ -55,10 +57,95 @@ def test_batch_tracker_summary_includes_completed_and_failed_files():
         assert summary["failed"] == 1
         assert summary["completed_files"] == ["/papers/ok.pdf"]
         assert summary["failed_files"] == {"/papers/bad.pdf": "grobid timeout"}
+        assert summary["aggregate_stats"] == {
+            "total_sentences": 20,
+            "sentences_with_citations": 5,
+            "total_citations": 8,
+            "total_references": 10,
+        }
+        assert summary["total_completed_duration_seconds"] == 3.5
+        assert summary["average_completed_duration_seconds"] == 3.5
+        assert summary["last_completed"]["pdf_path"] == "/papers/ok.pdf"
+        assert summary["last_completed"]["paper_id"] == "paper-1"
+        assert summary["last_completed"]["duration_seconds"] == 3.5
+        assert summary["failure_reasons"] == [{"error": "grobid timeout", "count": 1}]
 
         persisted = json.loads(tracker_file.read_text(encoding="utf-8"))
         assert persisted["/papers/ok.pdf"]["paper_id"] == "paper-1"
+        assert persisted["/papers/ok.pdf"]["duration_seconds"] == 3.5
         assert persisted["/papers/bad.pdf"]["error"] == "grobid timeout"
+
+
+def test_kernel_batch_upload_preserves_tracker_aggregate_stats():
+    batch_tracker = _load_module(
+        BATCH_TRACKER_PATH,
+        "batch_tracker",
+        module_name=f"src.kernel.batch_tracker_upload_{uuid.uuid4().hex}",
+    )
+
+    class DummyDocumentProcessor:
+        def process_document(self, pdf_path, save_results=True):
+            return {
+                "paper_id": "paper-1",
+                "processing_stats": {
+                    "total_sentences": 14,
+                    "sentences_with_citations": 6,
+                    "total_citations": 11,
+                    "total_references": 13,
+                },
+            }
+
+    class DummyResearchSystem:
+        pass
+
+    _stub_module("src", __path__=[])
+    _stub_module("src.processing", __path__=[])
+    _stub_module("src.processing.pdf", __path__=[])
+    _stub_module("src.processing.pdf.document_processor", DocumentProcessor=DummyDocumentProcessor)
+    _stub_module("src.agents", __path__=[])
+    _stub_module("src.agents.multi_agent_research_system", LangGraphResearchSystem=DummyResearchSystem)
+    _stub_module("src.agents.routing", active_route_configuration=lambda: {"default_route": "vector_search"})
+    _stub_module("src.kernel", __path__=[])
+    sys.modules["src.kernel.batch_tracker"] = batch_tracker
+    query_history = _load_module(
+        QUERY_HISTORY_PATH,
+        "query_history",
+        module_name=f"src.kernel.query_history_upload_{uuid.uuid4().hex}",
+    )
+    sys.modules["src.kernel.query_history"] = query_history
+
+    service = _load_module(
+        SERVICE_PATH,
+        "kernel_service_upload",
+        module_name=f"src.kernel.service_upload_{uuid.uuid4().hex}",
+    )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdf_dir = Path(tmpdir) / "papers"
+        pdf_dir.mkdir()
+        (pdf_dir / "ok.pdf").write_bytes(b"%PDF-1.4 ok")
+
+        tracker_file = Path(tmpdir) / "tracker.json"
+        original_tracker_cls = service.BatchUploadTracker
+
+        service.BatchUploadTracker = lambda directory: batch_tracker.BatchUploadTracker(directory, tracker_file=str(tracker_file))
+        try:
+            kernel = service.CiteWeaveKernel()
+            result = kernel.batch_upload(str(pdf_dir), resume=False, force_restart=True)
+        finally:
+            service.BatchUploadTracker = original_tracker_cls
+
+        summary = result["summary"]
+        assert result["processed_count"] == 1
+        assert result["failed_count"] == 0
+        assert summary["aggregate_stats"] == {
+            "total_sentences": 14,
+            "sentences_with_citations": 6,
+            "total_citations": 11,
+            "total_references": 13,
+        }
+        assert summary["average_completed_duration_seconds"] is not None
+        assert summary["last_completed"]["paper_id"] == "paper-1"
 
 
 def test_kernel_progress_summary_returns_actionable_breakdown():
@@ -83,8 +170,18 @@ def test_kernel_progress_summary_returns_actionable_breakdown():
     _stub_module("src.agents.routing", active_route_configuration=lambda: {"default_route": "vector_search"})
     _stub_module("src.kernel", __path__=[])
     sys.modules["src.kernel.batch_tracker"] = batch_tracker
+    query_history = _load_module(
+        QUERY_HISTORY_PATH,
+        "query_history",
+        module_name=f"src.kernel.query_history_test_{uuid.uuid4().hex}",
+    )
+    sys.modules["src.kernel.query_history"] = query_history
 
-    service = _load_module(SERVICE_PATH, "kernel_service")
+    service = _load_module(
+        SERVICE_PATH,
+        "kernel_service",
+        module_name=f"src.kernel.service_test_{uuid.uuid4().hex}",
+    )
 
     with tempfile.TemporaryDirectory() as tmpdir:
         pdf_dir = Path(tmpdir) / "papers"
@@ -97,7 +194,7 @@ def test_kernel_progress_summary_returns_actionable_breakdown():
         tracker = batch_tracker.BatchUploadTracker(str(pdf_dir), tracker_file=str(tracker_file))
         tracker.mark_file_completed(
             str(pdf_dir / "ok.pdf"),
-            {"paper_id": "paper-1", "processing_time": 1, "total_sentences": 10, "total_citations": 2},
+            {"paper_id": "paper-1", "processing_time": 1, "duration_seconds": 4.0, "total_sentences": 10, "total_citations": 2},
         )
         tracker.mark_file_failed(str(pdf_dir / "bad.pdf"), "parse error")
 
@@ -118,9 +215,24 @@ def test_kernel_progress_summary_returns_actionable_breakdown():
         assert progress["completed_count"] == 1
         assert progress["failed_count"] == 1
         assert progress["pending_count"] == 2
+        assert progress["not_started_count"] == 1
+        assert progress["retryable_failed_count"] == 1
         assert str(pdf_dir / "ok.pdf") in progress["completed_files"]
         assert progress["failed_files"] == {str(pdf_dir / "bad.pdf"): "parse error"}
+        assert progress["retryable_failed_files"] == [str(pdf_dir / "bad.pdf")]
+        assert progress["not_started_files"] == [str(pdf_dir / "pending.pdf")]
         assert progress["pending_files"] == sorted([
             str(pdf_dir / "bad.pdf"),
             str(pdf_dir / "pending.pdf"),
         ])
+        assert progress["average_completed_duration_seconds"] == 4.0
+        assert progress["estimated_remaining_seconds"] == 8.0
+        assert progress["summary"]["aggregate_stats"] == {
+            "total_sentences": 10,
+            "sentences_with_citations": 0,
+            "total_citations": 2,
+            "total_references": 0,
+        }
+        assert progress["summary"]["last_completed"]["pdf_path"] == str(pdf_dir / "ok.pdf")
+        assert progress["summary"]["last_completed"]["duration_seconds"] == 4.0
+        assert progress["summary"]["failure_reasons"] == [{"error": "parse error", "count": 1}]

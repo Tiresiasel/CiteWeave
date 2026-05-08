@@ -275,6 +275,77 @@ class GraphDB:
             result = session.run(query, paper_id=paper_id)
             return dict(result.single())['citation_network']
 
+    def get_citation_network_stats(self) -> Dict:
+        """Return aggregate paper and citation counts for the current graph."""
+        query = """
+        MATCH (p:Paper)
+        OPTIONAL MATCH ()-[c:CITES]->(:Paper)
+        WITH collect(DISTINCT p) AS papers, collect(c) AS citations
+        RETURN size(papers) AS total_papers,
+               size([paper IN papers WHERE coalesce(paper.stub, false) = false]) AS uploaded_papers,
+               size([paper IN papers WHERE coalesce(paper.stub, false) = true]) AS stub_papers,
+               size([citation IN citations WHERE citation IS NOT NULL]) AS total_citation_relations,
+               reduce(total = 0, citation IN citations |
+                   total + CASE
+                       WHEN citation IS NULL THEN 0
+                       WHEN citation.citation_count IS NOT NULL THEN citation.citation_count
+                       ELSE 1
+                   END
+               ) AS total_citation_instances
+        """
+        with self.driver.session() as session:
+            result = session.run(query)
+            row = result.single()
+            return dict(row) if row else {
+                "total_papers": 0,
+                "uploaded_papers": 0,
+                "stub_papers": 0,
+                "total_citation_relations": 0,
+                "total_citation_instances": 0,
+            }
+
+    def list_stub_papers(self, limit: int = 100) -> List[Dict]:
+        """Return the most-cited unresolved stub papers."""
+        query = """
+        MATCH (p:Paper)
+        WHERE coalesce(p.stub, false) = true
+        OPTIONAL MATCH ()-[c:CITES]->(p)
+        RETURN p.id AS paper_id,
+               p.title AS title,
+               p.authors AS authors,
+               p.year AS year,
+               count(c) AS cited_by_count
+        ORDER BY cited_by_count DESC, coalesce(p.year, 0) DESC, coalesce(p.title, "") ASC
+        LIMIT $limit
+        """
+        with self.driver.session() as session:
+            result = session.run(query, limit=max(0, limit))
+            return [dict(record) for record in result]
+
+    def update_paper_from_stub(self, paper_id: str, title: str, authors: List[str], year: int, **metadata):
+        """Resolve an existing stub paper node using real paper metadata."""
+        query = """
+        MERGE (p:Paper {id: $paper_id})
+        SET p.title = $title,
+            p.authors = $authors,
+            p.year = $year,
+            p.stub = false,
+            p.doi = $doi,
+            p.journal = $journal,
+            p.publisher = $publisher
+        """
+        with self.driver.session() as session:
+            session.run(
+                query,
+                paper_id=paper_id,
+                title=title,
+                authors=authors,
+                year=year,
+                doi=metadata.get('doi'),
+                journal=metadata.get('journal'),
+                publisher=metadata.get('publisher'),
+            )
+
     # ==================== 原有的Schema节点操作 ====================
 
     def create_claim_schema_node(self, claim_id: str, label: str, description: str,

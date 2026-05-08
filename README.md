@@ -51,6 +51,9 @@ Current CLI commands available on this branch:
 - `chat`
 - `query`
 - `routes`
+- `health`
+- `bootstrap-plan`
+- `query-history`
 
 ### Local CLI mode (no OpenClaw needed)
 
@@ -69,6 +72,10 @@ Then run CiteWeave through the project virtualenv:
 .venv/bin/python -m src.core.cli batch-upload ./papers --resume
 .venv/bin/python -m src.core.cli query "Which papers discuss X?"
 .venv/bin/python -m src.core.cli routes
+.venv/bin/python -m src.core.cli health
+.venv/bin/python -m src.core.cli bootstrap-plan
+.venv/bin/python -m src.core.cli query-history --limit 20
+.venv/bin/python -m src.core.cli query-history --status error --min-duration-ms 2000
 .venv/bin/python -m src.core.cli chat
 ```
 
@@ -139,12 +146,17 @@ Upload and process all PDFs in a directory.
 
 ### `progress <directory>`
 
-Inspect or clear batch-upload progress tracking.
+Inspect or clear batch-upload progress tracking. The report distinguishes between retryable failed files and PDFs that have not been attempted yet, so resume decisions are less guesswork and more engineering.
 
 ```bash
 .venv/bin/python -m src.core.cli progress path/to/papers/
 .venv/bin/python -m src.core.cli progress path/to/papers/ --clear
 ```
+
+The text output now breaks remaining work into:
+- **Retryable failed files**: attempted previously, failed, and will be retried by `batch-upload --resume`
+- **Not started yet**: discovered PDFs with no tracker entry yet
+- **Pending files**: the union of both groups above
 
 ### `chat`
 
@@ -172,6 +184,44 @@ and addon/env overrides.
 
 ```bash
 .venv/bin/python -m src.core.cli routes
+```
+
+### `health`
+
+Inspect environment and service health. The human-readable output now leads
+with an overall verdict and recommended next actions; use `--json` when you
+want the raw machine-readable snapshot.
+
+```bash
+.venv/bin/python -m src.core.cli health
+.venv/bin/python -m src.core.cli health --json
+```
+
+### `bootstrap-plan`
+
+Print the recommended local CLI and OpenClaw bootstrap steps without scraping
+other docs.
+
+```bash
+.venv/bin/python -m src.core.cli bootstrap-plan
+.venv/bin/python -m src.core.cli bootstrap-plan --json
+```
+
+### `query-history`
+
+Inspect recent query telemetry from the local JSONL history log. This is useful
+for spotting slow or failed research runs without opening the raw log file, and
+for separating CLI traffic from OpenClaw-driven queries when you need to audit
+how the system is actually being used.
+
+```bash
+.venv/bin/python -m src.core.cli query-history
+.venv/bin/python -m src.core.cli query-history --limit 20
+.venv/bin/python -m src.core.cli query-history --source cli.query --since-hours 24
+.venv/bin/python -m src.core.cli query-history --status error --min-duration-ms 2000
+.venv/bin/python -m src.core.cli query-history --status success --max-response-chars 120
+.venv/bin/python -m src.core.cli query-history --since-hours 24 --check-max-duration-ms 10000 --check-min-response-chars 80
+.venv/bin/python -m src.core.cli query-history --json
 ```
 
 ---

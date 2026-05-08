@@ -1,4 +1,5 @@
 import importlib.util
+import sys
 import unittest
 from pathlib import Path
 
@@ -7,6 +8,22 @@ MODULE_PATH = Path(__file__).resolve().parents[1] / "src" / "adapters" / "opencl
 
 
 def load_facade_module():
+    for name in [
+        "src",
+        "src.processing",
+        "src.processing.pdf",
+        "src.processing.pdf.document_processor",
+        "src.agents",
+        "src.agents.multi_agent_research_system",
+        "src.agents.routing",
+        "src.kernel",
+        "src.kernel.service",
+        "src.kernel.batch_tracker",
+        "src.kernel.query_history",
+    ]:
+        if name in sys.modules and getattr(sys.modules[name], "__file__", None) is None:
+            sys.modules.pop(name, None)
+
     spec = importlib.util.spec_from_file_location("openclaw_facade_test_module", MODULE_PATH)
     module = importlib.util.module_from_spec(spec)
     assert spec.loader is not None
@@ -21,8 +38,8 @@ class FakeKernel:
     def diagnose_document(self, pdf_path):
         return {"ok": True, "pdf_path": pdf_path}
 
-    def query(self, question, confirmation="continue"):
-        return f"answer:{question}:{confirmation}"
+    def query(self, question, confirmation="continue", source="kernel.query"):
+        return f"answer:{question}:{confirmation}:{source}"
 
     def routes_snapshot(self):
         return {"default_route": "vector_search"}
@@ -48,7 +65,7 @@ class OpenClawFacadeTests(unittest.TestCase):
         mod = load_facade_module()
         facade = mod.OpenClawCiteWeaveFacade(kernel=FakeKernel())
         query_result = facade.query("hello", confirmation="continue")
-        self.assertEqual(query_result["answer"], "answer:hello:continue")
+        self.assertEqual(query_result["answer"], "answer:hello:continue:openclaw.facade.query")
         chat_result = facade.chat_turn("hi")
         self.assertEqual(chat_result["text"], "chat:hi")
 

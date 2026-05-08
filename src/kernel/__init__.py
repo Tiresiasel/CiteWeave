@@ -7,5 +7,6 @@ layer instead of reaching directly into scattered processing/agent modules.
 
 from .service import CiteWeaveKernel
 from .batch_tracker import BatchUploadTracker
+from .query_history import QueryHistoryRecorder
 
-__all__ = ["CiteWeaveKernel", "BatchUploadTracker"]
+__all__ = ["CiteWeaveKernel", "BatchUploadTracker", "QueryHistoryRecorder"]
