@@ -52,51 +52,51 @@ The batch upload system now supports resuming interrupted uploads by tracking pr
 ### Basic Resume (Default Behavior)
 ```bash
 # First run - processes all files
-python -m src.core.cli batch-upload /papers/
+citeweave batch-upload /papers/
 
 # Interrupted by error/system shutdown...
 
 # Second run - automatically resumes, skips completed files
-python -m src.core.cli batch-upload /papers/
+citeweave batch-upload /papers/
 ```
 
 ### Explicit Resume Mode
 ```bash
 # Explicitly resume from previous progress
-python -m src.core.cli batch-upload /papers/ --resume
+citeweave batch-upload /papers/ --resume
 ```
 
 ### Force Restart (Ignore Previous Progress)
 ```bash
 # Force restart and process all files again
-python -m src.core.cli batch-upload /papers/ --force-restart
+citeweave batch-upload /papers/ --force-restart
 ```
 
 ### Clear Progress and Start Fresh
 ```bash
 # Clear previous progress and start fresh
-python -m src.core.cli batch-upload /papers/ --clear-progress
+citeweave batch-upload /papers/ --clear-progress
 ```
 
 ### Check Progress Status
 ```bash
 # View current progress for a directory
-python -m src.core.cli progress /papers/
+citeweave progress /papers/
 
 # Clear progress for a directory
-python -m src.core.cli progress /papers/ --clear
+citeweave progress /papers/ --clear
 ```
 
 ### Combined Options
 ```bash
 # Resume with custom processors
-python -m src.core.cli batch-upload /papers/ --resume --processors 8
+citeweave batch-upload /papers/ --resume --processors 8
 
 # Force restart with sequential processing
-python -m src.core.cli batch-upload /papers/ --force-restart --sequential
+citeweave batch-upload /papers/ --force-restart --sequential
 
 # Clear progress and use multiprocessing
-python -m src.core.cli batch-upload /papers/ --clear-progress --processors 6
+citeweave batch-upload /papers/ --clear-progress --processors 6
 ```
 
 ## Progress Tracking File

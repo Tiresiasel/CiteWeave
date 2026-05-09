@@ -1,323 +1,206 @@
 # CiteWeave
 
-**句子级引用图谱 + 语义检索，面向学术论文的 RAG 系统。**
+**一个通过 OpenClaw 操作的本地引文智能系统。**
 
-将 PDF 解析为句子级引用关系，构建引用图谱，通过多智能体系统对论文库进行学术问答。专为社会科学研究者设计——追踪论点如何在文献间流动；其他领域亦可使用。
+CiteWeave 会把学术 PDF 转换成可搜索的本地研究系统。OpenClaw 是入口：它帮助部署本地 stack，持续同步 Zotero library，并为用户提供自然语言界面，用于上传、诊断、查询和维护。CiteWeave 负责这个入口背后的本地基础设施：PDF 抽取、引文解析、embedding、Neo4j、Qdrant、GROBID 和研究查询内核。
 
 [![Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 ---
 
-## 5 分钟快速启动（先走 CLI / Docker）
+## 从这里开始
 
-```bash
-# 1. 克隆并配置
-git clone https://github.com/Tiresiasel/CiteWeave.git
-cd CiteWeave
+这份 README 是给人读的：它解释项目是什么、能做什么、各个部分如何配合。
 
-# 2. 一键完成本地 CLI 部署
-bash scripts/bootstrap_local.sh
+如果你是 **OpenClaw**，或者你正在部署 CiteWeave，请阅读：
 
-# 3. 使用 CLI
-.venv/bin/python -m src.core.cli upload path/to/paper.pdf
-.venv/bin/python -m src.core.cli query "哪些论文讨论了 X？"
-.venv/bin/python -m src.core.cli routes
-.venv/bin/python -m src.core.cli chat
+- [`docs/openclaw/README.md`](docs/openclaw/README.md) — OpenClaw 操作入口；
+- [`docs/openclaw/DEPLOYMENT.md`](docs/openclaw/DEPLOYMENT.md) — 本地部署步骤；
+- [`docs/openclaw/PACKAGE_INTERFACE.md`](docs/openclaw/PACKAGE_INTERFACE.md) — actions、接口和查询路由逻辑。
 
-# 4. 或切换到 OpenClaw 模式
-bash scripts/bootstrap_openclaw.sh
-# 然后验证：
-.venv/bin/python -m src.core.cli routes
-bash scripts/deployment_check.sh
-# 再从 OpenClaw 会话里调用 CiteWeave。
-```
+这个拆分是故意的。README 解释产品；`docs/openclaw/` 解释如何操作它。
 
 ---
 
-## 第一部分：作为 CLI 应用使用 CiteWeave
+## CiteWeave 能做什么
 
-这是最基础、也最重要的部署方式。即便你之后接入 OpenClaw，底层依然是
-这套本地 CLI + Docker 服务。
+CiteWeave 会从学术 PDF 构建本地研究数据库。部署完成后，OpenClaw 用户可以让它：
 
-### 当前代码分支上实际可用的命令
+- 持续同步 Zotero library；
+- 上传单篇 PDF 或批量导入 PDF 文件夹；
+- 在导入前诊断 PDF 抽取质量；
+- 构建并查询 Neo4j 引文图谱；
+- 构建并查询 Qdrant 语义向量索引；
+- 从图谱、向量、作者和 PDF 内容路径检索证据；
+- 回答文献、作者、引用、论证和组合性研究问题；
+- 检查健康状态、routes、导入进度、未解析引用和查询历史。
 
-- `upload`
-- `diagnose`
-- `batch-upload`
-- `progress`
-- `chat`
-- `query`
-- `routes`
+典型场景：
 
-### 本地 CLI 模式（无需 OpenClaw）
-
-在 `.env` 中设置：
-
-```bash
-CITEWEAVE_LLM_PROVIDER=openai
-OPENAI_API_KEY=sk-...yourkey...
-```
-
-然后通过项目虚拟环境运行：
-
-```bash
-.venv/bin/python -m src.core.cli upload path/to/paper.pdf
-.venv/bin/python -m src.core.cli diagnose path/to/paper.pdf
-.venv/bin/python -m src.core.cli batch-upload ./papers --resume
-.venv/bin/python -m src.core.cli query "哪些论文讨论了 X？"
-.venv/bin/python -m src.core.cli routes
-.venv/bin/python -m src.core.cli chat
-```
-
-> 为什么推荐 `.venv/bin/python`？
-> 因为 CLI 在启动时就会 import 项目依赖。对一台全新的机器来说，
-> 如果当前环境没有装齐依赖，直接 `python -m src.core.cli` 会失败。
+- 文献综述；
+- 引用追踪；
+- 理论来源梳理；
+- 作者和论文比较；
+- unresolved references 清理；
+- “这个观点从哪里来的？”这类研究问题。
 
 ---
 
-## 依赖服务
+## 产品模型
 
-通过 Docker Compose 一键启动三个依赖服务：
+CiteWeave 设计为 **OpenClaw Package**。
 
-```bash
-docker-compose up -d
-```
+OpenClaw 负责：
 
-| 服务 | 端口 | 用途 |
-|------|------|------|
-| **Neo4j** | 7474 / 7687 | 引用图谱存储（支持 Cypher 查询） |
-| **Qdrant** | 6333 / 6334 | 语义向量索引（ANN 检索） |
-| **GROBID** | 8070 | PDF 结构化解析（提取作者、标题、章节） |
+- 面向用户的自然语言入口；
+- 部署协同；
+- 通过 Docker Compose 拉起本地基础设施；
+- Zotero 定时导入自动化；
+- 操作选择：upload、sync、diagnose、query、health、progress、telemetry；
+- 面向 agent 的 CiteWeave 调用。
 
-验证部署健康状态：
+CiteWeave 负责：
 
-```bash
-bash scripts/deployment_check.sh
-```
+- Zotero/PDF 导入；
+- PDF 解析和引文抽取；
+- Neo4j 图存储；
+- Qdrant 向量存储；
+- 本地或 OpenAI embedding；
+- GROBID 元数据与结构抽取；
+- 研究查询规划和回答综合。
 
----
+边界很重要：
 
-## CLI 命令参考
+> OpenClaw 判断用户想执行什么操作。CiteWeave 判断如何检索和整合研究证据。
 
-所有操作建议通过项目虚拟环境执行：
-
-```
-.venv/bin/python -m src.core.cli <命令> [选项]
-```
-
-### `upload <pdf_path>` — 上传并解析论文
-
-```bash
-.venv/bin/python -m src.core.cli upload path/to/paper.pdf
-.venv/bin/python -m src.core.cli upload path/to/paper.pdf --diagnose
-.venv/bin/python -m src.core.cli upload path/to/paper.pdf --force
-```
-
-### `diagnose <pdf_path>` — PDF 质量诊断
-
-```bash
-.venv/bin/python -m src.core.cli diagnose path/to/paper.pdf
-```
-
-### `batch-upload <目录>` — 批量上传
-
-```bash
-.venv/bin/python -m src.core.cli batch-upload path/to/papers/
-.venv/bin/python -m src.core.cli batch-upload path/to/papers/ --resume
-.venv/bin/python -m src.core.cli batch-upload path/to/papers/ --sequential
-```
-
-### `progress <目录>` — 查看/清理批量处理进度
-
-```bash
-.venv/bin/python -m src.core.cli progress path/to/papers/
-.venv/bin/python -m src.core.cli progress path/to/papers/ --clear
-```
-
-### `chat` — 交互式多轮对话
-
-```bash
-.venv/bin/python -m src.core.cli chat
-```
-
-### `query "<问题>"` — 单轮查询入口
-
-单轮进入 LangGraph research workflow。
-当你希望控制信息摘要之后的流程时，可以使用 `--confirmation`。
-
-```bash
-.venv/bin/python -m src.core.cli query "哪些论文讨论了带宽与定价的关系？"
-.venv/bin/python -m src.core.cli query "总结一下 Michael Porter 1980" --confirmation continue
-```
-
-### `routes` — 路由配置诊断
-
-查看当前生效的 route 配置，包括 alias、priority 映射，以及 addon / env 覆盖。
-
-```bash
-.venv/bin/python -m src.core.cli routes
-```
+OpenClaw 不是数据库层。它是本地研究 stack 的入口和协调层。
 
 ---
 
-## 第二部分：将 CiteWeave 接入 OpenClaw
-
-关于这种分层方式背后的架构约定，可继续看：
-`docs/KERNEL_AND_OPENCLAW.md`
-
-### OpenClaw 模式到底改变了什么
-
-OpenClaw 不会替代 CiteWeave 的存储或解析层，它只是接管 CiteWeave 的
-LLM 后端。
-
-底层部署并没有变：
-
-- Neo4j 仍然存 citation graph
-- Qdrant 仍然存语义向量
-- GROBID 仍然负责 PDF 解析
-- CiteWeave 的 CLI / Python 代码仍然负责 ingestion 和 chat 逻辑
-
-变化只是：CiteWeave 不再自己直连 OpenAI，而是把所有 LLM 调用改为发往
-**本地 OpenClaw gateway**。
-
-### 工作原理
-
-```
-OpenClaw Agent (Atlas)
-    │
-    │  CITEWEAVE_LLM_PROVIDER=openclaw
-    │  所有 LLM 调用 → http://localhost:18789/v1
-    │
-    ├──→ .venv/bin/python -m src.core.cli chat
-    │       │
-    │       └── Neo4j + Qdrant + GROBID
-    │
-    └──（可选）直接 import Python API
-            LangGraphResearchSystem()
-```
-
-### 具体接入流程
-
-1. 先完成上面的 **本地 CLI / Docker 部署**，或者直接运行：
-
-```bash
-bash scripts/bootstrap_openclaw.sh
-```
-
-这个脚本会准备 `.env`、创建虚拟环境、安装依赖、启动 Docker 服务，并让项目保持在 OpenClaw 模式。
-
-2. 如果你想手动设置，`.env` 至少应包含：
-
-```bash
-CITEWEAVE_LLM_PROVIDER=openclaw
-CITEWEAVE_LLM_MODEL=openai-codex/gpt-5.4
-CITEWEAVE_LLM_API_BASE=http://localhost:18789/v1
-CITEWEAVE_NEO4J_PASSWORD=0xC1735
-```
-
-3. 确认本地 OpenClaw gateway 正在运行：
-
-```bash
-openclaw gateway status
-```
-
-4. 再跑一次部署检查：
-
-```bash
-bash scripts/deployment_check.sh
-```
-
-如果配置正确，你会看到 gateway 连通性检查通过。
-
-5. 然后就可以在 OpenClaw 会话里调用 CiteWeave，例如：
+## 架构
 
 ```text
-Atlas，帮我用 CiteWeave 上传这些 PDF，然后用 chat 模式带我检查 citation graph。
+Human researcher
+    │
+    ▼
+OpenClaw
+    │  natural-language entrypoint, deployment coordination,
+    │  Zotero sync scheduling, operation selection
+    ▼
+CiteWeave OpenClaw adapter
+    │  src/adapters/openclaw_facade.py
+    ▼
+CiteWeave kernel
+    │  upload, diagnose, route, query, progress, telemetry
+    ▼
+Local research infrastructure
+    ├── Docker Compose stack
+    │   ├── Neo4j citation graph
+    │   ├── Qdrant vector indexes
+    │   └── GROBID PDF extraction
+    ├── Zotero PDF source
+    └── Embeddings
+        ├── local SentenceTransformers   默认
+        └── OpenAI Embeddings            可选
 ```
 
-### 关键安全 / 行为说明
-
-在 `openclaw` 模式下，CiteWeave **不会**把你真实的 OpenAI API key 传给
-gateway。代码会把它替换成一个无害占位符，真正的认证由 OpenClaw 自己的
-本地会话 / gateway 流程处理。
+CLI 仍然存在，但它是运维 adapter。它适合验证和调试，不是产品中心。
 
 ---
 
-## 配置说明
+## Zotero 作为持久数据源
 
-### 环境变量（优先级高于 JSON 配置文件）
+正常部署从告诉 OpenClaw 用户的 Zotero library 在哪里开始。之后 CiteWeave 会把该 library 作为持续 PDF 数据源。
 
-| 变量 | 默认值 | 说明 |
-|------|--------|------|
-| `CITEWEAVE_LLM_PROVIDER` | `openai` | `openclaw` · `openai` · `ollama` |
-| `CITEWEAVE_LLM_MODEL` | — | 模型名称 |
-| `CITEWEAVE_LLM_API_BASE` | — | openclaw / ollama 模式的 API 地址 |
-| `CITEWEAVE_LLM_API_KEY` | — | API Key（openclaw 模式可填任意值） |
-| `CITEWEAVE_NEO4J_PASSWORD` | `0xC1735` | Neo4j 密码 |
-| `CITEWEAVE_ENV` | `production` | `production` · `development`（详细日志） |
+OpenClaw 会把路径持久化为：
 
-### Neo4j 默认密码
+```env
+CITEWEAVE_ZOTERO_LIBRARY_DIR=/path/to/Zotero
+```
 
-默认密码 `0xC1735` 是有意为之，方便本地开发记忆。
-**生产部署前务必修改：**
+OpenClaw 先通过 Docker Compose 拉起本地服务层，然后定时调用：
 
 ```bash
-CITEWEAVE_NEO4J_PASSWORD=your-secure-password
+.venv/bin/python scripts/sync_zotero_pdfs.py --json
 ```
+
+同步脚本会解析 Zotero `storage/`，递归发现 PDF，并委托给 CiteWeave 的可断点续传 batch uploader。这样本地研究数据库会随着 Zotero library 的变化持续增长。
+
+具体部署步骤见 [`docs/openclaw/DEPLOYMENT.md`](docs/openclaw/DEPLOYMENT.md)。
+
+---
+
+## 查询模型
+
+对于普通研究问题，OpenClaw 不应该手动查询 Neo4j 或 Qdrant。它应该把用户的完整研究问题交给 CiteWeave：
+
+```python
+facade.query(question, confirmation="continue")
+```
+
+然后由 CiteWeave 决定内部使用哪些路径：
+
+- 语义向量检索；
+- 图谱引用遍历；
+- 作者和论文查找；
+- 已抽取 PDF 内容；
+- unresolved citation tracking；
+- 最终回答综合。
+
+如果用户提出的是运维请求，OpenClaw 才调用对应 action：`upload_pdf`、`batch_upload`、`diagnose_pdf`、`progress`、`health`、`routes`、`query_history` 或 `list_pending_citations`。
+
+完整接口文档见 [`docs/openclaw/PACKAGE_INTERFACE.md`](docs/openclaw/PACKAGE_INTERFACE.md)。
+
+---
+
+## Embeddings
+
+CiteWeave 当前支持两套 embedding 方案：
+
+| Provider | 默认 | Model | Vector size | API key |
+|---|---:|---|---:|---|
+| `local` | 是 | `all-MiniLM-L6-v2` | 384 | 不需要 |
+| `openai` | 否 | `text-embedding-3-small` | 1536 | 需要 |
+
+默认本地模式让安装更自包含。OpenAI embeddings 可以在用户准备迁移向量索引时启用。
+
+切换 provider 会改变向量维度，因此已有 Qdrant collection 需要先重建或迁移，不能直接混用。数据库会记住自己的形状。烦，但合理。
+
+---
+
+## 文档地图
+
+| 文档 | 读者 | 用途 |
+|---|---|---|
+| [`README.md`](README.md) | 英文读者 | 产品概览和架构 |
+| [`README.zh.md`](README.zh.md) | 中文读者 | 中文概览 |
+| [`docs/openclaw/README.md`](docs/openclaw/README.md) | OpenClaw / operator | 操作入口 |
+| [`docs/openclaw/DEPLOYMENT.md`](docs/openclaw/DEPLOYMENT.md) | OpenClaw / operator | 本地部署和 Zotero sync |
+| [`docs/openclaw/PACKAGE_INTERFACE.md`](docs/openclaw/PACKAGE_INTERFACE.md) | OpenClaw / integrator | actions、接口、查询逻辑 |
+| [`docs/KERNEL_AND_OPENCLAW.md`](docs/KERNEL_AND_OPENCLAW.md) | 开发者 | kernel / adapter 架构 |
 
 ---
 
 ## 开发
 
-### Python 环境
+开发门禁：
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python -m nltk.downloader punkt          # 句子切分依赖
-```
-
-### 运行测试
-
-```bash
-python -m unittest discover -s tests
-python -m unittest discover -s tests -p 'test_routing.py'
-```
-
-### 隐私审计（提交前必须通过）
-
-```bash
+.venv/bin/python -m ruff check src tests scripts/sync_zotero_pdfs.py
+.venv/bin/python -m ruff check tests/manual --select F --ignore E501
+python3 -m compileall -q src tests scripts/sync_zotero_pdfs.py
+.venv/bin/python -m pytest -q
 python3 scripts/repo_privacy_audit.py
 ```
 
-任何隐私审计失败都会阻止提交。检查项包括：
-- 绝对本地机器路径（例如用户主目录或私有工作区根路径）
-- Token / 密钥写入 tracked 文件
-- `data/` 或 `test_files/` 中的运行时数据被 tracked
+期望隐私审计结果：
 
----
-
-## 引用类型分类
-
-CiteWeave 对论文中的每个句子进行分类：
-
-| 类型 | 说明 |
-|------|------|
-| `CLAIM_MAIN` | 核心论点 / 主要主张 |
-| `CLAIM_SUPPORTING` | 次要支撑论点 |
-| `EVIDENCE_EMPIRICAL` | 实证数据 / 结论 |
-| `EVIDENCE_THEORETICAL` | 理论支撑 |
-| `EVIDENCE_LITERATURE` | 引用支撑 |
-| `COUNTERARGUMENT` | 反论点 / 假设 |
-| `METHODOLOGY` | 方法描述 |
-| `REBUTTAL` | 明确反驳 |
-| `QUESTION_MOTIVATION` | 研究问题 / 动机 |
-| `FUTURE_WORK` | 未来方向 |
-| `NON_ARGUMENT` | 中立 / 过渡性文字 |
+```text
+PRIVACY_AUDIT_OK
+```
 
 ---
 
 ## License
 
-Apache License 2.0 — 见 [LICENSE](LICENSE)。
+Apache License 2.0 — see [LICENSE](LICENSE).

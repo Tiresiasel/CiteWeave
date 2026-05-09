@@ -14,10 +14,10 @@ import os
 import logging
 
 # Add src to path for imports
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from document_processor import DocumentProcessor
-from database_integrator import DatabaseIntegrator
+from src.processing.pdf.document_processor import DocumentProcessor
+from src.storage.database_integrator import DatabaseIntegrator
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')

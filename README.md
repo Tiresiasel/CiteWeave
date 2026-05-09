@@ -1,436 +1,203 @@
 # CiteWeave
 
-**Argument-level citation graph + semantic RAG for academic papers.**
+**A local citation intelligence stack operated through OpenClaw.**
 
-CiteWeave extracts sentence-level citation relationships from PDFs, builds a citation graph, and lets you query your paper library through a multi-agent research system. Designed for social-science researchers who need to trace the flow of arguments across literature — but useful anywhere citation-level precision matters.
+CiteWeave turns academic PDFs into a searchable research system. OpenClaw is the entrypoint: it helps deploy the stack, keeps a Zotero library synced, and gives the user a natural-language interface for upload, diagnosis, querying, and maintenance. CiteWeave owns the local infrastructure behind that interface: PDF extraction, citation parsing, embeddings, Neo4j, Qdrant, GROBID, and the research query kernel.
 
 [![Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 ---
 
-## TL;DR — Local CLI first
+## Start here
 
-```bash
-# 1. Clone & configure
-git clone https://github.com/Tiresiasel/CiteWeave.git
-cd CiteWeave
+This README is for human readers: what the project is, what it can do, and how the pieces fit.
 
-# 2. Bootstrap the local CLI deployment
-bash scripts/bootstrap_local.sh
+If you are **OpenClaw** or an operator deploying CiteWeave, read:
 
-# 3. Use the CLI
-.venv/bin/python -m src.core.cli upload path/to/paper.pdf
-.venv/bin/python -m src.core.cli query "Which papers discuss X?"
-.venv/bin/python -m src.core.cli routes
-.venv/bin/python -m src.core.cli chat
+- [`docs/openclaw/README.md`](docs/openclaw/README.md) — OpenClaw operating index;
+- [`docs/openclaw/DEPLOYMENT.md`](docs/openclaw/DEPLOYMENT.md) — step-by-step local deployment;
+- [`docs/openclaw/PACKAGE_INTERFACE.md`](docs/openclaw/PACKAGE_INTERFACE.md) — actions, interfaces, and query-routing logic.
 
-# 4. Or switch to OpenClaw mode
-bash scripts/bootstrap_openclaw.sh
-# then verify:
-.venv/bin/python -m src.core.cli routes
-bash scripts/deployment_check.sh
-# and call CiteWeave from your OpenClaw session.
-```
+That separation is intentional. README explains the product. `docs/openclaw/` explains how to operate it.
 
 ---
 
-## Part 1 — Use CiteWeave as a CLI application
+## What CiteWeave does
 
-This is the primary deployment path. Even if you later integrate CiteWeave with
-OpenClaw, the base system is still a local CLI application backed by Docker
-services.
+CiteWeave builds a local research database from academic PDFs. Once deployed, an OpenClaw user can ask it to:
 
-### What works on the current codebase
+- keep a Zotero library synced into CiteWeave;
+- upload individual PDFs or batch-ingest PDF folders;
+- diagnose PDF extraction quality before ingestion;
+- build and query a Neo4j citation graph;
+- build and query Qdrant semantic vector indexes;
+- retrieve evidence from graph, vector, author, and PDF-content routes;
+- answer literature, author, citation, argument, and compound research questions;
+- inspect health, routes, ingestion progress, unresolved citations, and query history.
 
-Current CLI commands available on this branch:
+Typical use cases:
 
-- `upload`
-- `diagnose`
-- `batch-upload`
-- `progress`
-- `chat`
-- `query`
-- `routes`
-- `health`
-- `bootstrap-plan`
-- `query-history`
-
-### Local CLI mode (no OpenClaw needed)
-
-Edit `.env`:
-
-```bash
-CITEWEAVE_LLM_PROVIDER=openai
-OPENAI_API_KEY=sk-...yourkey...
-```
-
-Then run CiteWeave through the project virtualenv:
-
-```bash
-.venv/bin/python -m src.core.cli upload path/to/paper.pdf
-.venv/bin/python -m src.core.cli diagnose path/to/paper.pdf
-.venv/bin/python -m src.core.cli batch-upload ./papers --resume
-.venv/bin/python -m src.core.cli query "Which papers discuss X?"
-.venv/bin/python -m src.core.cli routes
-.venv/bin/python -m src.core.cli health
-.venv/bin/python -m src.core.cli bootstrap-plan
-.venv/bin/python -m src.core.cli query-history --limit 20
-.venv/bin/python -m src.core.cli query-history --status error --min-duration-ms 2000
-.venv/bin/python -m src.core.cli chat
-```
-
-> Why `.venv/bin/python` instead of plain `python`?
-> Because the CLI imports project dependencies at startup. In a clean machine,
-> `python -m src.core.cli` will fail unless you installed the requirements in
-> the active environment.
+- literature reviews;
+- citation tracing;
+- theory lineage;
+- author and paper comparison;
+- unresolved-reference cleanup;
+- “where did this idea come from?” research.
 
 ---
 
-## Backing services
+## Product model
 
-CiteWeave depends on three backing services. Start them all at once:
+CiteWeave is designed as an **OpenClaw Package**.
 
-```bash
-docker-compose up -d
-```
+OpenClaw provides:
 
-| Service | Port | Purpose |
-|---------|------|---------|
-| **Neo4j** | 7474 / 7687 | Citation graph storage (Bolt + HTTP) |
-| **Qdrant** | 6333 / 6334 | Semantic vector index (REST + gRPC) |
-| **GROBID** | 8070 | PDF structure extraction (name/author/section parsing) |
+- the user-facing natural-language entrypoint;
+- deployment coordination;
+- Docker Compose stack startup for local infrastructure;
+- recurring Zotero ingestion automation;
+- operation selection: upload, sync, diagnose, query, health, progress, telemetry;
+- agent-facing calls into CiteWeave.
 
-Verify everything is healthy:
+CiteWeave provides:
 
-```bash
-bash scripts/deployment_check.sh
-```
+- Zotero/PDF ingestion;
+- PDF parsing and citation extraction;
+- Neo4j graph storage;
+- Qdrant vector storage;
+- local or OpenAI embeddings;
+- GROBID-backed metadata and structure extraction;
+- research query planning and answer synthesis.
 
----
+The boundary matters:
 
-## CLI reference
+> OpenClaw decides what operation the user wants. CiteWeave decides how to retrieve and synthesize research evidence.
 
-All interaction with CiteWeave goes through the project environment:
-
-```
-.venv/bin/python -m src.core.cli <command> [options]
-```
-
-### `upload <pdf_path>`
-
-Parse a PDF and ingest it into the citation graph.
-
-```bash
-.venv/bin/python -m src.core.cli upload path/to/paper.pdf
-.venv/bin/python -m src.core.cli upload path/to/paper.pdf --diagnose
-.venv/bin/python -m src.core.cli upload path/to/paper.pdf --force
-```
-
-### `diagnose <pdf_path>`
-
-Run a quality diagnosis on a PDF without ingesting it.
-
-```bash
-.venv/bin/python -m src.core.cli diagnose path/to/paper.pdf
-```
-
-### `batch-upload <directory>`
-
-Upload and process all PDFs in a directory.
-
-```bash
-.venv/bin/python -m src.core.cli batch-upload path/to/papers/
-.venv/bin/python -m src.core.cli batch-upload path/to/papers/ --resume
-.venv/bin/python -m src.core.cli batch-upload path/to/papers/ --sequential
-```
-
-### `progress <directory>`
-
-Inspect or clear batch-upload progress tracking. The report distinguishes between retryable failed files and PDFs that have not been attempted yet, so resume decisions are less guesswork and more engineering.
-
-```bash
-.venv/bin/python -m src.core.cli progress path/to/papers/
-.venv/bin/python -m src.core.cli progress path/to/papers/ --clear
-```
-
-The text output now breaks remaining work into:
-- **Retryable failed files**: attempted previously, failed, and will be retried by `batch-upload --resume`
-- **Not started yet**: discovered PDFs with no tracker entry yet
-- **Pending files**: the union of both groups above
-
-### `chat`
-
-Interactive multi-turn chat with the research system.
-
-```bash
-.venv/bin/python -m src.core.cli chat
-```
-
-### `query "<question>"`
-
-Single-shot query path into the LangGraph research workflow.
-Use `--confirmation` when you want to control how the workflow proceeds after
-an information summary step.
-
-```bash
-.venv/bin/python -m src.core.cli query "Which papers discuss bandwidth vs. pricing?"
-.venv/bin/python -m src.core.cli query "Summarize Michael Porter 1980" --confirmation continue
-```
-
-### `routes`
-
-Inspect the active route configuration, including aliases, priority mappings,
-and addon/env overrides.
-
-```bash
-.venv/bin/python -m src.core.cli routes
-```
-
-### `health`
-
-Inspect environment and service health. The human-readable output now leads
-with an overall verdict and recommended next actions; use `--json` when you
-want the raw machine-readable snapshot.
-
-```bash
-.venv/bin/python -m src.core.cli health
-.venv/bin/python -m src.core.cli health --json
-```
-
-### `bootstrap-plan`
-
-Print the recommended local CLI and OpenClaw bootstrap steps without scraping
-other docs.
-
-```bash
-.venv/bin/python -m src.core.cli bootstrap-plan
-.venv/bin/python -m src.core.cli bootstrap-plan --json
-```
-
-### `query-history`
-
-Inspect recent query telemetry from the local JSONL history log. This is useful
-for spotting slow or failed research runs without opening the raw log file, and
-for separating CLI traffic from OpenClaw-driven queries when you need to audit
-how the system is actually being used.
-
-```bash
-.venv/bin/python -m src.core.cli query-history
-.venv/bin/python -m src.core.cli query-history --limit 20
-.venv/bin/python -m src.core.cli query-history --source cli.query --since-hours 24
-.venv/bin/python -m src.core.cli query-history --status error --min-duration-ms 2000
-.venv/bin/python -m src.core.cli query-history --status success --max-response-chars 120
-.venv/bin/python -m src.core.cli query-history --since-hours 24 --check-max-duration-ms 10000 --check-min-response-chars 80
-.venv/bin/python -m src.core.cli query-history --json
-```
-
----
-
-## Part 2 — Integrate CiteWeave with OpenClaw
-
-For the architectural contract behind this split, see:
-`docs/KERNEL_AND_OPENCLAW.md`
-
-### What changes in OpenClaw mode
-
-OpenClaw does not replace CiteWeave's storage or parsing stack. It only becomes
-CiteWeave's LLM backend.
-
-The underlying deployment is still the same:
-
-- Neo4j stores the citation graph
-- Qdrant stores semantic vectors
-- GROBID parses PDFs
-- CiteWeave CLI / Python code handles ingestion and chat logic
-
-What changes is that CiteWeave sends LLM calls to the **local OpenClaw
-gateway** instead of directly calling OpenAI.
-
-### Architecture
-
-```
-OpenClaw Agent (Atlas / any agent)
-    │
-    │  CITEWEAVE_LLM_PROVIDER=openclaw
-    │  All LLM calls → http://localhost:18789/v1
-    │
-    ├──→ .venv/bin/python -m src.core.cli chat
-    │       │
-    │       └── Neo4j + Qdrant + GROBID
-    │
-    └──→ (optional) direct Python import
-            LangGraphResearchSystem()
-```
-
-### Concrete setup flow
-
-1. First finish the **local CLI deployment** above, or simply run:
-
-```bash
-bash scripts/bootstrap_openclaw.sh
-```
-
-That script prepares `.env`, ensures the virtualenv exists, installs
-requirements, starts Docker services, and keeps the project in OpenClaw mode.
-
-2. If you prefer to set values manually, `.env` should contain:
-
-```bash
-CITEWEAVE_LLM_PROVIDER=openclaw
-CITEWEAVE_LLM_MODEL=openai-codex/gpt-5.4
-CITEWEAVE_LLM_API_BASE=http://localhost:18789/v1
-CITEWEAVE_NEO4J_PASSWORD=0xC1735
-```
-
-3. Ensure the local OpenClaw gateway is running:
-
-```bash
-openclaw gateway status
-```
-
-4. Re-run the deployment check:
-
-```bash
-bash scripts/deployment_check.sh
-```
-
-You should see the gateway connectivity check succeed.
-
-5. Then call CiteWeave from an OpenClaw session. Example:
-
-```text
-Atlas, upload these PDFs with CiteWeave and then use chat mode to help me inspect the citation graph.
-```
-
-### Important security / behavior note
-
-In `openclaw` mode, CiteWeave does **not** forward your real OpenAI API key to
-the gateway. The code replaces it with a harmless placeholder, and OpenClaw
-handles authentication through its own local session / gateway flow.
-
-### For autonomous OpenClaw jobs
-
-The `citeweave:daily-iteration-and-push` cron workflow uses the same
-OpenClaw-backed mode, so automated iteration does not require a separate
-OpenAI key either.
-
----
-
-## Configuration
-
-### Files
-
-| File | Purpose |
-|------|---------|
-| `.env` | Runtime configuration (copy from `.env_template`) |
-| `config/model_config.json` | Per-agent model, temperature, max_tokens |
-| `config/neo4j_config.json` | Neo4j connection (uri, username, password) |
-| `config/default_config.yaml` | Default values; sets Neo4j password to `0xC1735` |
-
-### Environment variables (take precedence over JSON config)
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `CITEWEAVE_LLM_PROVIDER` | `openai` | `openclaw` · `openai` · `ollama` |
-| `CITEWEAVE_LLM_MODEL` | — | Model name (e.g. `gpt-4o-mini`, `openai-codex/gpt-5.4`) |
-| `CITEWEAVE_LLM_API_BASE` | — | API base URL for openclaw/ollama modes |
-| `CITEWEAVE_LLM_API_KEY` | — | API key (or any placeholder for openclaw) |
-| `CITEWEAVE_NEO4J_PASSWORD` | `0xC1735` | Neo4j password |
-| `CITEWEAVE_ENV` | `production` | `production` · `development` (verbose logging) |
-
-### Neo4j password
-
-The default password `0xC1735` is intentionally memorable for local
-development. **Change it before any real deployment:**
-
-```bash
-# Option 1: set in .env
-CITEWEAVE_NEO4J_PASSWORD=your-secure-password
-
-# Option 2: environment variable (takes precedence)
-export CITEWEAVE_NEO4J_PASSWORD=your-secure-password
-```
-
----
-
-## Development
-
-### Python environment
-
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
-python -m nltk.downloader punkt          # sentence splitting
-```
-
-### Run tests
-
-```bash
-# All tests
-python -m unittest discover -s tests
-
-# Specific test file
-python -m unittest discover -s tests -p 'test_routing.py'
-```
-
-### Privacy audit (blocking before any commit)
-
-```bash
-python3 scripts/repo_privacy_audit.py
-```
-
-Any privacy audit failure blocks commit. This checks for:
-- Absolute local machine paths (for example, user home directories or private workspace roots)
-- Token / secret values in tracked files
-- Runtime data tracked in `data/` or `test_files/`
+OpenClaw is not the database layer. It is the entrypoint and coordinator for a local research stack.
 
 ---
 
 ## Architecture
 
-```
-User question
+```text
+Human researcher
     │
     ▼
-Question Analysis Agent    ──→ Ambiguity? ──→ User Clarification Agent
-    │
+OpenClaw
+    │  natural-language entrypoint, deployment coordination,
+    │  Zotero sync scheduling, operation selection
     ▼
-Query Planning Agent
-    │
-    ├──→ Graph DB Agent  (Neo4j — citation edges, argument nodes)
-    ├──→ Vector DB Agent (Qdrant — semantic similarity search)
-    └──→ PDF Content Agent (GROBID — full text extraction)
-
-    ◄─────────── Reflection Agent (sufficiency check) ───────────◄
-    │                      │                                      │
-    │               Still insufficient?                          │
-    │                      │ yes                                  │ no
-    └──── Additional Query Generation ──────┘                      │
-                                                                ▼
-                                                    Response Generation Agent
-                                                                │
-                                                                ▼
-                                                        Structured Answer
+CiteWeave OpenClaw adapter
+    │  src/adapters/openclaw_facade.py
+    ▼
+CiteWeave kernel
+    │  upload, diagnose, route, query, progress, telemetry
+    ▼
+Local research infrastructure
+    ├── Docker Compose stack
+    │   ├── Neo4j citation graph
+    │   ├── Qdrant vector indexes
+    │   └── GROBID PDF extraction
+    ├── Zotero PDF source
+    └── Embeddings
+        ├── local SentenceTransformers   default
+        └── OpenAI Embeddings            optional
 ```
 
-### Argument claim types
+The CLI still exists, but it is an operational adapter. It is useful for verification and debugging; it is not the product center.
 
-CiteWeave classifies every sentence in a paper:
+---
 
-| Type | Description |
-|------|-------------|
-| `CLAIM_MAIN` | Primary thesis / main claim |
-| `CLAIM_SUPPORTING` | Secondary supporting claim |
-| `EVIDENCE_EMPIRICAL` | Empirical data / results |
-| `EVIDENCE_THEORETICAL` | Theoretical support |
-| `EVIDENCE_LITERATURE` | Citation-based support |
-| `COUNTERARGUMENT` | Counter-argument / assumption |
-| `METHODOLOGY` | Method description |
-| `REBUTTAL` | Explicit rebuttal |
-| `QUESTION_MOTIVATION` | Research question / motivation |
-| `FUTURE_WORK` | Future directions |
-| `NON_ARGUMENT` | Neutral / transitional text |
+## Zotero as the persistent data source
+
+A normal deployment starts by telling OpenClaw where the user's Zotero library lives. CiteWeave then treats that library as the continuing PDF source.
+
+OpenClaw persists the source path as:
+
+```env
+CITEWEAVE_ZOTERO_LIBRARY_DIR=/path/to/Zotero
+```
+
+OpenClaw brings up the local service layer through Docker Compose, then schedules recurring ingestion through:
+
+```bash
+.venv/bin/python scripts/sync_zotero_pdfs.py --json
+```
+
+The sync script resolves Zotero `storage/`, discovers PDFs recursively, and delegates to CiteWeave's resumable batch uploader. This lets the local research database grow continuously as the Zotero library changes.
+
+For the exact setup procedure, see [`docs/openclaw/DEPLOYMENT.md`](docs/openclaw/DEPLOYMENT.md).
+
+---
+
+## Query model
+
+OpenClaw should not manually query Neo4j or Qdrant for normal research questions. It should pass the user's research question to CiteWeave:
+
+```python
+facade.query(question, confirmation="continue")
+```
+
+CiteWeave then decides which internal routes to use:
+
+- semantic vector search;
+- graph citation traversal;
+- author and paper lookup;
+- extracted PDF content;
+- unresolved citation tracking;
+- final answer synthesis.
+
+For operational requests, OpenClaw calls the specific action instead: `upload_pdf`, `batch_upload`, `diagnose_pdf`, `progress`, `health`, `routes`, `query_history`, or `list_pending_citations`.
+
+Full interface documentation: [`docs/openclaw/PACKAGE_INTERFACE.md`](docs/openclaw/PACKAGE_INTERFACE.md).
+
+---
+
+## Embeddings
+
+CiteWeave currently supports two embedding schemes:
+
+| Provider | Default? | Model | Vector size | API key |
+|---|---:|---|---:|---|
+| `local` | yes | `all-MiniLM-L6-v2` | 384 | no |
+| `openai` | no | `text-embedding-3-small` | 1536 | yes |
+
+Default local mode keeps installation self-contained. OpenAI embeddings can be enabled when the user is ready to migrate the vector index.
+
+Switching providers changes vector dimensions, so existing Qdrant collections must be recreated or migrated before mixing providers. Databases do tend to remember their shape. Annoying, but useful.
+
+---
+
+## Documentation map
+
+| Document | Audience | Purpose |
+|---|---|---|
+| [`README.md`](README.md) | Human reader | Product overview and architecture |
+| [`README.zh.md`](README.zh.md) | Chinese human reader | Chinese overview |
+| [`docs/openclaw/README.md`](docs/openclaw/README.md) | OpenClaw / operator | Operational entrypoint |
+| [`docs/openclaw/DEPLOYMENT.md`](docs/openclaw/DEPLOYMENT.md) | OpenClaw / operator | Local deployment and Zotero sync |
+| [`docs/openclaw/PACKAGE_INTERFACE.md`](docs/openclaw/PACKAGE_INTERFACE.md) | OpenClaw / integrator | Actions, interfaces, query logic |
+| [`docs/KERNEL_AND_OPENCLAW.md`](docs/KERNEL_AND_OPENCLAW.md) | Developer | Kernel/adapter architecture |
+
+---
+
+## Development
+
+For development gates, run:
+
+```bash
+.venv/bin/python -m ruff check src tests scripts/sync_zotero_pdfs.py
+.venv/bin/python -m ruff check tests/manual --select F --ignore E501
+python3 -m compileall -q src tests scripts/sync_zotero_pdfs.py
+.venv/bin/python -m pytest -q
+python3 scripts/repo_privacy_audit.py
+```
+
+Expected privacy result:
+
+```text
+PRIVACY_AUDIT_OK
+```
 
 ---
 

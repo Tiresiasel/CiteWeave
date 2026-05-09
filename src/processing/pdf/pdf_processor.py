@@ -324,8 +324,18 @@ class PDFProcessor:
             reader = PdfReader(pdf_path)
             meta = reader.metadata or {}
             
-            # Handle creation_date which might be a datetime object
-            creation_date = getattr(meta, "creation_date", None)
+            # Handle creation_date defensively. Some PDFs contain dates such as
+            # "D:20000602164802" without a timezone; PyPDF2's convenience
+            # property tries to parse those and can raise. For metadata display we
+            # only need a stable string, so fall back to the raw PDF metadata value.
+            try:
+                creation_date = getattr(meta, "creation_date", None)
+            except Exception as date_error:
+                logging.debug("Could not parse PDF creation_date for %s: %s", pdf_path, date_error)
+                creation_date = None
+                if hasattr(meta, "get"):
+                    creation_date = meta.get("/CreationDate") or meta.get("CreationDate")
+
             if creation_date and hasattr(creation_date, 'isoformat'):
                 creation_date = creation_date.isoformat()
             elif creation_date:
@@ -379,10 +389,10 @@ class PDFProcessor:
                     timeout=30  # Add timeout
                 )
         except requests.exceptions.ConnectionError:
-            logging.warning(f"GROBID service not available at localhost:8070 - skipping metadata extraction")
+            logging.warning("GROBID service not available at localhost:8070 - skipping metadata extraction")
             return {}
         except requests.exceptions.Timeout:
-            logging.warning(f"GROBID request timed out - skipping metadata extraction")
+            logging.warning("GROBID request timed out - skipping metadata extraction")
             return {}
         except Exception as e:
             logging.warning(f"Failed to connect to GROBID: {e}")
@@ -1032,7 +1042,6 @@ class PDFProcessor:
             r'\n\s*(Abstract|Introduction|Methodology|Results|Discussion|Conclusion|References)\s*\n'
         ]
         
-        current_pos = 0
         section_index = 0
         
         for pattern in section_patterns:
@@ -1101,8 +1110,6 @@ class PDFProcessor:
         Enhanced sentence parsing with content filtering and quality control.
         Uses academic-text-aware sentence splitting to handle citations properly.
         """
-        from nltk.tokenize import sent_tokenize
-        import re
 
         # Use the best available PDF extraction engine
         full_text, extraction_info = self.extract_text_with_best_engine(pdf_path)
@@ -1314,8 +1321,6 @@ class PDFProcessor:
         
         # Look for concentrated reference patterns starting from the end
         for i in range(len(lines) - chunk_size, 0, -chunk_size):
-            chunk = '\n'.join(lines[i:i + chunk_size])
-            
             # More specific reference patterns to avoid false positives
             ref_indicators = [
                 r'^[A-Z][a-z]+,\s+[A-Z].*\d{4}',  # Author, Year at line start
@@ -1340,7 +1345,7 @@ class PDFProcessor:
                         break
             
             # If most lines in chunk look like references
-            ref_ratio = ref_like_lines / max(len([l for l in lines[i:i + chunk_size] if len(l.strip()) > 20]), 1)
+            ref_ratio = ref_like_lines / max(len([line_text for line_text in lines[i:i + chunk_size] if len(line_text.strip()) > 20]), 1)
             
             if ref_ratio > 0.6:  # 60% of substantial lines look like references
                 # Found reference section, but let's be conservative and go back a bit
@@ -2016,10 +2021,12 @@ class PDFProcessor:
         return diagnosis
 
 if __name__ == "__main__":
+    import argparse
+
+    cli_parser = argparse.ArgumentParser(description="Register and process a PDF with PDFProcessor.")
+    cli_parser.add_argument("pdf_path", help="Path to the PDF to process")
+    args = cli_parser.parse_args()
+
     logging.basicConfig(level=logging.DEBUG)
     pdf_processor = PDFProcessor()
-    # pdf_path = "test_files/Rivkin - 2000 - Imitation of Complex Strategies.pdf"
-    # pdf_processor.upload_pdf(pdf_path)
-    pdf_path = "test_files/Porter - Competitive Strategy.pdf"
-    pdf_processor.upload_pdf(pdf_path)
- 
+    pdf_processor.upload_pdf(args.pdf_path)

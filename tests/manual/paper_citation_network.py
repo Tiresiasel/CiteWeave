@@ -6,18 +6,11 @@ in CiteWeave, including paper ID generation and citation network building.
 """
 
 import os
-import sys
 import json
 import logging
-from datetime import datetime
 
-# Add src to path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
-
-from src.paper_id_utils import PaperIDGenerator
-from database_integrator import DatabaseIntegrator
-from src.graph_builder import GraphDB
-from config_manager import ConfigManager
+from src.utils.paper_id_utils import PaperIDGenerator
+from src.storage.database_integrator import DatabaseIntegrator
 
 # Set up logging
 logging.basicConfig(
@@ -81,7 +74,7 @@ def test_paper_id_generation():
             all_passed = False
     
     # Test citation-based generation
-    print(f"\n📚 Testing Citation-Based ID Generation:")
+    print("\n📚 Testing Citation-Based ID Generation:")
     citation_info = {
         "title": "Capitalism, Socialism, and Democracy",
         "year": "1942",
@@ -124,7 +117,7 @@ def test_database_citation_network():
             return False
         
         stats = overview["network_stats"]
-        print(f"📊 Current Network Statistics:")
+        print("📊 Current Network Statistics:")
         print(f"  Total Papers: {stats['total_papers']}")
         print(f"  Uploaded Papers: {stats['uploaded_papers']}")
         print(f"  Stub Papers: {stats['stub_papers']}")
@@ -134,7 +127,7 @@ def test_database_citation_network():
         # Show stub papers
         stub_papers = overview["stub_papers"]
         if stub_papers:
-            print(f"\n🔗 Top Cited Stub Papers:")
+            print("\n🔗 Top Cited Stub Papers:")
             for i, stub in enumerate(stub_papers[:5]):
                 print(f"  {i+1}. {stub['title']} ({stub['year']}) - Cited {stub['cited_by_count']} times")
                 print(f"     ID: {stub['paper_id'][:16]}...")
@@ -210,7 +203,7 @@ def test_citation_data_analysis():
                 print(f"❌ JSON decode error on line {line_num + 1}: {e}")
                 continue
     
-    print(f"📊 Citation Analysis Results:")
+    print("📊 Citation Analysis Results:")
     print(f"  Total Citations Found: {total_citations}")
     print(f"  Unique Cited Papers: {len(cited_papers)}")
     
@@ -219,7 +212,7 @@ def test_citation_data_analysis():
                           key=lambda x: x[1]["citation_count"], 
                           reverse=True)
     
-    print(f"\n📚 Most Cited Papers:")
+    print("\n📚 Most Cited Papers:")
     for i, (paper_id, info) in enumerate(sorted_papers[:10]):
         authors_str = ", ".join(info["authors"][:2])
         if len(info["authors"]) > 2:
@@ -277,7 +270,7 @@ def test_reimport_with_citation_network():
             overview = integrator.get_citation_network_overview()
             if "error" not in overview:
                 stats = overview["network_stats"]
-                print(f"\n📊 Updated Network Statistics:")
+                print("\n📊 Updated Network Statistics:")
                 print(f"  Total Papers: {stats['total_papers']}")
                 print(f"  Uploaded Papers: {stats['uploaded_papers']}")
                 print(f"  Stub Papers: {stats['stub_papers']}")
@@ -286,7 +279,7 @@ def test_reimport_with_citation_network():
                 
                 # Show integration stats
                 import_stats = integrator.get_import_status()
-                print(f"\n📈 Import Statistics:")
+                print("\n📈 Import Statistics:")
                 print(f"  Papers Processed: {import_stats['stats']['papers_processed']}")
                 print(f"  Citations Stored: {import_stats['stats']['citations_stored']}")
                 print(f"  Argument Relations: {import_stats['stats']['argument_relations_stored']}")
@@ -329,7 +322,7 @@ def main():
             results.append((test_name, False))
     
     # Summary
-    print(f"\n📋 Test Summary")
+    print("\n📋 Test Summary")
     print("=" * 50)
     passed = sum(1 for _, result in results if result)
     total = len(results)

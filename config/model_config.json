@@ -11,8 +11,9 @@
     }
   },
   "embedding": {
-    "provider": "ollama",
-    "model": "nomic-embed-text"
+    "provider": "local",
+    "model": "all-MiniLM-L6-v2",
+    "vector_size": 384
   },
   "llm": {
     "agents": {
@@ -55,4 +56,4 @@
   "conversation": {
     "summarization_threshold": 10
   }
-} 
+}

@@ -29,7 +29,7 @@ pip install magic-pdf[full]
 
 ### 3. 验证配置
 ```python
-from src.document_processor import DocumentProcessor
+from src.processing.pdf.document_processor import DocumentProcessor
 processor = DocumentProcessor()
 # 日志会显示 "MinerU-enhanced PDF processor (enabled via config)"
 ```

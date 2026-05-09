@@ -6,13 +6,12 @@ Test the enhanced multi-agent system with multi-language support and intelligent
 
 import asyncio
 import os
-import sys
-sys.path.append('src')
 
-from src.enhanced_multi_agent_system import EnhancedMultiAgentSystem
-from src.graph_builder import GraphDB
-from src.vector_indexer import MultiLevelVectorIndexer
-from src.author_paper_index import AuthorPaperIndex
+from src.agents.multi_agent_system import EnhancedMultiAgentSystem
+from src.storage.graph_builder import GraphDB
+from src.storage.vector_indexer import VectorIndexer
+from src.storage.author_paper_index import AuthorPaperIndex
+from src.utils.config_manager import ConfigManager
 
 async def test_enhanced_system():
     """测试改进的多智能体系统"""
@@ -24,17 +23,19 @@ async def test_enhanced_system():
         # 初始化组件
         print("📊 正在初始化系统组件...")
         
+        config = ConfigManager()
+
         # 初始化图数据库
         graph_db = GraphDB(
-            uri="bolt://localhost:7687",
-            user="neo4j", 
-            password="password"
+            uri=config.neo4j_config["uri"],
+            user=config.neo4j_config["username"],
+            password=config.neo4j_config["password"],
         )
         
         # 初始化多层向量索引器
-        vector_indexer = MultiLevelVectorIndexer(
+        vector_indexer = VectorIndexer(
             paper_root="data/papers",
-            index_path="data/vector_index"
+            config_path="config/qdrant_config.json",
         )
         
         # 初始化作者索引
@@ -48,7 +49,7 @@ async def test_enhanced_system():
             graph_db=graph_db,
             vector_indexer=vector_indexer,
             author_index=author_index,
-            config_path="config/model_config.json"
+            config_path="config/model_config.json",
         )
         
         print("✅ 系统组件初始化完成")
@@ -117,7 +118,7 @@ async def test_enhanced_system():
                     response = response[:200] + "..."
                 print(f"💬 响应: {response}")
                 
-                print(f"🔍 调试信息:")
+                print("🔍 调试信息:")
                 for debug_msg in result.get('debug_messages', [])[:3]:  # 只显示前3条
                     print(f"   - {debug_msg}")
                 
@@ -158,7 +159,7 @@ def test_basic_components():
         
         # 测试向量索引器
         print("🔍 测试向量索引器...")
-        vector_indexer = MultiLevelVectorIndexer()
+        vector_indexer = VectorIndexer()
         # 简单测试搜索功能
         results = vector_indexer.smart_search("competitive advantage", limit=3)
         print(f"   搜索结果数量: {len(results)}")
@@ -182,4 +183,4 @@ if __name__ == "__main__":
         asyncio.run(test_enhanced_system())
     else:
         print("⚠️  未发现模型配置文件，跳过LLM测试")
-        print("   要测试完整功能，请配置 config/model_config.json") 
+        print("   要测试完整功能，请配置 config/model_config.json")

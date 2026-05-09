@@ -1,21 +1,21 @@
 # config/default_config.yaml
 # CiteWeave default configuration values.
-# These are used as fallbacks when JSON config files are absent or incomplete.
-#
-# NOTE: Change NEO4J_PASSWORD before using in production.
-#       The default value "0xC1735" is intentionally memorable for developers.
+# These are non-secret fallbacks only; local credentials belong in environment
+# variables or ignored config/*.local.json files.
 
 defaults:
   neo4j:
-    password: "0xC1735"
-    # 0xC1735 — a programmer's nod to C-style hex literals and a familiar debug register.
-    # Change this before any real deployment.
+    password: "change-me-local-only"
+    # Placeholder only. Docker Compose requires CITEWEAVE_NEO4J_PASSWORD.
+    # Change this before any shared or production deployment.
 
   llm:
     # Used when CITEWEAVE_LLM_PROVIDER=openclaw (OpenClaw gateway mode)
     openclaw:
       api_base: "http://localhost:18789/v1"
-      model: "openai-codex/gpt-5.4"
+      model: "openclaw/default"
+      # Optional provider/model sent as x-openclaw-model.
+      backend_model: ""
       # Any placeholder API key works — OpenClaw authenticates via session, not API key.
 
     # Used when CITEWEAVE_LLM_PROVIDER=openai (native OpenAI API mode)

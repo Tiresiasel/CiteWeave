@@ -126,14 +126,14 @@ Below is a summary of each agent in the system, including its responsibility, de
 You can use the multi-agent system as follows (see also the `__main__` block in `multi_agent_system.py`):
 
 ```python
-from src.graph_builder import GraphDB
-from src.vector_indexer import MultiLevelVectorIndexer
-from src.author_paper_index import AuthorPaperIndex
+from src.storage.graph_builder import GraphDB
+from src.storage.vector_indexer import VectorIndexer
+from src.storage.author_paper_index import AuthorPaperIndex
 from src.agents.multi_agent_system import EnhancedMultiAgentSystem
 
 # Initialize dependencies (see __main__ for full example)
 graph_db = GraphDB(uri, user, password)
-vector_indexer = MultiLevelVectorIndexer(paper_root, index_path)
+vector_indexer = VectorIndexer(paper_root, index_path)
 author_index = AuthorPaperIndex(storage_root, index_db_path)
 
 agent_system = EnhancedMultiAgentSystem(

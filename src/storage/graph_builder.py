@@ -2,7 +2,6 @@
 
 from neo4j import GraphDatabase
 from typing import List, Dict, Optional
-import logging
 
 class GraphDB:
     def __init__(self, uri: str, user: str, password: str):
@@ -88,6 +87,85 @@ class GraphDB:
         with self.driver.session() as session:
             session.run(query, from_arg=from_arg, to_paper_id=to_paper_id,
                         relation_type=relation_type, confidence=confidence, version=version)
+
+
+    # ==================== Query helpers used by agent orchestration ====================
+
+    def find_papers_by_author(
+        self,
+        author_name: str,
+        fuzzy: bool = True,
+        limit: int = 20,
+    ) -> List[Dict]:
+        """Find papers whose author list matches an author name.
+
+        Returns a stable dict shape used by the legacy multi-agent system.
+        """
+        query = """
+        MATCH (p:Paper)
+        WHERE any(author IN coalesce(p.authors, [])
+            WHERE CASE
+                WHEN $fuzzy THEN toLower(author) CONTAINS toLower($author_name)
+                ELSE toLower(author) = toLower($author_name)
+            END)
+        RETURN p.id as paper_id,
+               p.id as id,
+               p.title as title,
+               p.authors as authors,
+               p.year as year,
+               coalesce(p.stub, false) as stub
+        ORDER BY coalesce(p.year, 0) DESC, p.title ASC
+        LIMIT $limit
+        """
+        with self.driver.session() as session:
+            result = session.run(query, author_name=author_name, fuzzy=fuzzy, limit=limit)
+            return [dict(record) for record in result]
+
+    def find_papers_by_author_year(
+        self,
+        author_name: str,
+        year: Optional[int] = None,
+        fuzzy: bool = True,
+        limit: int = 20,
+    ) -> List[Dict]:
+        """Find papers by author, optionally constrained to publication year."""
+        query = """
+        MATCH (p:Paper)
+        WHERE any(author IN coalesce(p.authors, [])
+            WHERE CASE
+                WHEN $fuzzy THEN toLower(author) CONTAINS toLower($author_name)
+                ELSE toLower(author) = toLower($author_name)
+            END)
+          AND ($year IS NULL OR p.year = $year OR toString(p.year) = toString($year))
+        RETURN p.id as paper_id,
+               p.id as id,
+               p.title as title,
+               p.authors as authors,
+               p.year as year,
+               coalesce(p.stub, false) as stub
+        ORDER BY coalesce(p.year, 0) DESC, p.title ASC
+        LIMIT $limit
+        """
+        with self.driver.session() as session:
+            result = session.run(query, author_name=author_name, year=year, fuzzy=fuzzy, limit=limit)
+            return [dict(record) for record in result]
+
+    def find_citations(self, cited_paper_id: str, limit: int = 100) -> List[Dict]:
+        """Return graph evidence that cites or relates to a paper."""
+        query = """
+        MATCH (source)-[rel:CITES|RELATES]->(target:Paper {id: $cited_paper_id})
+        RETURN source.id as source_id,
+               labels(source) as source_labels,
+               source.text as source_text,
+               type(rel) as relationship_type,
+               properties(rel) as relationship,
+               target.id as cited_paper_id,
+               target.title as cited_paper_title
+        LIMIT $limit
+        """
+        with self.driver.session() as session:
+            result = session.run(query, cited_paper_id=cited_paper_id, limit=limit)
+            return [dict(record) for record in result]
 
     # ==================== 新增：句子节点操作 ====================
     
@@ -372,7 +450,17 @@ class GraphDB:
 
 
 if __name__ == "__main__":
-    db = GraphDB(uri="bolt://localhost:7687", user="neo4j", password="12345678")
+    import os
+
+    password = os.environ.get("CITEWEAVE_NEO4J_PASSWORD", "").strip()
+    if not password or password in {"change-me-local-only", "CHANGE_ME_LOCAL_ONLY"}:
+        raise SystemExit("Set a non-placeholder CITEWEAVE_NEO4J_PASSWORD before running this module directly.")
+
+    db = GraphDB(
+        uri=os.environ.get("CITEWEAVE_NEO4J_URI", "bolt://localhost:7687"),
+        user=os.environ.get("CITEWEAVE_NEO4J_USERNAME", "neo4j"),
+        password=password,
+    )
     
     # 原有测试
     # db.create_paper(paper_id="1", title="Paper 1", authors=["Author 1"], year=2021)

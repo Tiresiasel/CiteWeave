@@ -151,11 +151,21 @@ def backup_data():
         print(f"❌ Error creating backup: {e}")
         return False
 
-def restore_data():
-    """Restore Qdrant data from backup"""
+def restore_data(confirm: bool = False):
+    """Restore Qdrant data from backup.
+
+    This overwrites the Qdrant Docker volume, so callers must pass an
+    explicit confirmation flag instead of relying on an interactive prompt.
+    """
     backup_dir = Path("./backups/qdrant_backup")
     if not backup_dir.exists():
         print("❌ No backup found. Please create a backup first.")
+        return False
+    if not any(backup_dir.iterdir()):
+        print(f"❌ Backup directory is empty: {backup_dir}")
+        return False
+    if not confirm:
+        print("❌ Restore refused: pass --confirm-restore to overwrite the Qdrant volume.")
         return False
     
     print("🔄 Restoring Qdrant data from backup...")
@@ -191,6 +201,11 @@ def main():
     parser.add_argument('action', choices=[
         'start', 'stop', 'restart', 'status', 'logs', 'info', 'backup', 'restore'
     ], help='Action to perform')
+    parser.add_argument(
+        '--confirm-restore',
+        action='store_true',
+        help='Required with restore; confirms overwriting the Qdrant Docker volume.',
+    )
     
     args = parser.parse_args()
     
@@ -214,7 +229,7 @@ def main():
         success = backup_data()
         sys.exit(0 if success else 1)
     elif args.action == 'restore':
-        success = restore_data()
+        success = restore_data(confirm=args.confirm_restore)
         sys.exit(0 if success else 1)
 
 if __name__ == "__main__":

@@ -1,10 +1,12 @@
 # 测试图数据库中的句子节点和段落节点
 
 ```{python}
-NEO4J_URI = "bolt://localhost:7687"
-NEO4J_USER = "neo4j"
-NEO4J_PASSWORD = "12345678"
-NEO4J_DATABASE = "neo4j"
+import os
+
+NEO4J_URI = os.environ.get("CITEWEAVE_NEO4J_URI", "bolt://localhost:7687")
+NEO4J_USER = os.environ.get("CITEWEAVE_NEO4J_USERNAME", "neo4j")
+NEO4J_PASSWORD = os.environ.get("CITEWEAVE_NEO4J_PASSWORD", "change-me-local-only")
+NEO4J_DATABASE = os.environ.get("CITEWEAVE_NEO4J_DATABASE", "neo4j")
 
 def query_sample_nodes_and_relationships():
     driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))

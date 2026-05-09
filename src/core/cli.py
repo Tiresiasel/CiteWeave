@@ -1,6 +1,6 @@
 """
 cli.py
-Command-line interface for the argument graph project.
+Command-line interface for CiteWeave.
 """
 
 import argparse
@@ -23,27 +23,30 @@ try:
 except ImportError:
     pass  # If python-dotenv is not installed, skip
 
-import os
-import sys
 from prompt_toolkit import prompt
 import warnings
 warnings.filterwarnings("ignore", message=".*found in sys.modules after import of package.*", category=RuntimeWarning)
 
 
-def find_project_root():
-    cur = os.path.abspath(os.getcwd())
-    while cur != "/" and not os.path.exists(os.path.join(cur, "README.md")):
-        cur = os.path.dirname(cur)
-    return cur
+def find_project_root() -> str:
+    """Return the repository root without depending on the caller's cwd."""
+    return str(Path(__file__).resolve().parents[2])
 
-project_root = find_project_root()
-if os.getcwd() != project_root:
-    os.chdir(project_root)
-    print(f"[INFO] Changed working directory to project root: {project_root}")
+
+def ensure_project_root() -> str:
+    """Switch CLI execution to the repository root.
+
+    This is intentionally called from main(), not at import time, so importing
+    the CLI module in tests or tools does not mutate global process state.
+    """
+    project_root = find_project_root()
+    if os.getcwd() != project_root:
+        os.chdir(project_root)
+        print(f"[INFO] Changed working directory to project root: {project_root}")
+    return project_root
 
 # Set up logging based on environment variable (before importing other modules)
 env = os.environ.get("CITEWEAVE_ENV", "production").lower()
-import logging
 if env in ("test", "development", "dev"):
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
     logging.getLogger().setLevel(logging.INFO)
@@ -104,7 +107,8 @@ def process_single_pdf_worker(pdf_path, diagnose=False, force=False):
 
 def main():
     """Main entry point for the CLI."""
-    parser = argparse.ArgumentParser(description="Argument Graph CLI")
+    ensure_project_root()
+    parser = argparse.ArgumentParser(description="CiteWeave CLI")
     subparsers = parser.add_subparsers(dest="command")
 
     # Upload command
@@ -114,7 +118,7 @@ def main():
     upload_parser.add_argument("--force", action="store_true", help="Force reprocessing even if cached results exist.")
 
     # Query command  
-    query_parser = subparsers.add_parser("query", help="Query the argument graph.")
+    query_parser = subparsers.add_parser("query", help="Query the citation knowledge graph.")
     query_parser.add_argument("question", type=str, help="Question to ask.")
     query_parser.add_argument(
         "--confirmation",
@@ -123,7 +127,7 @@ def main():
     )
 
     # Chat command
-    chat_parser = subparsers.add_parser("chat", help="Start an interactive chat with the multi-agent research system.")
+    subparsers.add_parser("chat", help="Start an interactive chat with the multi-agent research system.")
 
     # Diagnose command
     diagnose_parser = subparsers.add_parser("diagnose", help="Diagnose PDF processing quality.")
@@ -252,7 +256,7 @@ def handle_upload_command(args):
         
         # Display results
         stats = results['processing_stats']
-        print(f"\nProcessing completed successfully!")
+        print("\nProcessing completed successfully!")
         print(f"Paper ID: {results['paper_id']}")
         print(f"Total sentences: {stats['total_sentences']}")
         print(f"Sentences with citations: {stats['sentences_with_citations']}")
@@ -260,11 +264,12 @@ def handle_upload_command(args):
         print(f"Total references: {stats['total_references']}")
         
         # Show some example citations
-        sentences_with_cites = [s for s in results.get('sentences_with_citations', []) if s.get('citations')]
-        if not results.get('sentences_with_citations'):
-            print("Warning: No 'sentences_with_citations' found in results. This document may not contain any extracted citation sentences.")
+        citation_sentences = results.get('sentences_with_citations') or results.get('sentences', [])
+        sentences_with_cites = [s for s in citation_sentences if s.get('citations')]
+        if not citation_sentences and stats.get('sentences_with_citations', 0) == 0:
+            print("Warning: No citation-bearing sentences found in results. This document may not contain any extracted citation sentences.")
         if sentences_with_cites:
-            print(f"\nExample sentences with citations:")
+            print("\nExample sentences with citations:")
             for i, sentence in enumerate(sentences_with_cites[:3]):  # Show first 3
                 print(f"\n{i+1}. {sentence.get('sentence_text', '')[:100]}...")
                 for cite in sentence.get('citations', []):
@@ -287,7 +292,7 @@ def handle_query_command(args):
         print()
         print(response)
     except Exception as e:
-        print(f"Error querying argument graph: {e}")
+        print(f"Error querying CiteWeave: {e}")
         logging.exception("Query command failed")
         sys.exit(1)
 
@@ -297,7 +302,7 @@ def handle_diagnose_command(args):
         kernel = CiteWeaveKernel()
         diagnosis = kernel.diagnose_document(args.pdf_path)
         
-        print(f"=== Document Processing Diagnosis ===")
+        print("=== Document Processing Diagnosis ===")
         print(f"File: {args.pdf_path}")
         print(f"Quality Level: {diagnosis['overall_assessment']['quality_level']}")
         print(f"Is Processable: {diagnosis['overall_assessment']['is_processable']}")
@@ -305,21 +310,21 @@ def handle_diagnose_command(args):
         # PDF diagnosis
         pdf_diag = diagnosis.get('pdf_diagnosis', {})
         if pdf_diag:
-            print(f"\n--- PDF Processing ---")
+            print("\n--- PDF Processing ---")
             print(f"Best Quality Score: {pdf_diag.get('best_quality_score', 'Unknown')}")
             print(f"Recommended Engine: {pdf_diag.get('recommended_engine', 'Unknown')}")
             
         # Citation diagnosis  
         cite_diag = diagnosis.get('citation_diagnosis', {})
         if cite_diag:
-            print(f"\n--- Citation Processing ---")
+            print("\n--- Citation Processing ---")
             print(f"References Count: {cite_diag.get('references_count', 0)}")
             print(f"References Extraction Success: {cite_diag.get('references_extraction_success', False)}")
             print(f"Has DOI: {cite_diag.get('has_doi', False)}")
         
         # Recommendations
         if diagnosis['overall_assessment']['recommendations']:
-            print(f"\n--- Recommendations ---")
+            print("\n--- Recommendations ---")
             for rec in diagnosis['overall_assessment']['recommendations']:
                 print(f"  - {rec}")
                 
@@ -441,7 +446,11 @@ def handle_batch_upload_command(args):
     # Find all PDF files (recursively)
     print(f"Searching for PDF files in {directory}...")
     logging.info(f"START: Searching for PDF files in {directory}")
-    pdf_files = glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True)
+    pdf_files = [
+        path
+        for path in glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True)
+        if os.path.isfile(path)
+    ]
     logging.info(f"FINISH: Found {len(pdf_files)} PDF files in {directory}")
     
     if not pdf_files:
@@ -456,7 +465,7 @@ def handle_batch_upload_command(args):
         completed_count = len(pdf_files) - len(pending_files)
         
         if completed_count > 0:
-            print(f"📊 Progress Summary:")
+            print("📊 Progress Summary:")
             summary = tracker.get_progress_summary()
             print(f"   Previously completed: {completed_count}")
             print(f"   Previously failed: {summary['failed']}")
@@ -495,7 +504,7 @@ def handle_batch_upload_command(args):
     
     # Final summary
     final_summary = tracker.get_progress_summary()
-    print(f"\n📊 Final Summary:")
+    print("\n📊 Final Summary:")
     print(f"   Total files processed: {final_summary['total_tracked']}")
     print(f"   Successfully completed: {final_summary['completed']}")
     print(f"   Failed: {final_summary['failed']}")
@@ -518,20 +527,21 @@ def process_files_sequentially(pdf_files, tracker):
             results = kernel.upload_document(pdf_path, save_results=True)
             stats = results.get('processing_stats', {})
 
-            print(f"\nProcessing completed successfully!")
+            print("\nProcessing completed successfully!")
             print(f"Paper ID: {results['paper_id']}")
             print(f"Total sentences: {stats.get('total_sentences', 0)}")
             print(f"Sentences with citations: {stats.get('sentences_with_citations', 0)}")
             print(f"Total citations found: {stats.get('total_citations', 0)}")
             print(f"Total references: {stats.get('total_references', 0)}")
 
+            citation_sentences = results.get('sentences_with_citations') or results.get('sentences', [])
             sentences_with_cites = [
-                s for s in results.get('sentences_with_citations', []) if s.get('citations')
+                s for s in citation_sentences if s.get('citations')
             ]
-            if not results.get('sentences_with_citations'):
-                print("Warning: No 'sentences_with_citations' found in results. This document may not contain any extracted citation sentences.")
+            if not citation_sentences and stats.get('sentences_with_citations', 0) == 0:
+                print("Warning: No citation-bearing sentences found in results. This document may not contain any extracted citation sentences.")
             if sentences_with_cites:
-                print(f"\nExample sentences with citations:")
+                print("\nExample sentences with citations:")
                 for i, sentence in enumerate(sentences_with_cites[:3]):
                     print(f"\n{i+1}. {sentence.get('sentence_text', '')[:100]}...")
                     for cite in sentence.get('citations', []):
@@ -610,7 +620,7 @@ def process_files_parallel(pdf_files, num_processors, tracker):
                 tracker.mark_file_failed(pdf_path, e)
     
     print("=" * 60)
-    print(f"Batch upload complete!")
+    print("Batch upload complete!")
     print(f"Success: {success_count}, Failed: {fail_count}")
     
     if success_count > 0:
@@ -736,7 +746,7 @@ def handle_routes_command(args):
             print(f"  addon config issues: {validation['addon_config_issues']}")
             print(f"  addon config sources: {validation['addon_config_sources']}")
             if not validation["ok"]:
-                print("  Tip: run `.venv/bin/python -m src.core.cli routes` for the full diagnostic report.")
+                print("  Tip: run `.venv/bin/citeweave routes` for the full diagnostic report.")
         if not validation["ok"]:
             raise SystemExit(1)
         return

@@ -214,7 +214,7 @@ class CliRoutesCommandTests(unittest.TestCase):
         self.assertEqual(exc.exception.code, 1)
         output = buf.getvalue()
         self.assertIn("Route configuration check: invalid", output)
-        self.assertIn("Tip: run `.venv/bin/python -m src.core.cli routes`", output)
+        self.assertIn("Tip: run `.venv/bin/citeweave routes`", output)
 
     def test_handle_routes_command_check_supports_json_output(self):
         cli = _load_cli_module()
@@ -450,7 +450,7 @@ class CliQueryHistoryCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="continue", contains="retrieval", planned_database="vector_db", planned_method="search_relevant_sentences", planned_route="all", min_duration_ms=200, min_response_chars=None, max_response_chars=None, json=True, since_hours=None))
+            cli.handle_query_history_command(Namespace(limit=5, status="error", source="cli.query", confirmation="continue", contains="retrieval", planned_database="vector_db", planned_method="search_relevant_sentences", planned_route="all", min_duration_ms=200, max_duration_ms=260, min_response_chars=None, max_response_chars=None, json=True, since_hours=None))
 
         self.assertEqual(json.loads(buf.getvalue()), expected)
 
@@ -1192,7 +1192,7 @@ class CliHealthAndBootstrapCommandTests(unittest.TestCase):
         expected = {
             "local_cli": {
                 "script": "bash scripts/bootstrap_local.sh",
-                "next_steps": [".venv/bin/python -m src.core.cli upload path/to/paper.pdf"],
+                "next_steps": [".venv/bin/citeweave upload path/to/paper.pdf"],
             },
             "openclaw": {
                 "script": "bash scripts/bootstrap_openclaw.sh",
@@ -1213,7 +1213,7 @@ class CliHealthAndBootstrapCommandTests(unittest.TestCase):
         self.assertEqual(json.loads(buf.getvalue()), expected)
 
 
-class CliQueryHistoryCommandTests(unittest.TestCase):
+class CliQueryHistorySinceFilterTests(unittest.TestCase):
     def test_handle_query_history_command_passes_since_hours_to_kernel(self):
         cli = _load_cli_module()
 

@@ -103,3 +103,34 @@ def test_graph_builder_can_resolve_stub_papers():
     assert "p.stub = false" in query
     assert params["paper_id"] == "porter_1980"
     assert params["doi"] == "10.1000/porter"
+
+
+def test_graph_builder_finds_papers_by_author_year_with_stable_shape():
+    module = _load_module()
+    recorder = []
+    fake_rows = [{"paper_id": "porter_1980", "id": "porter_1980", "title": "Competitive Strategy", "authors": ["Michael Porter"], "year": 1980, "stub": False}]
+    db = module.GraphDB.__new__(module.GraphDB)
+    db.driver = _FakeDriver(recorder, _FakeResult(rows=fake_rows))
+
+    rows = db.find_papers_by_author_year("Porter", year=1980, fuzzy=True, limit=5)
+
+    assert rows == fake_rows
+    query, params = recorder[0]
+    assert "coalesce(p.authors, [])" in query
+    assert "p.year = $year" in query
+    assert params == {"author_name": "Porter", "year": 1980, "fuzzy": True, "limit": 5}
+
+
+def test_graph_builder_finds_citations_by_target_paper():
+    module = _load_module()
+    recorder = []
+    fake_rows = [{"source_id": "s1", "relationship_type": "CITES", "cited_paper_id": "porter_1980"}]
+    db = module.GraphDB.__new__(module.GraphDB)
+    db.driver = _FakeDriver(recorder, _FakeResult(rows=fake_rows))
+
+    rows = db.find_citations("porter_1980", limit=10)
+
+    assert rows == fake_rows
+    query, params = recorder[0]
+    assert "CITES|RELATES" in query
+    assert params == {"cited_paper_id": "porter_1980", "limit": 10}

@@ -9,12 +9,11 @@ import os
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-import hashlib
 
 from langchain_openai import ChatOpenAI
 from src.utils.env_config import is_openclaw_mode, chatopenai_kwargs, get_llm_api_key
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 # Configure logging
@@ -367,7 +366,7 @@ Context: {context}"""),
             
         except Exception as e:
             logger.error(f"Clarification question generation failed: {e}")
-            return f"Could you provide more specific information about your query?"
+            return "Could you provide more specific information about your query?"
 
     def cleanup_old_conversations(self, days_threshold: int = 30):
         """Clean up old conversation memories"""
@@ -409,7 +408,6 @@ Context: {context}"""),
             
             # Convert tools to LangChain format
             from langchain.tools import tool
-            from langchain_core.tools import BaseTool
             
             langchain_tools = []
             for tool_def in tools:
@@ -467,7 +465,6 @@ Context: {context}"""),
 
 # Example usage and testing
 if __name__ == "__main__":
-    import asyncio
     
     async def test_language_processing():
         manager = EnhancedLLMManager()

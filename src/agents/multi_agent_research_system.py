@@ -7,24 +7,16 @@ import json
 import logging
 import uuid
 import os
-import sys
-from typing import Dict, List, Optional, Tuple, Any, Union, TypedDict, Annotated
+from typing import Dict, List, Optional, Tuple, Any, TypedDict, Annotated
 from dataclasses import dataclass, asdict
 from enum import Enum
-import time
 import operator
 import re
 
-# Add project root to Python path for imports
-project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-if project_root not in sys.path:
-    sys.path.insert(0, project_root)
-
 try:
     from langgraph.graph import StateGraph, END, START
-    from langgraph.prebuilt import ToolNode
     from langchain_openai import ChatOpenAI
-    from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+    from langchain_core.messages import HumanMessage, SystemMessage
     from langchain_core.tools import tool
     LANGGRAPH_AVAILABLE = True
 except ImportError as e:
@@ -36,14 +28,12 @@ except ImportError as e:
         def add_node(self, *args, **kwargs): pass
         def add_edge(self, *args, **kwargs): pass
         def compile(self): return lambda x: x
-    class ToolNode:
-        def __init__(self, *args, **kwargs): pass
     def tool(func): return func
     START = END = None
 
 from src.agents.query_db_agent import QueryDBAgent
 from src.storage.vector_indexer import VectorIndexer
-from src.utils.config_manager import ConfigManager
+from src.utils.env_config import chatopenai_kwargs, get_llm_provider
 
 # --- Sophisticated Structured Logging Setup ---
 logger = logging.getLogger("CiteWeave")
@@ -97,20 +87,32 @@ class ModelConfigManager:
         return agent_config
     
     def get_model_instance(self, agent_name: str) -> Any:
-        """Create a model instance for the specified agent"""
+        """Create a model instance for the specified agent.
+
+        Environment provider settings take precedence over JSON so OpenClaw
+        gateway mode is honored consistently across the agent stack.
+        """
         config = self.get_agent_config(agent_name)
-        
+        provider_override = get_llm_provider()
+        provider = provider_override or config.get("provider")
+
         try:
-            if config.get("provider") == "openai" and LANGGRAPH_AVAILABLE:
-                model_instance = ChatOpenAI(
-                    model=config.get("model", "gpt-3.5-turbo"),
-                    temperature=config.get("temperature", 0.1),
-                    max_tokens=config.get("max_tokens", 1000)
+            if provider in {"openai", "openclaw"} and LANGGRAPH_AVAILABLE:
+                kwargs = chatopenai_kwargs(agent_name) if provider_override else {
+                    "model": config.get("model", "gpt-3.5-turbo"),
+                }
+                kwargs.setdefault("temperature", config.get("temperature", 0.1))
+                kwargs.setdefault("max_tokens", config.get("max_tokens", 1000))
+                model_instance = ChatOpenAI(**kwargs)
+                log_event(
+                    "ModelConfigManager",
+                    "model_instance_created",
+                    {"agent_name": agent_name, "model": kwargs.get("model"), "provider": provider},
+                    level=logging.DEBUG,
                 )
-                log_event("ModelConfigManager", "model_instance_created", {"agent_name": agent_name, "model": config.get("model"), "provider": config.get("provider")}, level=logging.DEBUG)
                 return model_instance
             else:
-                logger.warning(f"Unsupported provider or LangChain not available: {config.get('provider')}")
+                logger.warning(f"Unsupported provider or LangChain not available: {provider}")
                 return None
         except Exception as e:
             logger.error(f"Failed to create model instance for {agent_name}: {e}")
@@ -290,8 +292,6 @@ Return ONLY a JSON object with the extracted entities."""
     
     def _fallback_entity_extraction(self, question: str) -> Dict[str, Any]:
         """Simple fallback entity extraction when LLM is not available"""
-        question_lower = question.lower()
-        
         # Basic patterns for common entities
         author_patterns = [
             r'\b([A-Z][a-z]+)\b',  # Capitalized words
@@ -367,7 +367,7 @@ Return ONLY the focus type: reverse_citation, paper_search, author_search, or co
                     query_focus = response_content
                 elif author_names:
                     query_focus = "author_search"
-        except Exception as e:
+        except Exception:
             # Fallback logic
             if author_names:
                 query_focus = "author_search"
@@ -1541,7 +1541,7 @@ class QueryPlanningAgent:
                     llm_requirements = json.loads(json_text)
                     requirements.update(llm_requirements)
                     
-                except Exception as e:
+                except Exception:
                     # Fallback to basic requirements
                     requirements.update({
                         "needs_content_search": True,
@@ -1553,7 +1553,7 @@ class QueryPlanningAgent:
                     "needs_content_search": True,
                     "primary_focus": "content_analysis"
                 })
-        except Exception as e:
+        except Exception:
             # Ultimate fallback
             requirements.update({
                 "needs_content_search": True,
@@ -1703,7 +1703,7 @@ class QueryPlanningAgent:
                 "params": secondary_params,
                 "expected_result": self._get_expected_result_name(secondary_method),
                 "required": False,
-                "reasoning": f"补充查询: 获取更多上下文信息"
+                "reasoning": "补充查询: 获取更多上下文信息"
             })
             step_counter += 1
         
@@ -2138,35 +2138,6 @@ class ReflectionAgent:
                 {"role": "user", "content": user_prompt}
             ]
             
-            # Define evaluation function for AI to call
-            evaluation_function = {
-                "name": "evaluate_information_sufficiency",
-                "description": "Evaluate if the collected information is sufficient to answer the user's question",
-                "parameters": {
-                    "type": "object",
-                    "properties": {
-                        "sufficient": {
-                            "type": "boolean",
-                            "description": "Whether the information is sufficient to answer the question"
-                        },
-                        "confidence": {
-                            "type": "number",
-                            "description": "Confidence score from 0.0 to 1.0"
-                        },
-                        "missing_aspects": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "List of missing information aspects if not sufficient"
-                        },
-                        "reasoning": {
-                            "type": "string",
-                            "description": "Explanation of the evaluation decision"
-                        }
-                    },
-                    "required": ["sufficient", "confidence", "reasoning"]
-                }
-            }
-            
             # Use simple text generation instead of function calling
             response = llm_manager.generate_response(
                 messages=messages,
@@ -2246,7 +2217,7 @@ Call the evaluate_information_sufficiency function with your assessment."""
         results = collected_data.get("results", {})
         execution_log = collected_data.get("execution_log", [])
         
-        prompt_parts.append(f"\nCOLLECTED DATA SUMMARY:")
+        prompt_parts.append("\nCOLLECTED DATA SUMMARY:")
         
         if results:
             for key, value in results.items():
@@ -2264,11 +2235,11 @@ Call the evaluate_information_sufficiency function with your assessment."""
             prompt_parts.append("- No results collected")
         
         if execution_log:
-            prompt_parts.append(f"\nEXECUTION LOG:")
+            prompt_parts.append("\nEXECUTION LOG:")
             for log_entry in execution_log[-3:]:  # Show last 3 log entries
                 prompt_parts.append(f"- {log_entry}")
         
-        prompt_parts.append(f"\nPlease evaluate if this information is sufficient to answer the user's question.")
+        prompt_parts.append("\nPlease evaluate if this information is sufficient to answer the user's question.")
         
         return "\n".join(prompt_parts)
 
@@ -2506,13 +2477,13 @@ Please create a comprehensive summary that highlights these specific numbers and
                         summary_parts.append(f"  - {method_display}: {count}")
         
         # Content type breakdown with exact numbers
-        summary_parts.append(f"\n**CONTENT TYPE TOTALS:**")
+        summary_parts.append("\n**CONTENT TYPE TOTALS:**")
         for content_type, count in stats["collection_stats"].items():
             if count > 0:
                 summary_parts.append(f"• {content_type.title()}: {count}")
         
         # Individual method breakdown
-        summary_parts.append(f"\n**METHOD-BY-METHOD BREAKDOWN:**")
+        summary_parts.append("\n**METHOD-BY-METHOD BREAKDOWN:**")
         for method, count in stats["method_breakdown"].items():
             if count > 0:
                 method_display = method.replace("_", " ").title()
@@ -2760,10 +2731,10 @@ Convert the user's instruction into specific search queries:"""
                     queries = json.loads(json_text)
                     if isinstance(queries, list):
                         return queries
-                except Exception as e:
+                except Exception:
                     # Fallback to simple parsing
                     pass
-        except Exception as e:
+        except Exception:
             # Fallback to simple parsing
             pass
         
@@ -2800,7 +2771,7 @@ class UserConfirmationAgent:
         for i, step in enumerate(suggested_steps, 1):
             confirmation_message += f"{i}. {step}\n"
         
-        confirmation_message += f"""
+        confirmation_message += """
 
 **Please Choose:**
 1. **Continue** - Generate final answer with current information
@@ -2845,7 +2816,7 @@ Return ONLY the category name: continue, expand, or refine"""
                 
                 if response_content in ['continue', 'expand', 'refine']:
                     return response_content
-        except Exception as e:
+        except Exception:
             # Fallback to simple parsing
             pass
         
@@ -2959,7 +2930,7 @@ Be thorough but concise. Focus on directly answering the user's question."""
         prompt_parts.append(f"QUERY TYPE: {intent.query_type.value}")
         
         # Include reflection assessment
-        prompt_parts.append(f"\nINFORMATION ASSESSMENT:")
+        prompt_parts.append("\nINFORMATION ASSESSMENT:")
         prompt_parts.append(f"- Sufficiency: {'Sufficient' if reflection_result.sufficient else 'Insufficient'}")
         prompt_parts.append(f"- Confidence: {reflection_result.confidence:.2f}")
         if reflection_result.missing_aspects:
@@ -2967,7 +2938,7 @@ Be thorough but concise. Focus on directly answering the user's question."""
         
         # Include collected data
         results = data.get("results", {})
-        prompt_parts.append(f"\nCOLLECTED DATA:")
+        prompt_parts.append("\nCOLLECTED DATA:")
         
         for key, value in results.items():
             prompt_parts.append(f"\n### {key.upper()}:")
@@ -2996,14 +2967,14 @@ Be thorough but concise. Focus on directly answering the user's question."""
             else:
                 prompt_parts.append(f"  {str(value)[:200]}...")
         
-        prompt_parts.append(f"\nPlease generate a comprehensive response that directly answers the user's question using this collected data.")
+        prompt_parts.append("\nPlease generate a comprehensive response that directly answers the user's question using this collected data.")
         
         return "\n".join(prompt_parts)
     
     def _generate_fallback_response(self, intent: QueryIntent, data: Dict[str, Any]) -> str:
         """Generate simple fallback response when AI fails"""
         response_parts = []
-        response_parts.append(f"## Query Results\n")
+        response_parts.append("## Query Results\n")
         response_parts.append(f"**Question**: {intent.original_question}\n")
         
         results = data.get("results", {})
@@ -3019,7 +2990,7 @@ Be thorough but concise. Focus on directly answering the user's question."""
         else:
             response_parts.append("No specific results found.")
         
-        response_parts.append(f"\nFor detailed analysis, please try a more specific query.")
+        response_parts.append("\nFor detailed analysis, please try a more specific query.")
         
         return "\n".join(response_parts)
 
@@ -3216,6 +3187,24 @@ class LangGraphResearchSystem:
                 return self.query_agent.semantic_search_pdf_content(paper_id, query, similarity_threshold)
             except Exception as e:
                 return {"error": str(e), "found": False}
+
+        @tool
+        def get_citation_sentences_from_paper(paper_id: str, limit: int = 50) -> Dict[str, Any]:
+            """Get citation-bearing sentences extracted from a source paper. Best for 'what citations were extracted from this paper?'"""
+            try:
+                data = self.query_agent.get_sentences_with_citations_from_paper(paper_id, limit)
+                return {"found": bool(data), "data": data, "count": len(data), "paper_id": paper_id}
+            except Exception as e:
+                return {"error": str(e), "found": False}
+
+        @tool
+        def list_uploaded_papers(limit: int = 20) -> Dict[str, Any]:
+            """List non-stub papers currently uploaded into the graph, with citation evidence counts."""
+            try:
+                data = self.query_agent.list_uploaded_papers(limit)
+                return {"found": bool(data), "data": data, "count": len(data)}
+            except Exception as e:
+                return {"error": str(e), "found": False}
         
         return [
             get_papers_citing_paper,
@@ -3233,7 +3222,9 @@ class LangGraphResearchSystem:
             get_full_pdf_content,
             query_pdf_by_author_and_content,
             query_pdf_by_title_and_content,
-            semantic_search_pdf_content
+            semantic_search_pdf_content,
+            get_citation_sentences_from_paper,
+            list_uploaded_papers
         ]
     
     def _build_workflow(self) -> StateGraph:
@@ -3407,7 +3398,6 @@ Return ONLY a JSON object with: query_type, target_entity, entity_type, reasonin
                 return self._execute_tools_based_on_intent(state, query_intent)
             
             # Create tool-enabled agent
-            tool_node = ToolNode(self.tools)
             llm_with_tools = planner_model.bind_tools(self.tools)
             
             system_prompt = """You are a research assistant with access to academic database tools and direct PDF content access. 
@@ -3455,7 +3445,9 @@ Return ONLY a JSON object with: query_type, target_entity, entity_type, reasonin
                 
                 collected_data = {"results": {}, "tool_calls": []}
                 
-                # Execute tool calls if any
+                # Execute tool calls if any. Some OpenAI-compatible gateways/models
+                # can return a plain assistant message instead of tool calls even when
+                # tools are bound; fall back to deterministic routing in that case.
                 if response.tool_calls:
                     log_event("WorkflowAgent", "tool_calls_received", {"tool_calls": len(response.tool_calls)}, level=logging.DEBUG, request_id=request_id)
                     for tool_call in response.tool_calls:
@@ -3480,6 +3472,17 @@ Return ONLY a JSON object with: query_type, target_entity, entity_type, reasonin
                                     collected_data["results"][tool_name] = {"error": str(e)}
                                     log_event("WorkflowAgent", "tool_call_error", {"tool": tool_name, "error": str(e)}, level=logging.ERROR, request_id=request_id)
                                 break
+
+                if not collected_data["results"]:
+                    log_event("WorkflowAgent", "tool_call_fallback", {"reason": "no_tool_calls_or_empty_results"}, level=logging.INFO, request_id=request_id)
+                    fallback_state = self._execute_tools_based_on_intent(
+                        state,
+                        query_intent,
+                        state.get("matched_entity"),
+                    )
+                    fallback_data = fallback_state.get("collected_data") or {}
+                    if fallback_data.get("results"):
+                        collected_data = fallback_data
                 
                 log_event("WorkflowAgent", "plan_and_execute_success", {"collected_data_keys": list(collected_data["results"].keys())}, level=logging.INFO, request_id=request_id)
                 return {**state, "collected_data": collected_data, "messages": messages}
@@ -3491,8 +3494,8 @@ Return ONLY a JSON object with: query_type, target_entity, entity_type, reasonin
         def summarize_information(state: ResearchState) -> ResearchState:
             """Summarize gathered information and create confirmation request"""
             question = state["question"]
-            collected_data = state.get("collected_data", {})
-            query_intent = state.get("query_intent", {})
+            collected_data = state.get("collected_data") or {}
+            query_intent = state.get("query_intent") or {}
             request_id = state.get("request_id")
             
             log_event("WorkflowAgent", "summarize_information_start", {"question": question}, level=logging.INFO, request_id=request_id)
@@ -3558,7 +3561,7 @@ Please respond with: CONTINUE or EXPAND
         def generate_response(state: ResearchState) -> ResearchState:
             """Generate the final response based on collected data"""
             question = state["question"]
-            collected_data = state.get("collected_data", {})
+            collected_data = state.get("collected_data") or {}
             request_id = state.get("request_id")
             
             log_event("WorkflowAgent", "generate_response_start", {"question": question, "collected_data_keys": list(collected_data.get("results", {}).keys())}, level=logging.DEBUG, request_id=request_id)
@@ -3579,10 +3582,21 @@ Please respond with: CONTINUE or EXPAND
             if collected_data and "results" in collected_data:
                 data_summary = "Collected data:\n"
                 for tool_name, result in collected_data["results"].items():
-                    if isinstance(result, dict) and result.get("found", True):
-                        data_summary += f"- {tool_name}: {len(result.get('data', result))} items found\n"
+                    if isinstance(result, dict):
+                        if result.get("error"):
+                            data_summary += f"- {tool_name}: error: {result.get('error')}\n"
+                        elif result.get("found", True):
+                            data = result.get("data", result)
+                            count = result.get("count")
+                            if count is None and hasattr(data, "__len__"):
+                                count = len(data)
+                            data_summary += f"- {tool_name}: {count if count is not None else 'some'} items found\n"
+                        else:
+                            data_summary += f"- {tool_name}: no results\n"
+                    elif isinstance(result, list):
+                        data_summary += f"- {tool_name}: {len(result)} items found\n"
                     else:
-                        data_summary += f"- {tool_name}: No results or error\n"
+                        data_summary += f"- {tool_name}: available\n"
             
             messages = [
                 SystemMessage(content=system_prompt),
@@ -3619,6 +3633,251 @@ Please respond with: CONTINUE or EXPAND
         
         return workflow.compile()
     
+    def _tool_by_name(self, name: str):
+        """Return a LangChain tool by name.
+
+        The tool list is append-only, but resolving by name is safer than
+        relying on fragile positional indices.
+        """
+        for tool_obj in self.tools:
+            if getattr(tool_obj, "name", None) == name:
+                return tool_obj
+        raise KeyError(f"Tool not found: {name}")
+
+    def _invoke_tool(self, name: str, args: Dict[str, Any]) -> Any:
+        """Invoke a named tool."""
+        return self._tool_by_name(name).invoke(args)
+
+    def _wrap_result(self, data: Any, **metadata: Any) -> Dict[str, Any]:
+        """Normalize direct query-agent results into the tool-style dict shape."""
+        count = len(data) if hasattr(data, "__len__") else None
+        wrapped = {"found": bool(data), "data": data}
+        if count is not None:
+            wrapped["count"] = count
+        wrapped.update(metadata)
+        return wrapped
+
+    def _paper_from_match(self, matched_entity: Any) -> Optional[Dict[str, Any]]:
+        """Extract a paper-like dict from fuzzy/entity matching output."""
+        if not matched_entity:
+            return None
+        if isinstance(matched_entity, list):
+            for item in matched_entity:
+                paper = self._paper_from_match(item)
+                if paper:
+                    return paper
+            return None
+        if not isinstance(matched_entity, dict) or matched_entity.get("error"):
+            return None
+
+        paper_id = matched_entity.get("paper_id") or matched_entity.get("id")
+        if paper_id:
+            paper = dict(matched_entity)
+            paper["paper_id"] = paper_id
+            return paper
+        return None
+
+    def _single_or_best_paper_from_title_result(self, title_result: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Return the best paper candidate from get_papers_id_by_title output."""
+        if not isinstance(title_result, dict):
+            return None
+        if title_result.get("status") == "single_match":
+            paper = dict(title_result.get("paper_info") or {})
+            paper["paper_id"] = title_result.get("paper_id") or paper.get("paper_id") or paper.get("id")
+            return paper if paper.get("paper_id") else None
+        candidates = title_result.get("candidates") or []
+        if candidates:
+            paper = dict(candidates[0])
+            paper["paper_id"] = paper.get("paper_id") or paper.get("id")
+            return paper if paper.get("paper_id") else None
+        return None
+
+    def _resolve_source_paper_for_query(
+        self,
+        question: str,
+        query_intent: Dict[str, Any],
+        matched_entity: Any = None,
+        request_id: Optional[str] = None,
+    ) -> Tuple[Optional[Dict[str, Any]], Dict[str, Any]]:
+        """Resolve the source paper for outgoing citation/content queries."""
+        target_entity = (query_intent.get("target_entity") or "").strip()
+        entity_type = (query_intent.get("entity_type") or "").strip().lower()
+        extracted = query_intent.get("extracted_entities") or {}
+        paper_titles = query_intent.get("paper_titles") or extracted.get("paper_titles") or []
+        diagnostics: Dict[str, Any] = {}
+
+        matched_paper = self._paper_from_match(matched_entity)
+        if matched_paper:
+            diagnostics["resolution_strategy"] = "matched_entity"
+            return matched_paper, diagnostics
+
+        title_queries = []
+        if isinstance(paper_titles, list):
+            title_queries.extend([title for title in paper_titles if title])
+        if target_entity and entity_type in {"paper", "paper_title", "title", "publication"}:
+            title_queries.append(target_entity)
+
+        seen_titles = set()
+        for title in title_queries:
+            normalized_title = title.lower().strip()
+            if not normalized_title or normalized_title in seen_titles:
+                continue
+            seen_titles.add(normalized_title)
+            title_result = self.query_agent.get_papers_id_by_title(title)
+            diagnostics[f"title_lookup:{title[:40]}"] = title_result
+            paper = self._single_or_best_paper_from_title_result(title_result)
+            if paper:
+                diagnostics["resolution_strategy"] = "title_lookup"
+                return paper, diagnostics
+
+        uploaded_papers = self.query_agent.list_uploaded_papers(limit=5)
+        diagnostics["list_uploaded_papers"] = self._wrap_result(uploaded_papers)
+
+        question_lower = question.lower()
+        target_lower = target_entity.lower()
+        refers_to_current_upload = any(
+            token in f"{question_lower} {target_lower}"
+            for token in ["uploaded", "sample", "latest", "current", "this paper", "the paper"]
+        )
+        if uploaded_papers and (refers_to_current_upload or len(uploaded_papers) == 1):
+            paper = dict(uploaded_papers[0])
+            paper["paper_id"] = paper.get("paper_id") or paper.get("id")
+            diagnostics["resolution_strategy"] = "uploaded_paper_fallback"
+            return paper, diagnostics
+
+        diagnostics["resolution_strategy"] = "unresolved"
+        log_event(
+            "WorkflowAgent",
+            "source_paper_unresolved",
+            {"target_entity": target_entity, "entity_type": entity_type, "title_queries": title_queries},
+            level=logging.WARNING,
+            request_id=request_id,
+        )
+        return None, diagnostics
+
+    def _execute_citation_analysis(
+        self,
+        state: ResearchState,
+        query_intent: Dict[str, Any],
+        matched_entity: Any = None,
+    ) -> ResearchState:
+        """Deterministically answer outgoing-citation questions."""
+        question = state["question"]
+        request_id = state.get("request_id")
+        collected_data = {"results": {}, "tool_calls": []}
+
+        source_paper, diagnostics = self._resolve_source_paper_for_query(
+            question,
+            query_intent,
+            matched_entity,
+            request_id,
+        )
+        collected_data["results"]["paper_resolution"] = diagnostics
+
+        if not source_paper or not source_paper.get("paper_id"):
+            collected_data["results"]["clarification_needed"] = True
+            collected_data["clarification_message"] = (
+                "I couldn't identify which uploaded paper you mean. Please provide a paper title, author, or paper ID."
+            )
+            return {**state, "collected_data": collected_data}
+
+        paper_id = source_paper["paper_id"]
+        collected_data["results"]["source_paper"] = self._wrap_result(source_paper, paper_id=paper_id)
+
+        cited_papers = self.query_agent.get_papers_cited_by_paper(paper_id)
+        collected_data["results"]["get_papers_cited_by_paper"] = self._wrap_result(cited_papers, paper_id=paper_id)
+        collected_data["tool_calls"].append({
+            "tool": "get_papers_cited_by_paper",
+            "args": {"paper_id": paper_id},
+            "result": cited_papers,
+        })
+
+        citation_sentences = self.query_agent.get_sentences_with_citations_from_paper(paper_id, count=50)
+        collected_data["results"]["get_citation_sentences_from_paper"] = self._wrap_result(
+            citation_sentences,
+            paper_id=paper_id,
+        )
+        collected_data["tool_calls"].append({
+            "tool": "get_citation_sentences_from_paper",
+            "args": {"paper_id": paper_id, "limit": 50},
+            "result": citation_sentences,
+        })
+
+        log_event(
+            "WorkflowAgent",
+            "citation_analysis_complete",
+            {
+                "paper_id": paper_id,
+                "cited_papers": len(cited_papers),
+                "citation_sentences": len(citation_sentences),
+            },
+            level=logging.INFO,
+            request_id=request_id,
+        )
+        return {**state, "collected_data": collected_data}
+
+    def _execute_reverse_citation_analysis(
+        self,
+        state: ResearchState,
+        query_intent: Dict[str, Any],
+        matched_entity: Any = None,
+    ) -> ResearchState:
+        """Deterministically answer incoming-citation questions."""
+        question = state["question"]
+        request_id = state.get("request_id")
+        collected_data = {"results": {}, "tool_calls": []}
+
+        target_paper = self._paper_from_match(matched_entity)
+        diagnostics: Dict[str, Any] = {}
+        target_entity = (query_intent.get("target_entity") or "").strip()
+        entity_type = (query_intent.get("entity_type") or "").strip().lower()
+
+        if not target_paper and target_entity:
+            if entity_type in {"paper", "paper_title", "title", "publication"}:
+                title_result = self.query_agent.get_papers_id_by_title(target_entity)
+                diagnostics["title_lookup"] = title_result
+                target_paper = self._single_or_best_paper_from_title_result(title_result)
+            elif entity_type in {"author", "authors", "author_name"}:
+                author_result = self.query_agent.get_papers_id_by_author(target_entity)
+                diagnostics["author_lookup"] = author_result
+                candidates = author_result.get("candidates") if isinstance(author_result, dict) else None
+                if isinstance(author_result, dict) and author_result.get("status") == "single_match":
+                    target_paper = author_result.get("paper_info") or {"paper_id": author_result.get("paper_id")}
+                elif candidates:
+                    target_paper = candidates[0]
+
+        collected_data["results"]["paper_resolution"] = diagnostics
+        if not target_paper or not target_paper.get("paper_id"):
+            collected_data["results"]["clarification_needed"] = True
+            collected_data["clarification_message"] = (
+                "I couldn't identify the cited paper. Please provide a paper title, author, or paper ID."
+            )
+            return {**state, "collected_data": collected_data}
+
+        paper_id = target_paper["paper_id"]
+        collected_data["results"]["target_paper"] = self._wrap_result(target_paper, paper_id=paper_id)
+
+        citing_papers = self.query_agent.get_papers_citing_paper(paper_id)
+        collected_data["results"]["get_papers_citing_paper"] = self._wrap_result(citing_papers, paper_id=paper_id)
+        citing_sentences = self.query_agent.get_sentences_citing_paper(paper_id, count=50)
+        collected_data["results"]["get_sentences_citing_paper"] = self._wrap_result(citing_sentences, paper_id=paper_id)
+        citing_paragraphs = self.query_agent.get_paragraphs_citing_paper(paper_id, count=20)
+        collected_data["results"]["get_paragraphs_citing_paper"] = self._wrap_result(citing_paragraphs, paper_id=paper_id)
+
+        log_event(
+            "WorkflowAgent",
+            "reverse_citation_analysis_complete",
+            {
+                "paper_id": paper_id,
+                "citing_papers": len(citing_papers),
+                "citing_sentences": len(citing_sentences),
+                "citing_paragraphs": len(citing_paragraphs),
+            },
+            level=logging.INFO,
+            request_id=request_id,
+        )
+        return {**state, "collected_data": collected_data}
+
     def _execute_tools_based_on_intent(self, state: ResearchState, query_intent: Dict, matched_entity: Any = None) -> ResearchState:
         """Execute tools based on query intent when LLM is not available"""
         question = state["question"]
@@ -3629,6 +3888,10 @@ Please respond with: CONTINUE or EXPAND
         
         try:
             query_type = query_intent.get("query_type", "concept_search")
+            if query_type == "reverse_citation":
+                query_type = "reverse_citation_analysis"
+            elif query_type == "citation":
+                query_type = "citation_analysis"
             target_entity = query_intent.get("target_entity", "")
             entity_type = query_intent.get("entity_type", "unknown")
             author_names = query_intent.get("author_names", [])
@@ -3636,6 +3899,12 @@ Please respond with: CONTINUE or EXPAND
             concepts = query_intent.get("concepts", [])  # Initialize concepts variable
 
             search_author = None # Initialize search_author
+
+            if query_type == "citation_analysis":
+                return self._execute_citation_analysis(state, query_intent, matched_entity)
+
+            if query_type == "reverse_citation_analysis":
+                return self._execute_reverse_citation_analysis(state, query_intent, matched_entity)
 
             if query_type == "author_search":
                 # If fuzzy matching already found papers, use them directly.
@@ -3654,13 +3923,13 @@ Please respond with: CONTINUE or EXPAND
                     log_event("WorkflowAgent", "author_search_direct", {"search_author": search_author}, level=logging.DEBUG, request_id=request_id)
                     
                     # Use graphDB to find papers by author
-                    author_result = self.tools[4].invoke({"author_name": search_author}) # get_papers_id_by_author
+                    author_result = self._invoke_tool("get_papers_id_by_author", {"author_name": search_author})
                     collected_data["results"]["get_papers_id_by_author"] = author_result
 
                 # Also query PDF content by the (potentially corrected) author name
                 if search_author:
                     log_event("WorkflowAgent", "pdf_author_search", {"author": search_author}, level=logging.DEBUG, request_id=request_id)
-                    pdf_result = self.tools[14].invoke({"author": search_author, "content_query": None}) # query_pdf_by_author_and_content
+                    pdf_result = self._invoke_tool("query_pdf_by_author_and_content", {"author_name": search_author, "content_query": question})
                     collected_data["results"]["query_pdf_by_author_and_content"] = pdf_result
 
             elif query_type == "paper_search" or entity_type == "paper":
@@ -3679,7 +3948,7 @@ Please respond with: CONTINUE or EXPAND
                     if not paper_id:
                         log_event("WorkflowAgent", "paper_id_validation_failed", {"matched_paper": matched_paper}, level=logging.ERROR, request_id=request_id)
                         collected_data["results"]["error"] = "No valid paper_id found in matched paper"
-                        return state
+                        return {**state, "collected_data": collected_data}
                     
                     # Determine what type of analysis is needed based on the question
                     content_keywords = ["summarize", "findings", "content", "arguments", "main points"]
@@ -3688,19 +3957,19 @@ Please respond with: CONTINUE or EXPAND
                     if is_content_query:
                         # Only get full PDF content for summarization queries
                         log_event("WorkflowAgent", "pdf_content_retrieval", {"paper_id": paper_id}, level=logging.INFO, request_id=request_id)
-                        pdf_content_result = self.tools[11].invoke({"paper_id": paper_id})  # get_full_pdf_content
+                        pdf_content_result = self._invoke_tool("get_full_pdf_content", {"paper_id": paper_id})
                         collected_data["results"]["get_full_pdf_content"] = pdf_content_result
                     else:
                         # For citation analysis or general info queries
                         log_event("WorkflowAgent", "citation_analysis_start", {"paper_id": paper_id}, level=logging.INFO, request_id=request_id)
                         # Get full content
-                        pdf_content_result = self.tools[11].invoke({"paper_id": paper_id})  # get_full_pdf_content
+                        pdf_content_result = self._invoke_tool("get_full_pdf_content", {"paper_id": paper_id})
                         collected_data["results"]["get_full_pdf_content"] = pdf_content_result
                         # Get citation relationships
-                        citing_result = self.tools[0].invoke({"paper_id": paper_id})  # get_papers_citing_paper
+                        citing_result = self._invoke_tool("get_papers_citing_paper", {"paper_id": paper_id})
                         collected_data["results"]["get_papers_citing_paper"] = citing_result
                         # Get citation contexts
-                        context_result = self.tools[2].invoke({"paper_id": paper_id})  # get_sentences_citing_paper
+                        context_result = self._invoke_tool("get_sentences_citing_paper", {"paper_id": paper_id})
                         collected_data["results"]["get_sentences_citing_paper"] = context_result
                 
                 else:
@@ -3710,7 +3979,7 @@ Please respond with: CONTINUE or EXPAND
                     log_event("WorkflowAgent", "paper_search_direct", {"search_title": search_title, "paper_titles": paper_titles}, level=logging.DEBUG, request_id=request_id)
                     
                     # Use graphDB to find papers by title
-                    title_result = self.tools[5].invoke({"title": search_title}) # get_papers_id_by_title
+                    title_result = self._invoke_tool("get_papers_id_by_title", {"title": search_title})
                     collected_data["results"]["get_papers_id_by_title"] = title_result
             
             elif query_type == "concept_search" and entity_type == "concept":
@@ -3721,7 +3990,7 @@ Please respond with: CONTINUE or EXPAND
                 search_query = query_intent.get("target_entity")
                 
                 # Search for related concepts
-                search_results = self.tools[6].invoke({"query": search_query, "limit_per_collection": 10})  # search_all_collections
+                search_results = self._invoke_tool("search_all_collections", {"query": search_query, "limit_per_collection": 10})
                 collected_data["results"]["search_all_collections"] = search_results
                 
                 # Also try semantic search for sentences
@@ -3732,7 +4001,7 @@ Please respond with: CONTINUE or EXPAND
                 if paper_titles:
                     # Search for specific papers by title
                     for title in paper_titles:
-                        title_content_result = self.tools[13].invoke({"title_query": title, "content_query": search_query})  # query_pdf_by_title_and_content
+                        title_content_result = self._invoke_tool("query_pdf_by_title_and_content", {"title_query": title, "content_query": search_query})
                         collected_data["results"][f"query_pdf_by_title_and_content_{title[:20]}"] = title_content_result
             
             else:
@@ -3741,20 +4010,20 @@ Please respond with: CONTINUE or EXPAND
                 
                 log_event("WorkflowAgent", "concept_search", {"search_query": search_query, "concepts": concepts}, level=logging.DEBUG, request_id=request_id)
                 
-                search_result = self.tools[6].invoke({"query": search_query, "limit_per_collection": 10})  # search_all_collections
+                search_result = self._invoke_tool("search_all_collections", {"query": search_query, "limit_per_collection": 10})
                 collected_data["results"]["search_all_collections"] = search_result
                 
                 # Try additional searches based on extracted entities
                 if author_names:
                     # Search for author's papers and their content
                     for author in author_names:
-                        author_content_result = self.tools[12].invoke({"author_name": author, "content_query": search_query})  # query_pdf_by_author_and_content
+                        author_content_result = self._invoke_tool("query_pdf_by_author_and_content", {"author_name": author, "content_query": search_query})
                         collected_data["results"][f"query_pdf_by_author_and_content_{author}"] = author_content_result
                 
                 if paper_titles:
                     # Search for specific papers by title
                     for title in paper_titles:
-                        title_content_result = self.tools[13].invoke({"title_query": title, "content_query": search_query})  # query_pdf_by_title_and_content
+                        title_content_result = self._invoke_tool("query_pdf_by_title_and_content", {"title_query": title, "content_query": search_query})
                         collected_data["results"][f"query_pdf_by_title_and_content_{title[:20]}"] = title_content_result
         
         except Exception as e:
@@ -3782,7 +4051,7 @@ Please respond with: CONTINUE or EXPAND
             return {**state, "final_response": clarification_msg}
         
         # Normal content response generation
-        response_parts.append(f"# Research Results\n")
+        response_parts.append("# Research Results\n")
         response_parts.append(f"**Question**: {question}\n")
         
         if results:
@@ -3792,16 +4061,17 @@ Please respond with: CONTINUE or EXPAND
                 if isinstance(result, dict) and result.get("found", False):
                     data = result.get("data", [])
                     if data:
+                        items = data if isinstance(data, list) else [data]
                         response_parts.append(f"### {tool_name.replace('_', ' ').title()}")
-                        response_parts.append(f"Found {len(data)} items:\n")
+                        response_parts.append(f"Found {len(items)} items:\n")
                         
-                        for i, item in enumerate(data[:5], 1):  # Show first 5 items
+                        for i, item in enumerate(items[:5], 1):  # Show first 5 items
                             if isinstance(item, dict):
-                                title = item.get("title", item.get("text", "Unknown"))
-                                response_parts.append(f"{i}. {title[:100]}...")
+                                title = item.get("title") or item.get("text") or item.get("paper_id") or "Unknown"
+                                response_parts.append(f"{i}. {str(title)[:100]}...")
                         
-                        if len(data) > 5:
-                            response_parts.append(f"... and {len(data) - 5} more items\n")
+                        if len(items) > 5:
+                            response_parts.append(f"... and {len(items) - 5} more items\n")
                     else:
                         response_parts.append(f"### {tool_name.replace('_', ' ').title()}")
                         response_parts.append("No specific data found\n")
@@ -3906,8 +4176,7 @@ Please respond with: CONTINUE or EXPAND
     def continue_with_confirmation(self, question: str, user_response: str) -> str:
         """Continue research after user provides confirmation"""
         self.logger.info(f"Continuing research with user confirmation: {user_response}")
-        request_id = str(uuid.uuid4())
-        
+
         # Parse user response
         confirmation = self.user_confirmation_agent.parse_user_response(user_response)
         
@@ -4298,7 +4567,7 @@ Return ONLY a JSON object with: query_type, target_entity, entity_type, reasonin
     def _generate_simple_final_answer(self, original_question: str, collected_data: Dict[str, Any], conversation_history: List[Dict]) -> str:
         """Generate a simple structured final answer, robust to history format."""
         response_parts = []
-        response_parts.append(f"# Research Results\n")
+        response_parts.append("# Research Results\n")
         response_parts.append(f"**Original Question**: {original_question}\n")
         
         # Add conversation context

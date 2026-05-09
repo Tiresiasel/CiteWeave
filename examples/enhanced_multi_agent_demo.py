@@ -9,12 +9,12 @@ import os
 import json
 
 # Add src to Python path
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'src'))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from src.agents.multi_agent_system import EnhancedMultiAgentSystem
-from src.graph_builder import GraphDB
-from src.vector_indexer import VectorIndexer
-from src.config_manager import ConfigManager
+from src.storage.graph_builder import GraphDB
+from src.storage.vector_indexer import VectorIndexer
+from src.utils.config_manager import ConfigManager
 
 async def main():
     """Demo the enhanced multi-agent system"""
@@ -41,7 +41,7 @@ async def main():
     
     vector_indexer = VectorIndexer(
         paper_root=os.path.join(project_root, "data", "papers"),
-        index_path=os.path.join(project_root, "data", "vector_index")
+        config_path=os.path.join(project_root, "config", "qdrant_config.json"),
     )
     
     # Initialize the enhanced multi-agent system

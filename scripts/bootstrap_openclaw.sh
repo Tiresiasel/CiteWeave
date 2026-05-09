@@ -51,8 +51,8 @@ This project is now configured to route CiteWeave LLM calls through the local Op
 
 Recommended verification:
   1. bash scripts/deployment_check.sh
-  2. .venv/bin/python -m src.core.cli routes
-  3. .venv/bin/python -m src.core.cli chat
+  2. .venv/bin/citeweave routes
+  3. .venv/bin/citeweave chat
 
 Then call CiteWeave from your OpenClaw session.
 EOF

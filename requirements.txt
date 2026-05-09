@@ -143,7 +143,7 @@ python-multipart==0.0.20
 pytz==2025.2
 pyyaml==6.0.2
 pyzmq==27.0.0
-qdrant-client==1.14.3
+qdrant-client==1.17.1
 rapid-table==1.0.5
 regex==2024.11.6
 reportlab==4.4.2

@@ -8,9 +8,8 @@ import json
 import logging
 import tempfile
 import subprocess
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Tuple
 from pathlib import Path
-import hashlib
 
 # 继承原有的PDF处理器
 from src.processing.pdf.pdf_processor import PDFProcessor

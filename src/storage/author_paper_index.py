@@ -12,10 +12,8 @@ This module provides functionality to:
 import os
 import json
 import logging
-from typing import List, Dict, Optional, Set
-from collections import defaultdict
+from typing import List, Dict, Optional
 import sqlite3
-from pathlib import Path
 
 class AuthorPaperIndex:
     """
@@ -210,27 +208,24 @@ class AuthorPaperIndex:
         Returns:
             Path to original PDF file if found, None otherwise
         """
-        # Try common PDF storage locations
-        possible_paths = [
-            f"test_files/{metadata.get('title', '')}.pdf",
-            f"test_files/{paper_id}.pdf", 
-            f"data/pdfs/{paper_id}.pdf",
-            f"pdfs/{paper_id}.pdf"
+        metadata_paths = [
+            metadata.get("pdf_path"),
+            metadata.get("original_pdf_path"),
+            metadata.get("source_pdf"),
+            metadata.get("source_pdf_path"),
+            metadata.get("file_path"),
         ]
+        possible_paths = [p for p in metadata_paths if p]
+        possible_paths.extend([
+            os.path.join(self.storage_root, paper_id, "original.pdf"),
+            os.path.join(self.storage_root, paper_id, f"{paper_id}.pdf"),
+            os.path.join("data", "pdfs", f"{paper_id}.pdf"),
+            os.path.join("pdfs", f"{paper_id}.pdf"),
+        ])
         
         for pdf_path in possible_paths:
             if os.path.exists(pdf_path):
                 return os.path.abspath(pdf_path)
-        
-        # Try finding PDFs with similar names in test_files
-        test_files_dir = "test_files"
-        if os.path.exists(test_files_dir):
-            title = metadata.get("title", "").lower()
-            for filename in os.listdir(test_files_dir):
-                if filename.endswith(".pdf"):
-                    # Simple fuzzy matching
-                    if any(word in filename.lower() for word in title.split() if len(word) > 3):
-                        return os.path.abspath(os.path.join(test_files_dir, filename))
         
         return None
     

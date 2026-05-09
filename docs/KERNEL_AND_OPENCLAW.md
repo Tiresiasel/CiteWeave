@@ -14,7 +14,12 @@ Treat **CiteWeave as a kernel**:
 - route diagnostics
 - persistence in Neo4j / Qdrant / derived files
 
-Treat **CLI / OpenClaw Skill / future HTTP API** as adapters.
+Treat **CLI / OpenClaw Package / OpenClaw Skill / future HTTP API** as adapters.
+
+OpenClaw is the entrypoint, query interface, and deployment coordinator. It does
+not own the database substrate. CiteWeave owns the local research stack:
+Zotero/PDF ingestion, the Docker Compose service layer, Neo4j, Qdrant, GROBID,
+embeddings, and the research kernel.
 
 ## Layers
 
@@ -33,6 +38,9 @@ Responsibilities:
   - `query(question, confirmation='continue')`
   - `routes_snapshot()`
   - `progress_summary(directory, clear=False)`
+  - `batch_upload(directory, resume=True, force_restart=False, clear_progress=False)`
+  - `query_history_snapshot(...)`
+  - `list_pending_citations_snapshot(limit=10)`
 - compose heavy internals (`DocumentProcessor`, `LangGraphResearchSystem`)
 - remain adapter-agnostic
 
@@ -66,12 +74,17 @@ Current facade methods:
 - `upload_pdf(pdf_path)`
 - `diagnose_pdf(pdf_path)`
 - `query(question, confirmation='continue')`
-- `chat_turn(user_input, history=None, menu_choice=None, collected_data=None)`
 - `routes()`
 - `progress(directory, clear=False)`
 - `batch_upload(directory, resume=True, force_restart=False, clear_progress=False)`
+- `query_history(...)`
+- `list_pending_citations(limit=10)`
 - `health()`
 - `bootstrap_plan()`
+- `chat_turn(user_input, history=None, menu_choice=None, collected_data=None)` — compatibility path, not the preferred OpenClaw package entrypoint.
+
+For the full OpenClaw action and query-routing contract, see
+[`docs/openclaw/PACKAGE_INTERFACE.md`](openclaw/PACKAGE_INTERFACE.md).
 
 ## Recommended future OpenClaw Skill design
 
@@ -86,9 +99,13 @@ Instead it should:
 ### Suggested Skill workflow
 
 1. `bootstrap_openclaw.sh` if missing / first run
-2. call `OpenClawCiteWeaveFacade.routes()` for environment diagnostics
-3. call `upload_pdf()` / `query()` / `diagnose_pdf()` as needed
-4. optionally maintain session memory at the OpenClaw layer, not in the kernel
+2. deploy the local Docker Compose stack via `scripts/deploy_local_stack.sh` when infrastructure repair/restart is needed
+3. ask the user for the Zotero data directory and persist it as `CITEWEAVE_ZOTERO_LIBRARY_DIR`
+4. dry-run `scripts/sync_zotero_pdfs.py --dry-run --json`
+5. schedule `scripts/sync_zotero_pdfs.py --json` for recurring ingestion
+6. call `OpenClawCiteWeaveFacade.routes()` for environment diagnostics
+7. call `upload_pdf()` / `query()` / `diagnose_pdf()` / `progress()` as needed
+8. optionally maintain session memory at the OpenClaw layer, not in the kernel
 
 ## Why this split matters
 
@@ -105,6 +122,7 @@ points to evolve independently.
 ## What remains future work
 
 - add a local HTTP adapter (likely FastAPI)
-- make batch upload callable through the OpenClaw facade
+- publish a first-class OpenClaw package installer
+- add deeper Zotero metadata enrichment from `zotero.sqlite`
 - expand machine-readable health/status coverage beyond the current CLI `health` / `bootstrap-plan` commands
 - add integration tests that exercise kernel methods directly
