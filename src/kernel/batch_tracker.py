@@ -51,6 +51,16 @@ class BatchUploadTracker:
         except (json.JSONDecodeError, IOError):
             all_data = {}
 
+        # Replace this directory's tracker entries atomically within the JSON
+        # document. A plain ``dict.update`` resurrects entries after
+        # clear_progress(directory), because the old on-disk entries remain in
+        # all_data. That defeats force-restart/resume semantics in exactly the
+        # way progress trackers enjoy doing at 2 AM.
+        all_data = {
+            path: entry
+            for path, entry in all_data.items()
+            if entry.get("directory") != self.directory
+        }
         all_data.update(self.progress_data)
         with open(self.tracker_file, "w", encoding="utf-8") as f:
             json.dump(all_data, f, indent=2, ensure_ascii=False)

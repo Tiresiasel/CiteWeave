@@ -133,6 +133,40 @@ def get_embedding_dimensions() -> Optional[int]:
     return int(raw)
 
 
+def get_embedding_profile() -> str:
+    """Returns the named embedding profile override, if set."""
+    return os.environ.get("CITEWEAVE_EMBEDDING_PROFILE", "").strip()
+
+
+def get_embedding_device() -> str:
+    """Returns the local embedding device override: auto, cpu, cuda, cuda:0, etc."""
+    return os.environ.get("CITEWEAVE_EMBEDDING_DEVICE", "").strip()
+
+
+def get_embedding_batch_size() -> Optional[int]:
+    """Returns the embedding encode batch-size override, if set."""
+    raw = os.environ.get("CITEWEAVE_EMBEDDING_BATCH_SIZE", "").strip()
+    if not raw:
+        return None
+    return int(raw)
+
+
+def get_embedding_require_cuda() -> Optional[bool]:
+    """Returns whether local embeddings must use CUDA, if explicitly configured."""
+    raw = os.environ.get("CITEWEAVE_EMBEDDING_REQUIRE_CUDA", "").strip().lower()
+    if not raw:
+        return None
+    return raw in {"1", "true", "yes", "y", "on"}
+
+
+def get_embedding_trust_remote_code() -> Optional[bool]:
+    """Returns whether local embedding models may use Hugging Face remote code."""
+    raw = os.environ.get("CITEWEAVE_EMBEDDING_TRUST_REMOTE_CODE", "").strip().lower()
+    if not raw:
+        return None
+    return raw in {"1", "true", "yes", "y", "on"}
+
+
 def get_embedding_api_key() -> str:
     """Returns the API key for remote embedding providers."""
     explicit = os.environ.get("CITEWEAVE_EMBEDDING_API_KEY", "").strip()

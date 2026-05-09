@@ -25,6 +25,7 @@ class EnvConfigTests(unittest.TestCase):
                 "CITEWEAVE_LLM_PROVIDER": "openclaw",
                 "CITEWEAVE_LLM_MODEL": "openai-codex/gpt-5.4",
                 "CITEWEAVE_LLM_API_BASE": "http://localhost:18789/v1",
+                "CITEWEAVE_LLM_API_KEY": "",
             },
             clear=False,
         ):
@@ -74,6 +75,7 @@ class EnvConfigTests(unittest.TestCase):
                 "OPENAI_API_KEY": "user-key-from-env",
                 "CITEWEAVE_LLM_PROVIDER": "openai",
                 "CITEWEAVE_LLM_MODEL": "gpt-4o-mini",
+                "CITEWEAVE_LLM_API_KEY": "",
             },
             clear=False,
         ):

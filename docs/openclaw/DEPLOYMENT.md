@@ -267,7 +267,20 @@ CITEWEAVE_EMBEDDING_MODEL=text-embedding-3-small
 OPENAI_API_KEY=your-openai-api-key
 ```
 
-Important: local and OpenAI embeddings use different vector sizes by default. If switching providers after Qdrant collections exist, recreate or migrate Qdrant collections before indexing new data.
+Important: local and OpenAI embeddings use different vector sizes by default.
+
+Hard rule: changing the base embedding model, provider, or configured vector dimension is a **full re-ingest event**. Do not resume ingestion into existing Qdrant collections after such a change. Old vectors live in the old embedding space; even when dimensions happen to match, semantic distances are no longer comparable. Mixing old and new embeddings makes retrieval results invalid, not merely noisy.
+
+Required procedure after changing the base embedding model:
+
+1. Stop any running Zotero or batch ingestion job.
+2. Update the embedding configuration and verify the resolved model/vector size.
+3. Recreate or explicitly migrate all Qdrant vector collections.
+4. Clear batch-upload progress for the source directory.
+5. Re-ingest the complete corpus from scratch with a force restart.
+6. Run a representative query before declaring the rebuild complete.
+
+Use `--resume` only when the embedding configuration and Qdrant collection schema are unchanged.
 
 ---
 
@@ -364,9 +377,9 @@ bash scripts/deployment_check.sh
 
 If graph data matters, back it up or migrate it first.
 
-### Qdrant fails after switching embedding providers
+### Qdrant fails after switching embedding providers or models
 
-Existing Qdrant collections keep their original vector size. For a disposable local index:
+Existing Qdrant collections keep their original vector size and embedding space. Switching the base embedding provider, model, or dimension requires a full vector rebuild and full corpus re-ingest. For a disposable local index:
 
 ```bash
 docker-compose down
@@ -376,7 +389,7 @@ docker-compose up -d
 bash scripts/deployment_check.sh
 ```
 
-Then re-ingest PDFs.
+Then clear batch progress and re-ingest **all** PDFs from scratch. Do not continue with `--resume` from the old embedding run.
 
 ### `citeweave` command is missing
 

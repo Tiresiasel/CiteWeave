@@ -17,9 +17,14 @@ from src.utils.env_config import (
     LOCAL_EMBEDDING_DEFAULT_MODEL,
     OPENAI_EMBEDDING_DEFAULT_MODEL,
     get_embedding_api_key,
+    get_embedding_batch_size,
+    get_embedding_device,
     get_embedding_dimensions,
     get_embedding_model,
+    get_embedding_profile,
     get_embedding_provider,
+    get_embedding_require_cuda,
+    get_embedding_trust_remote_code,
 )
 from src.utils.paper_id_utils import PaperIDGenerator
 
@@ -38,6 +43,18 @@ DEFAULT_QDRANT_CONFIG: Dict[str, Any] = {
             "model": LOCAL_EMBEDDING_DEFAULT_MODEL,
             "vector_size": 384,
             "normalize": True,
+            "device": "auto",
+            "require_cuda": False,
+            "batch_size": 64,
+            "trust_remote_code": False,
+            "max_seq_length": None,
+            "document_prompt_name": None,
+            "query_prompt_name": None,
+            "document_prompt": None,
+            "query_prompt": None,
+            "model_kwargs": {},
+            "tokenizer_kwargs": {},
+            "encode_kwargs": {},
         },
         "openai": {
             "model": OPENAI_EMBEDDING_DEFAULT_MODEL,
@@ -60,17 +77,130 @@ class LocalSentenceTransformerEmbedder:
 
     provider = "local"
 
-    def __init__(self, model_name: str, vector_size: Optional[int] = None, normalize: bool = True):
+    def __init__(
+        self,
+        model_name: str,
+        vector_size: Optional[int] = None,
+        normalize: bool = True,
+        device: str = "auto",
+        require_cuda: bool = False,
+        batch_size: Optional[int] = 64,
+        trust_remote_code: bool = False,
+        max_seq_length: Optional[int] = None,
+        document_prompt_name: Optional[str] = None,
+        query_prompt_name: Optional[str] = None,
+        document_prompt: Optional[str] = None,
+        query_prompt: Optional[str] = None,
+        model_kwargs: Optional[Dict[str, Any]] = None,
+        tokenizer_kwargs: Optional[Dict[str, Any]] = None,
+        encode_kwargs: Optional[Dict[str, Any]] = None,
+    ):
         self.model_name = model_name
         self.normalize = normalize
-        self.model = SentenceTransformer(model_name)
+        self.device = self._resolve_device(device=device, require_cuda=require_cuda)
+        self.batch_size = int(batch_size) if batch_size else None
+        self.document_prompt_name = document_prompt_name
+        self.query_prompt_name = query_prompt_name
+        self.document_prompt = document_prompt
+        self.query_prompt = query_prompt
+        self.encode_kwargs = dict(encode_kwargs or {})
+
+        init_kwargs: Dict[str, Any] = {"device": self.device}
+        if trust_remote_code:
+            init_kwargs["trust_remote_code"] = True
+        if model_kwargs:
+            init_kwargs["model_kwargs"] = self._normalise_model_kwargs(model_kwargs)
+        if tokenizer_kwargs:
+            init_kwargs["tokenizer_kwargs"] = tokenizer_kwargs
+
+        try:
+            self.model = SentenceTransformer(model_name, **init_kwargs)
+        except TypeError:
+            # Some test doubles and older sentence-transformers builds do not
+            # accept the richer constructor kwargs. Fall back rather than making
+            # configuration support brittle.
+            logging.warning("SentenceTransformer constructor rejected advanced kwargs; falling back to model name only")
+            self.model = SentenceTransformer(model_name)
+
+        if max_seq_length and hasattr(self.model, "max_seq_length"):
+            self.model.max_seq_length = int(max_seq_length)
+
         inferred_size = None
         if hasattr(self.model, "get_sentence_embedding_dimension"):
             inferred_size = self.model.get_sentence_embedding_dimension()
         self.vector_size = int(vector_size or inferred_size or 384)
 
-    def encode(self, texts: List[str]) -> List[List[float]]:
-        vectors = self.model.encode(texts, normalize_embeddings=self.normalize)
+    @staticmethod
+    def _cuda_available() -> bool:
+        try:
+            import torch
+
+            return bool(torch.cuda.is_available())
+        except Exception:
+            return False
+
+    @classmethod
+    def _resolve_device(cls, device: str, require_cuda: bool) -> str:
+        requested = (device or "auto").strip().lower()
+        cuda_available = cls._cuda_available()
+        if requested in {"", "auto"}:
+            if cuda_available:
+                return "cuda"
+            if require_cuda:
+                raise RuntimeError("CITEWEAVE embedding config requires CUDA, but torch.cuda.is_available() is false")
+            return "cpu"
+        if requested.startswith("cuda") and not cuda_available:
+            if require_cuda:
+                raise RuntimeError(f"Requested embedding device '{device}', but CUDA is not available")
+            logging.warning("Requested embedding device '%s' but CUDA is unavailable; falling back to CPU", device)
+            return "cpu"
+        return requested
+
+    @staticmethod
+    def _normalise_model_kwargs(model_kwargs: Dict[str, Any]) -> Dict[str, Any]:
+        normalised = dict(model_kwargs)
+        torch_dtype = normalised.get("torch_dtype")
+        if isinstance(torch_dtype, str):
+            try:
+                import torch
+
+                dtype_map = {
+                    "auto": "auto",
+                    "float16": torch.float16,
+                    "fp16": torch.float16,
+                    "bfloat16": torch.bfloat16,
+                    "bf16": torch.bfloat16,
+                    "float32": torch.float32,
+                    "fp32": torch.float32,
+                }
+                normalised["torch_dtype"] = dtype_map.get(torch_dtype.lower(), torch_dtype)
+            except Exception:
+                pass
+        return normalised
+
+    def encode(self, texts: List[str], purpose: str = "document") -> List[List[float]]:
+        kwargs: Dict[str, Any] = {
+            "normalize_embeddings": self.normalize,
+            **self.encode_kwargs,
+        }
+        if self.batch_size:
+            kwargs.setdefault("batch_size", self.batch_size)
+
+        if purpose == "query":
+            if self.query_prompt_name:
+                kwargs.setdefault("prompt_name", self.query_prompt_name)
+            if self.query_prompt:
+                kwargs.setdefault("prompt", self.query_prompt)
+        else:
+            if self.document_prompt_name:
+                kwargs.setdefault("prompt_name", self.document_prompt_name)
+            if self.document_prompt:
+                kwargs.setdefault("prompt", self.document_prompt)
+
+        try:
+            vectors = self.model.encode(texts, **kwargs)
+        except TypeError:
+            vectors = self.model.encode(texts, normalize_embeddings=self.normalize)
         return [_as_float_list(vector) for vector in vectors]
 
 
@@ -190,12 +320,26 @@ class VectorIndexer:
     def _resolve_embedding_config(self) -> Dict[str, Any]:
         """Resolve embedding provider configuration from qdrant_config.json plus env overrides."""
         configured = self.qdrant_config.get("embedding", {})
-        provider = _normalise_embedding_provider(get_embedding_provider() or configured.get("provider", "local"))
+        active_profile = get_embedding_profile() or configured.get("active_profile") or configured.get("profile")
+        profile_config = {}
+        if active_profile:
+            profiles = configured.get("profiles", {})
+            if active_profile not in profiles:
+                raise ValueError(f"Embedding profile '{active_profile}' was requested but is not defined")
+            profile_config = dict(profiles[active_profile])
+
+        provider = _normalise_embedding_provider(
+            get_embedding_provider()
+            or profile_config.get("provider")
+            or configured.get("provider", "local")
+        )
         if provider not in {"local", "openai"}:
             raise ValueError(f"Unsupported embedding provider '{provider}'. Use 'local' or 'openai'.")
 
-        provider_config = dict(configured.get(provider, {}))
+        provider_config = _deep_merge(dict(configured.get(provider, {})), {k: v for k, v in profile_config.items() if k != "provider"})
         provider_config["provider"] = provider
+        if active_profile:
+            provider_config["profile"] = active_profile
 
         model_override = get_embedding_model()
         if model_override:
@@ -206,10 +350,36 @@ class VectorIndexer:
             provider_config["dimensions"] = dimensions_override
             provider_config["vector_size"] = dimensions_override
 
+        batch_size_override = get_embedding_batch_size()
+        if batch_size_override is not None:
+            provider_config["batch_size"] = batch_size_override
+
         if provider == "local":
             provider_config.setdefault("model", LOCAL_EMBEDDING_DEFAULT_MODEL)
             provider_config.setdefault("vector_size", 384)
             provider_config.setdefault("normalize", True)
+            provider_config.setdefault("device", "auto")
+            provider_config.setdefault("require_cuda", False)
+            provider_config.setdefault("batch_size", 64)
+            provider_config.setdefault("trust_remote_code", False)
+            provider_config.setdefault("max_seq_length", None)
+            provider_config.setdefault("document_prompt_name", None)
+            provider_config.setdefault("query_prompt_name", None)
+            provider_config.setdefault("document_prompt", None)
+            provider_config.setdefault("query_prompt", None)
+            provider_config.setdefault("model_kwargs", {})
+            provider_config.setdefault("tokenizer_kwargs", {})
+            provider_config.setdefault("encode_kwargs", {})
+
+            device_override = get_embedding_device()
+            if device_override:
+                provider_config["device"] = device_override
+            require_cuda_override = get_embedding_require_cuda()
+            if require_cuda_override is not None:
+                provider_config["require_cuda"] = require_cuda_override
+            trust_remote_code_override = get_embedding_trust_remote_code()
+            if trust_remote_code_override is not None:
+                provider_config["trust_remote_code"] = trust_remote_code_override
         else:
             provider_config.setdefault("model", OPENAI_EMBEDDING_DEFAULT_MODEL)
             provider_config.setdefault("vector_size", provider_config.get("dimensions") or 1536)
@@ -227,6 +397,18 @@ class VectorIndexer:
                 model_name=self.embedding_config["model"],
                 vector_size=self.embedding_config.get("vector_size"),
                 normalize=bool(self.embedding_config.get("normalize", True)),
+                device=str(self.embedding_config.get("device", "auto")),
+                require_cuda=bool(self.embedding_config.get("require_cuda", False)),
+                batch_size=self.embedding_config.get("batch_size"),
+                trust_remote_code=bool(self.embedding_config.get("trust_remote_code", False)),
+                max_seq_length=self.embedding_config.get("max_seq_length"),
+                document_prompt_name=self.embedding_config.get("document_prompt_name"),
+                query_prompt_name=self.embedding_config.get("query_prompt_name"),
+                document_prompt=self.embedding_config.get("document_prompt"),
+                query_prompt=self.embedding_config.get("query_prompt"),
+                model_kwargs=self.embedding_config.get("model_kwargs"),
+                tokenizer_kwargs=self.embedding_config.get("tokenizer_kwargs"),
+                encode_kwargs=self.embedding_config.get("encode_kwargs"),
             )
         if provider == "openai":
             return OpenAIEmbeddingClient(
@@ -238,12 +420,18 @@ class VectorIndexer:
             )
         raise ValueError(f"Unsupported embedding provider '{provider}'")
 
-    def _embed_texts(self, texts: List[str]) -> List[List[float]]:
+    def _embed_texts(self, texts: List[str], purpose: str = "document") -> List[List[float]]:
         """Generate embeddings for non-empty text strings."""
         clean_texts = [text or "" for text in texts]
         if not clean_texts:
             return []
-        vectors = self.embedder.encode(clean_texts)
+        if hasattr(self.embedder, "encode"):
+            try:
+                vectors = self.embedder.encode(clean_texts, purpose=purpose)
+            except TypeError:
+                vectors = self.embedder.encode(clean_texts)
+        else:  # pragma: no cover - defensive
+            raise RuntimeError("Configured embedding provider does not implement encode()")
         expected_size = self.embedder.vector_size
         for vector in vectors:
             if len(vector) != expected_size:
@@ -493,7 +681,7 @@ class VectorIndexer:
 
     def search(self, query: str, collection_name: str = "sentences", limit: int = 5) -> List[Dict]:
         """Search a specific Qdrant collection."""
-        query_vector = self._embed_texts([query])[0]
+        query_vector = self._embed_texts([query], purpose="query")[0]
         results = self.client.search(collection_name=collection_name, query_vector=query_vector, limit=limit)
         return [
             {

@@ -60,6 +60,10 @@ services:
     environment:
       - NEO4J_AUTH=neo4j/${CITEWEAVE_NEO4J_PASSWORD:?set CITEWEAVE_NEO4J_PASSWORD in .env before starting Neo4j}
       - NEO4J_dbms_security_auth__enabled=true
+    # Neo4j can leave a stale PID file after an unclean container restart;
+    # remove it before handing off to the stock server command.
+    command: >
+      bash -lc 'rm -f /var/lib/neo4j/run/neo4j.pid /var/lib/neo4j/run/*.pid 2>/dev/null || true; exec /var/lib/neo4j/bin/neo4j console'
     volumes:
       - neo4j_data:/data
     restart: unless-stopped

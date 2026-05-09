@@ -3823,7 +3823,6 @@ Please respond with: CONTINUE or EXPAND
         matched_entity: Any = None,
     ) -> ResearchState:
         """Deterministically answer incoming-citation questions."""
-        question = state["question"]
         request_id = state.get("request_id")
         collected_data = {"results": {}, "tool_calls": []}
 
