@@ -661,10 +661,15 @@ def handle_progress_command(args):
 
     average_completed_duration_seconds = progress.get("average_completed_duration_seconds")
     estimated_remaining_seconds = progress.get("estimated_remaining_seconds")
+    average_completed_duration_human = progress.get("average_completed_duration_human")
+    estimated_remaining_human = progress.get("estimated_remaining_human")
+    print(f"Completion: {progress.get('completion_percent', 0.0):.2f}%")
     if average_completed_duration_seconds is not None:
-        print(f"Observed average time per completed file: {average_completed_duration_seconds:.1f}s")
+        display_average = average_completed_duration_human or f"{average_completed_duration_seconds:.1f}s"
+        print(f"Observed average time per completed file: {display_average}")
     if estimated_remaining_seconds is not None:
-        print(f"Estimated remaining wall time: {estimated_remaining_seconds:.1f}s")
+        display_remaining = estimated_remaining_human or f"{estimated_remaining_seconds:.1f}s"
+        print(f"Estimated remaining wall time: {display_remaining}")
 
     aggregate_stats = summary.get("aggregate_stats", {})
     if aggregate_stats:
