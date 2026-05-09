@@ -22,6 +22,23 @@ from .batch_tracker import BatchUploadTracker
 from .query_history import QueryHistoryRecorder, DATABASE_ROUTE_MAP
 
 
+def _format_duration(seconds: float | int | None) -> str | None:
+    """Return a compact human-readable duration for CLI/API progress summaries."""
+    if seconds is None:
+        return None
+
+    total_seconds = max(0, int(round(float(seconds))))
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, secs = divmod(remainder, 60)
+    parts = []
+    if hours:
+        parts.append(f"{hours}h")
+    if minutes or hours:
+        parts.append(f"{minutes}m")
+    parts.append(f"{secs}s")
+    return " ".join(parts)
+
+
 class CiteWeaveKernel:
     """Stable application service boundary for CiteWeave."""
 
@@ -178,7 +195,7 @@ class CiteWeaveKernel:
         if clear_progress:
             tracker.clear_progress(directory)
 
-        all_files = glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True)
+        all_files = [path for path in glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True) if os.path.isfile(path)]
         pending_files = tracker.get_pending_files(all_files, force_restart=force_restart or not resume)
 
         processed = []
@@ -305,7 +322,7 @@ class CiteWeaveKernel:
         if clear:
             tracker.clear_progress(directory)
 
-        all_files = glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True)
+        all_files = [path for path in glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True) if os.path.isfile(path)]
         summary = tracker.get_progress_summary()
         pending_files = tracker.get_pending_files(all_files, force_restart=False)
         failed_files = summary["failed_files"]
@@ -316,6 +333,9 @@ class CiteWeaveKernel:
         estimated_remaining_seconds = None
         if average_completed_duration_seconds is not None and pending_files:
             estimated_remaining_seconds = round(float(average_completed_duration_seconds) * len(pending_files), 3)
+
+        completed_count = summary["completed"]
+        completion_percent = round((completed_count / len(all_files) * 100), 2) if all_files else 0.0
 
         return {
             "directory": directory,
@@ -328,12 +348,15 @@ class CiteWeaveKernel:
             "not_started_files": not_started_files,
             "retryable_failed_count": len(retryable_failed_files),
             "retryable_failed_files": retryable_failed_files,
-            "completed_count": summary["completed"],
+            "completed_count": completed_count,
             "completed_files": summary["completed_files"],
             "failed_count": summary["failed"],
             "failed_files": failed_files,
+            "completion_percent": completion_percent,
             "average_completed_duration_seconds": average_completed_duration_seconds,
+            "average_completed_duration_human": _format_duration(average_completed_duration_seconds),
             "estimated_remaining_seconds": estimated_remaining_seconds,
+            "estimated_remaining_human": _format_duration(estimated_remaining_seconds),
         }
 
     def query_history_snapshot(

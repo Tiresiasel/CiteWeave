@@ -197,8 +197,11 @@ def test_kernel_progress_summary_returns_actionable_breakdown():
             str(pdf_dir / "bad.pdf"),
             str(pdf_dir / "pending.pdf"),
         ])
+        assert progress["completion_percent"] == 33.33
         assert progress["average_completed_duration_seconds"] == 4.0
+        assert progress["average_completed_duration_human"] == "4s"
         assert progress["estimated_remaining_seconds"] == 8.0
+        assert progress["estimated_remaining_human"] == "8s"
         assert progress["summary"]["aggregate_stats"] == {
             "total_sentences": 10,
             "sentences_with_citations": 0,

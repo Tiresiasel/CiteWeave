@@ -386,9 +386,19 @@ if [[ "${LLM_MODE}" == "openclaw" ]]; then
     info "  Backend model : gateway default"
   fi
 
-  # Quick connectivity check to gateway
+  # Quick connectivity check to gateway. OpenClaw's OpenAI-compatible HTTP
+  # surface is commonly protected by the gateway bearer token; treat 401 as a
+  # configuration warning only when no token was supplied.
+  CURL_AUTH_ARGS=()
+  if [[ -n "${CITEWEAVE_LLM_API_KEY:-}" ]]; then
+    CURL_AUTH_ARGS=(-H "Authorization: Bearer ${CITEWEAVE_LLM_API_KEY}")
+  elif [[ -n "${OPENCLAW_GATEWAY_TOKEN:-}" ]]; then
+    CURL_AUTH_ARGS=(-H "Authorization: Bearer ${OPENCLAW_GATEWAY_TOKEN}")
+  fi
+
   GATEWAY_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
     --max-time 5 \
+    "${CURL_AUTH_ARGS[@]}" \
     "${API_BASE%/}/models" 2>/dev/null || echo "000")
   if [[ "${GATEWAY_CODE}" =~ ^(200|404)$ ]]; then
     pass "OpenClaw gateway reachable (HTTP ${GATEWAY_CODE})"

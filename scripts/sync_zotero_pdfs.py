@@ -49,7 +49,15 @@ def discover_pdfs(source_dir: Path) -> List[Path]:
     return sorted(path for path in source_dir.rglob("*.pdf") if path.is_file())
 
 
-def citeweave_command(root: Path, source_dir: Path, resume: bool, force_restart: bool, clear_progress: bool) -> List[str]:
+def citeweave_command(
+    root: Path,
+    source_dir: Path,
+    resume: bool,
+    force_restart: bool,
+    clear_progress: bool,
+    processors: int | None,
+    sequential: bool,
+) -> List[str]:
     citeweave_bin = root / ".venv" / "bin" / "citeweave"
     if citeweave_bin.exists():
         command = [str(citeweave_bin), "batch-upload", str(source_dir)]
@@ -62,6 +70,10 @@ def citeweave_command(root: Path, source_dir: Path, resume: bool, force_restart:
         command.append("--force-restart")
     if clear_progress:
         command.append("--clear-progress")
+    if sequential:
+        command.append("--sequential")
+    elif processors is not None:
+        command.extend(["--processors", str(processors)])
     return command
 
 
@@ -84,6 +96,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-resume", action="store_true", help="Do not pass --resume to CiteWeave batch-upload.")
     parser.add_argument("--force-restart", action="store_true", help="Reprocess all PDFs, ignoring previous progress.")
     parser.add_argument("--clear-progress", action="store_true", help="Clear batch progress for this source before ingestion.")
+    parser.add_argument("--processors", type=int, help="Number of CiteWeave batch-upload workers to use.")
+    parser.add_argument("--sequential", action="store_true", help="Force sequential CiteWeave batch-upload processing.")
     return parser.parse_args()
 
 
@@ -100,6 +114,8 @@ def main() -> int:
             resume=not args.no_resume,
             force_restart=args.force_restart,
             clear_progress=args.clear_progress,
+            processors=args.processors,
+            sequential=args.sequential,
         )
         report = build_report(args.source, source_dir, pdfs, command, args.dry_run)
 
