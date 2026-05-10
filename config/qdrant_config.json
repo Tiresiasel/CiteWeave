@@ -91,7 +91,7 @@
         "query_prompt": "Represent this sentence for searching relevant passages: "
       }
     },
-    "active_profile": "bge_large_en"
+    "active_profile": "bge_large_en_cuda"
   },
   "collections": {
     "sentences": {
