@@ -211,3 +211,92 @@ def test_kernel_progress_summary_returns_actionable_breakdown():
         assert progress["summary"]["last_completed"]["pdf_path"] == str(pdf_dir / "ok.pdf")
         assert progress["summary"]["last_completed"]["duration_seconds"] == 4.0
         assert progress["summary"]["failure_reasons"] == [{"error": "parse error", "count": 1}]
+
+
+def test_content_deduplication_marks_duplicate_paths_without_deleting_files():
+    batch_tracker = _load_module(BATCH_TRACKER_PATH, "batch_tracker_dedupe")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdf_dir = Path(tmpdir) / "papers"
+        pdf_dir.mkdir()
+        canonical = pdf_dir / "already-done.pdf"
+        duplicate = pdf_dir / "same-bytes.pdf"
+        unique = pdf_dir / "unique.pdf"
+        canonical.write_bytes(b"%PDF same bytes")
+        duplicate.write_bytes(b"%PDF same bytes")
+        unique.write_bytes(b"%PDF unique bytes")
+
+        tracker_file = Path(tmpdir) / "tracker.json"
+        tracker = batch_tracker.BatchUploadTracker(str(pdf_dir), tracker_file=str(tracker_file))
+        tracker.mark_file_completed(
+            str(canonical),
+            {"paper_id": "paper-1", "processing_time": 1, "duration_seconds": 2.0},
+        )
+
+        dedupe = tracker.apply_content_deduplication([str(duplicate), str(unique), str(canonical)])
+        summary = tracker.get_progress_summary()
+
+        assert dedupe["total_pdf_files"] == 3
+        assert dedupe["unique_content_files"] == 2
+        assert dedupe["duplicate_files"] == 1
+        assert summary["completed"] == 1
+        assert summary["duplicate"] == 1
+        assert summary["duplicate_files"] == {str(duplicate): str(canonical)}
+        assert tracker.get_pending_files([str(duplicate), str(unique), str(canonical)]) == [str(unique)]
+        assert tracker.file_hash_for_path(str(canonical)) == tracker.file_hash_for_path(str(duplicate))
+        assert duplicate.exists()
+
+
+def test_kernel_batch_upload_processes_only_unique_pdf_content():
+    batch_tracker = _load_module(
+        BATCH_TRACKER_PATH,
+        "batch_tracker_upload_dedupe",
+        module_name=f"src.kernel.batch_tracker_upload_dedupe_{uuid.uuid4().hex}",
+    )
+
+    class DummyDocumentProcessor:
+        calls = []
+
+        def process_document(self, pdf_path, save_results=True):
+            self.calls.append(Path(pdf_path).name)
+            return {
+                "paper_id": f"paper-{Path(pdf_path).stem}",
+                "processing_stats": {
+                    "total_sentences": 1,
+                    "sentences_with_citations": 0,
+                    "total_citations": 0,
+                    "total_references": 0,
+                },
+            }
+
+    class DummyResearchSystem:
+        pass
+
+    service = _load_service_with_stubs(batch_tracker, DummyDocumentProcessor, DummyResearchSystem, "upload_dedupe")
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdf_dir = Path(tmpdir) / "papers"
+        pdf_dir.mkdir()
+        (pdf_dir / "a.pdf").write_bytes(b"%PDF duplicate")
+        (pdf_dir / "b.pdf").write_bytes(b"%PDF duplicate")
+        (pdf_dir / "c.pdf").write_bytes(b"%PDF unique")
+
+        tracker_file = Path(tmpdir) / "tracker.json"
+        original_tracker_cls = service.BatchUploadTracker
+        service.BatchUploadTracker = lambda directory: batch_tracker.BatchUploadTracker(directory, tracker_file=str(tracker_file))
+        try:
+            kernel = service.CiteWeaveKernel()
+            result = kernel.batch_upload(str(pdf_dir), resume=False, force_restart=True)
+            progress = kernel.progress_summary(str(pdf_dir))
+        finally:
+            service.BatchUploadTracker = original_tracker_cls
+
+        assert result["processed_count"] == 2
+        assert result["deduplication"]["duplicate_files"] == 1
+        assert sorted(DummyDocumentProcessor.calls) == ["a.pdf", "c.pdf"]
+        assert progress["total_pdf_files"] == 3
+        assert progress["unique_content_count"] == 2
+        assert progress["duplicate_count"] == 1
+        assert progress["completed_count"] == 2
+        assert progress["pending_count"] == 0
+        assert progress["completion_percent"] == 100.0

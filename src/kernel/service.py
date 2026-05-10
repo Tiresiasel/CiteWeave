@@ -196,6 +196,7 @@ class CiteWeaveKernel:
             tracker.clear_progress(directory)
 
         all_files = [path for path in glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True) if os.path.isfile(path)]
+        dedupe_summary = tracker.apply_content_deduplication(all_files)
         pending_files = tracker.get_pending_files(all_files, force_restart=force_restart or not resume)
 
         processed = []
@@ -216,6 +217,7 @@ class CiteWeaveKernel:
                     "sentences_with_citations": stats.get("sentences_with_citations", 0),
                     "total_citations": stats.get("total_citations", 0),
                     "total_references": stats.get("total_references", 0),
+                    "file_hash": tracker.file_hash_for_path(pdf_path),
                 }
                 tracker.mark_file_completed(pdf_path, compact)
                 processed.append(compact)
@@ -230,6 +232,7 @@ class CiteWeaveKernel:
             "failed_count": len(failed),
             "processed": processed,
             "failed": failed,
+            "deduplication": dedupe_summary,
             "summary": tracker.get_progress_summary(),
         }
 
@@ -326,6 +329,7 @@ class CiteWeaveKernel:
         summary = tracker.get_progress_summary()
         pending_files = tracker.get_pending_files(all_files, force_restart=False)
         failed_files = summary["failed_files"]
+        duplicate_files = summary.get("duplicate_files", {})
         failed_paths = set(failed_files.keys())
         not_started_files = sorted(pdf_path for pdf_path in all_files if pdf_path not in tracker.progress_data)
         retryable_failed_files = sorted(pdf_path for pdf_path in all_files if pdf_path in failed_paths)
@@ -334,13 +338,18 @@ class CiteWeaveKernel:
         if average_completed_duration_seconds is not None and pending_files:
             estimated_remaining_seconds = round(float(average_completed_duration_seconds) * len(pending_files), 3)
 
+        duplicate_count = summary.get("duplicate", 0)
+        unique_content_count = max(0, len(all_files) - duplicate_count)
         completed_count = summary["completed"]
-        completion_percent = round((completed_count / len(all_files) * 100), 2) if all_files else 0.0
+        completion_percent = round((completed_count / unique_content_count * 100), 2) if unique_content_count else 0.0
 
         return {
             "directory": directory,
             "cleared": clear,
             "total_pdf_files": len(all_files),
+            "unique_content_count": unique_content_count,
+            "duplicate_count": duplicate_count,
+            "duplicate_files": duplicate_files,
             "summary": summary,
             "pending_count": len(pending_files),
             "pending_files": sorted(pending_files),

@@ -146,6 +146,8 @@ def main():
                                    help="Force restart and reprocess all files (ignore previous progress)")
     batch_upload_parser.add_argument("--clear-progress", action="store_true", 
                                    help="Clear progress tracking for this directory before starting")
+    batch_upload_parser.add_argument("--preserve-order", action="store_true",
+                                   help="Process pending PDFs in filesystem discovery order instead of resumable small-first order")
 
     # Progress status command
     progress_parser = subparsers.add_parser("progress", help="View batch upload progress status.")
@@ -438,6 +440,7 @@ def handle_batch_upload_command(args):
     resume_mode = args.resume
     force_restart = args.force_restart
     clear_progress = args.clear_progress
+    preserve_order = getattr(args, "preserve_order", False)
     
     if not os.path.isdir(directory):
         print(f"Error: {directory} is not a valid directory.")
@@ -467,28 +470,45 @@ def handle_batch_upload_command(args):
         sys.exit(0)
     
     print(f"Found {len(pdf_files)} PDF files in {directory}.")
-    
-    # Get pending files based on resume mode
+
+    print("Hashing PDF content and marking byte-identical duplicates...")
+    logging.info("START: Content-hash deduplication for batch upload")
+    dedupe_summary = tracker.apply_content_deduplication(pdf_files)
+    logging.info("FINISH: Content-hash deduplication summary: %s", dedupe_summary)
+    print(
+        "   Unique PDF contents: "
+        f"{dedupe_summary['unique_content_files']} / {dedupe_summary['total_pdf_files']}"
+    )
+    print(f"   Duplicate PDF paths skipped: {dedupe_summary['duplicate_files']}")
+    if dedupe_summary.get("duplicate_completed_paths"):
+        print(f"   Previously completed duplicate paths reclassified: {dedupe_summary['duplicate_completed_paths']}")
+    if dedupe_summary.get("hash_error_count"):
+        print(f"   Hashing errors: {dedupe_summary['hash_error_count']} files; they will be handled as normal pending files if reachable.")
+
+    # Get pending files based on resume mode.  Pending is content-aware: duplicate
+    # paths are aliases of their canonical PDF and are never sent into parsing.
     if resume_mode or not force_restart:
         pending_files = tracker.get_pending_files(pdf_files, force_restart=force_restart)
-        completed_count = len(pdf_files) - len(pending_files)
-        
-        if completed_count > 0:
+        pending_files = order_pending_files_for_resumable_batch(pending_files, preserve_order=preserve_order)
+        summary = tracker.get_progress_summary()
+
+        if summary["completed"] > 0 or summary["failed"] > 0 or summary.get("duplicate", 0) > 0:
             print("📊 Progress Summary:")
-            summary = tracker.get_progress_summary()
-            print(f"   Previously completed: {completed_count}")
+            print(f"   Previously completed unique PDFs: {summary['completed']}")
+            print(f"   Duplicate paths skipped: {summary.get('duplicate', 0)}")
             print(f"   Previously failed: {summary['failed']}")
             print(f"   Success rate: {summary['success_rate']:.1f}%")
-            print(f"   Files to process: {len(pending_files)}")
-            
+            print(f"   Unique PDFs to process: {len(pending_files)}")
+
             if len(pending_files) == 0:
-                print("✅ All files have been processed successfully!")
+                print("✅ All unique PDF contents have been processed successfully!")
                 return
         else:
-            print("🆕 No previous progress found. Starting fresh batch upload.")
+            print("🆕 No previous progress found. Starting fresh deduplicated batch upload.")
     else:
-        pending_files = pdf_files
-        print("🔄 Force restart mode: Processing all files.")
+        pending_files = tracker.get_pending_files(pdf_files, force_restart=True)
+        pending_files = order_pending_files_for_resumable_batch(pending_files, preserve_order=preserve_order)
+        print("🔄 Force restart mode: Reprocessing canonical unique PDF contents only.")
     
     # Determine processing mode
     if use_sequential:
@@ -515,11 +535,35 @@ def handle_batch_upload_command(args):
     final_summary = tracker.get_progress_summary()
     print("\n📊 Final Summary:")
     print(f"   Total files processed: {final_summary['total_tracked']}")
-    print(f"   Successfully completed: {final_summary['completed']}")
+    print(f"   Successfully completed unique PDFs: {final_summary['completed']}")
+    print(f"   Duplicate paths skipped: {final_summary.get('duplicate', 0)}")
     print(f"   Failed: {final_summary['failed']}")
     print(f"   Overall success rate: {final_summary['success_rate']:.1f}%")
     
     logging.info("FINISH: Batch upload command completed")
+
+def order_pending_files_for_resumable_batch(pdf_files, preserve_order=False):
+    """Return a stable processing order that avoids large-PDF head-of-line blocking.
+
+    Resume state is recorded per completed file, not per ordinal position. When a
+    host or user service restarts mid-file, putting a very large/scanned PDF at
+    the front can pin the whole batch forever: every restart retries the same
+    long file before any later file gets a chance. Small-first ordering preserves
+    the guarantee that every pending PDF remains in the queue while allowing the
+    tracker to make durable forward progress between interruptions.
+    """
+    if preserve_order:
+        return list(pdf_files)
+
+    def sort_key(pdf_path):
+        try:
+            size = os.path.getsize(pdf_path)
+        except OSError:
+            size = 0
+        return (size, str(pdf_path))
+
+    return sorted(pdf_files, key=sort_key)
+
 
 def process_files_sequentially(pdf_files, tracker):
     """Process files sequentially while preserving real tracker statistics."""
@@ -529,10 +573,10 @@ def process_files_sequentially(pdf_files, tracker):
     kernel = CiteWeaveKernel()
 
     for idx, pdf_path in enumerate(pdf_files, 1):
-        print(f"\n[{idx}/{len(pdf_files)}] Processing: {pdf_path}")
+        print(f"\n[{idx}/{len(pdf_files)}] Processing: {pdf_path}", flush=True)
         started_at = time.time()
         try:
-            print(f"Processing document: {pdf_path}")
+            print(f"Processing document: {pdf_path}", flush=True)
             results = kernel.upload_document(pdf_path, save_results=True)
             stats = results.get('processing_stats', {})
 
@@ -569,6 +613,7 @@ def process_files_sequentially(pdf_files, tracker):
                     'sentences_with_citations': stats.get('sentences_with_citations', 0),
                     'total_citations': stats.get('total_citations', 0),
                     'total_references': stats.get('total_references', 0),
+                    'file_hash': tracker.file_hash_for_path(pdf_path),
                 },
             )
             success_count += 1
@@ -615,6 +660,7 @@ def process_files_parallel(pdf_files, num_processors, tracker):
                     print(f"[{completed_count}/{total_files}] ✅ {os.path.basename(pdf_path)}")
                     print(f"    Paper ID: {result['paper_id']}")
                     print(f"    Sentences: {result['total_sentences']}, Citations: {result['total_citations']}")
+                    result['file_hash'] = tracker.file_hash_for_path(pdf_path)
                     tracker.mark_file_completed(pdf_path, result)
                 else:
                     fail_count += 1
@@ -698,10 +744,12 @@ def handle_progress_command(args):
 
     summary = progress["summary"]
     print(f"Total PDF files discovered: {progress['total_pdf_files']}")
+    print(f"Unique PDF contents: {progress.get('unique_content_count', progress['total_pdf_files'])}")
+    print(f"Duplicate PDF paths skipped: {progress.get('duplicate_count', 0)}")
     print(f"Total files tracked: {summary['total_tracked']}")
-    print(f"Completed: {progress['completed_count']}")
+    print(f"Completed unique PDFs: {progress['completed_count']}")
     print(f"Failed: {progress['failed_count']}")
-    print(f"Pending / resumable: {progress['pending_count']}")
+    print(f"Pending unique PDFs / resumable: {progress['pending_count']}")
     print(f"  • Not started yet: {progress['not_started_count']}")
     print(f"  • Retryable failed files: {progress['retryable_failed_count']}")
     print(f"Success rate: {summary['success_rate']:.1f}%")
@@ -766,8 +814,15 @@ def handle_progress_command(args):
     else:
         print("No files pending processing.")
 
+    if progress.get("duplicate_files"):
+        print("\n--- Duplicate Files Skipped ---")
+        for i, (pdf_path, canonical_path) in enumerate(list(progress["duplicate_files"].items())[:50], 1):
+            print(f"{i}. {os.path.basename(pdf_path)} → {os.path.basename(canonical_path)}")
+        if len(progress["duplicate_files"]) > 50:
+            print(f"... {len(progress['duplicate_files']) - 50} more duplicate paths omitted")
+
     if progress["pending_count"] > 0:
-        print("\nTip: run batch-upload --resume to continue remaining files, including retries for previous failures.")
+        print("\nTip: run batch-upload --resume to continue remaining unique files, including retries for previous failures.")
 
     if getattr(args, "show_completed", False) and progress["completed_files"]:
         print("\n--- Completed Files ---")
