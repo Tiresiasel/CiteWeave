@@ -359,6 +359,61 @@ class CiteWeaveKernel:
             "estimated_remaining_human": _format_duration(estimated_remaining_seconds),
         }
 
+    def paper_index_snapshot(self, search: str = "", author: str = "", limit: int = 20) -> Dict[str, Any]:
+        """Return a privacy-safe view of locally indexed papers.
+
+        The author index may contain absolute local PDF paths. Keep those out of
+        CLI/API snapshots by exposing only a boolean PDF-availability flag.
+        """
+        from src.storage.author_paper_index import AuthorPaperIndex
+
+        requested_limit = max(0, limit)
+        search_text = (search or "").strip()
+        author_text = (author or "").strip()
+        index = AuthorPaperIndex()
+
+        if author_text:
+            raw_papers = index.find_papers_by_author(author_text)
+        else:
+            raw_papers = index.get_all_papers(limit=None)
+
+        if search_text:
+            needle = search_text.casefold()
+            raw_papers = [
+                paper
+                for paper in raw_papers
+                if needle in str(paper.get("title") or "").casefold()
+                or needle in str(paper.get("authors") or paper.get("author_name") or "").casefold()
+                or needle in str(paper.get("journal") or "").casefold()
+                or needle in str(paper.get("year") or "").casefold()
+            ]
+
+        total_matches = len(raw_papers)
+        limited_papers = raw_papers if requested_limit == 0 else raw_papers[:requested_limit]
+        papers = []
+        for paper in limited_papers:
+            authors = paper.get("authors") or paper.get("author_name") or "(unknown)"
+            papers.append(
+                {
+                    "paper_id": paper.get("paper_id"),
+                    "title": paper.get("title") or "(untitled)",
+                    "year": paper.get("year"),
+                    "journal": paper.get("journal"),
+                    "authors": authors,
+                    "pdf_available": bool(paper.get("pdf_path")),
+                    "processed_date": paper.get("processed_date"),
+                }
+            )
+
+        return {
+            "search_filter": search_text,
+            "author_filter": author_text,
+            "requested_limit": requested_limit,
+            "total_matches": total_matches,
+            "entries_returned": len(papers),
+            "papers": papers,
+        }
+
     def query_history_snapshot(
         self,
         limit: int = 10,

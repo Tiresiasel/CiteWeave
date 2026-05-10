@@ -1,5 +1,10 @@
 # Development Logs
 
+## **2026-05-10**
+- **local paper index CLI**: added `papers` to search/list the local author-paper index by title, author, journal, or year while exposing only PDF availability instead of absolute local paths.
+- **privacy-aware diagnostics**: paper index snapshots now omit raw `pdf_path` values, making local corpus checks safer to share in automation output.
+- **test coverage**: added CLI regression coverage for JSON output and empty-result guidance.
+
 ## **2026-05-07**
 - **query-history triage sorting**: added `query-history --sort` for ordering the displayed matching window by recency, age, duration, or response size before `--limit`, so daily audits can inspect slowest, fastest, longest, or shortest responses without post-processing JSONL.
 - **test coverage**: added regression coverage that sorted displays keep full matching-window metrics intact while preserving chronological latest-query diagnostics.

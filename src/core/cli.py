@@ -154,6 +154,13 @@ def main():
     progress_parser.add_argument("--json", action="store_true", help="Print machine-readable progress information as JSON.")
     progress_parser.add_argument("--show-completed", action="store_true", help="Also list completed files in text output.")
 
+    # Papers command
+    papers_parser = subparsers.add_parser("papers", help="Search or list the local paper index without exposing local PDF paths.")
+    papers_parser.add_argument("--search", default="", help="Filter papers by title, author, journal, or year.")
+    papers_parser.add_argument("--author", default="", help="Filter papers by author name using the author index.")
+    papers_parser.add_argument("--limit", type=int, default=20, help="Maximum papers to display (default: 20; use 0 for all matches).")
+    papers_parser.add_argument("--json", action="store_true", help="Print machine-readable paper index results as JSON.")
+
     # Routes command
     routes_parser = subparsers.add_parser("routes", help="Show active route configuration.")
     routes_parser.add_argument("--json", action="store_true", help="Print machine-readable route configuration as JSON.")
@@ -215,6 +222,8 @@ def main():
         handle_batch_upload_command(args)
     elif args.command == "progress":
         handle_progress_command(args)
+    elif args.command == "papers":
+        handle_papers_command(args)
     elif args.command == "routes":
         handle_routes_command(args)
     elif args.command == "health":
@@ -629,6 +638,44 @@ def process_files_parallel(pdf_files, num_processors, tracker):
     if fail_count > 0:
         print(f"Failed files: {fail_count}/{total_files}")
         print("Consider running with --sequential flag for more detailed error messages.")
+
+def handle_papers_command(args):
+    """Search/list locally indexed papers without printing absolute PDF paths."""
+    kernel = CiteWeaveKernel()
+    snapshot = kernel.paper_index_snapshot(
+        search=getattr(args, "search", "") or "",
+        author=getattr(args, "author", "") or "",
+        limit=max(0, getattr(args, "limit", 20)),
+    )
+
+    if getattr(args, "json", False):
+        print(json.dumps(snapshot, indent=2, ensure_ascii=False, sort_keys=True))
+        return
+
+    print("\n=== Local Paper Index ===")
+    if snapshot["search_filter"]:
+        print(f"Search filter: {snapshot['search_filter']}")
+    if snapshot["author_filter"]:
+        print(f"Author filter: {snapshot['author_filter']}")
+    print(f"Matches: {snapshot['total_matches']} | Displayed: {snapshot['entries_returned']}")
+
+    if not snapshot["papers"]:
+        print("No indexed papers matched. Try a broader --search term or rebuild the author-paper index after uploads.")
+        return
+
+    for idx, paper in enumerate(snapshot["papers"], 1):
+        pdf_marker = "PDF" if paper["pdf_available"] else "no PDF path"
+        year = paper["year"] if paper["year"] else "?"
+        print(f"\n{idx}. {paper['title']}")
+        print(f"   Year: {year} | {pdf_marker}")
+        print(f"   Authors: {paper['authors']}")
+        print(f"   Paper ID: {paper['paper_id']}")
+        if paper.get("journal"):
+            print(f"   Journal: {paper['journal']}")
+
+    if snapshot["requested_limit"] and snapshot["total_matches"] > snapshot["entries_returned"]:
+        print("\nTip: use --limit 0 to show all matching papers.")
+
 
 def handle_progress_command(args):
     """Handle the progress command to view batch upload progress status."""
