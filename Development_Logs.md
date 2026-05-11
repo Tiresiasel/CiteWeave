@@ -1,5 +1,9 @@
 # Development Logs
 
+## **2026-05-11**
+- **OCR availability diagnostics**: PDF processing now distinguishes missing Python OCR packages from a missing `tesseract` binary, so scanned-PDF failures point to the actual setup gap instead of silently advertising OCR as available.
+- **test coverage**: added focused regression coverage for OCR availability reason messages.
+
 ## **2026-05-10**
 - **local paper index CLI**: added `papers` to search/list the local author-paper index by title, author, journal, or year while exposing only PDF availability instead of absolute local paths.
 - **privacy-aware diagnostics**: paper index snapshots now omit raw `pdf_path` values, making local corpus checks safer to share in automation output.
