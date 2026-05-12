@@ -9,6 +9,10 @@
 - **privacy-aware diagnostics**: paper index snapshots now omit raw `pdf_path` values, making local corpus checks safer to share in automation output.
 - **test coverage**: added CLI regression coverage for JSON output and empty-result guidance.
 
+## **2026-05-12**
+- **citation-analysis paper resolution**: added deterministic author+year fallback for queries like “Toh and Ahuja 2022” when title lookup fails, avoiding incorrect latest-upload fallback and resolving the cited/source paper from intersected author matches.
+- **test coverage**: added regression coverage for author-year citation extraction routing.
+
 ## **2026-05-07**
 - **query-history triage sorting**: added `query-history --sort` for ordering the displayed matching window by recency, age, duration, or response size before `--limit`, so daily audits can inspect slowest, fastest, longest, or shortest responses without post-processing JSONL.
 - **test coverage**: added regression coverage that sorted displays keep full matching-window metrics intact while preserving chronological latest-query diagnostics.

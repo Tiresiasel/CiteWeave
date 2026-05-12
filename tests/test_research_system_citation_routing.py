@@ -5,6 +5,9 @@ class FakeQueryAgent:
     def get_papers_id_by_title(self, title):
         return {"status": "no_match", "query": title}
 
+    def get_papers_id_by_author(self, author, title_hint=None, year=None):
+        return {"status": "no_match", "query": author, "title_hint": title_hint, "year": year}
+
     def list_uploaded_papers(self, limit=5):
         return [
             {
@@ -44,5 +47,78 @@ def test_citation_analysis_falls_back_to_uploaded_paper_without_tool_calls():
 
     assert results["paper_resolution"]["resolution_strategy"] == "uploaded_paper_fallback"
     assert results["source_paper"]["paper_id"] == "paper-1"
+    assert results["get_papers_cited_by_paper"]["count"] == 1
+    assert results["get_citation_sentences_from_paper"]["count"] == 1
+
+
+class FakeAuthorYearQueryAgent(FakeQueryAgent):
+    def get_papers_id_by_author(self, author, title_hint=None, year=None):
+        candidates = {
+            ("Toh", "2022"): [
+                {
+                    "paper_id": "toh-ahuja-2022",
+                    "title": "Integration and appropriability",
+                    "authors": ["Toh", "Ahuja"],
+                    "year": 2022,
+                    "title_similarity_score": 0.41,
+                },
+                {
+                    "paper_id": "toh-other-2022",
+                    "title": "Another Toh paper",
+                    "authors": ["Toh"],
+                    "year": 2022,
+                    "title_similarity_score": 0.12,
+                },
+            ],
+            ("Ahuja", "2022"): [
+                {
+                    "paper_id": "toh-ahuja-2022",
+                    "title": "Integration and appropriability",
+                    "authors": ["Toh", "Ahuja"],
+                    "year": 2022,
+                    "title_similarity_score": 0.41,
+                }
+            ],
+        }.get((author, year), [])
+        if not candidates:
+            return {"status": "no_match"}
+        return {"status": "multiple_matches", "candidates": candidates, "count": len(candidates)}
+
+    def list_uploaded_papers(self, limit=5):
+        raise AssertionError("author/year resolution should run before uploaded-paper fallback")
+
+    def get_papers_cited_by_paper(self, paper_id):
+        assert paper_id == "toh-ahuja-2022"
+        return [{"paper_id": "cited-1", "title": "Cited Paper"}]
+
+    def get_sentences_with_citations_from_paper(self, paper_id, count=50):
+        assert paper_id == "toh-ahuja-2022"
+        return [{"text": "Example citation sentence", "citations": [{"paper_id": "cited-1"}]}]
+
+
+def test_citation_analysis_resolves_author_year_when_title_lookup_fails():
+    system = LangGraphResearchSystem.__new__(LangGraphResearchSystem)
+    system.query_agent = FakeAuthorYearQueryAgent()
+
+    state = {
+        "question": "What citations were extracted from Toh and Ahuja 2022?",
+        "request_id": "test-request",
+    }
+    query_intent = {
+        "query_type": "citation_analysis",
+        "target_entity": "Toh and Ahuja 2022",
+        "entity_type": "paper",
+        "extracted_entities": {
+            "author_names": ["Toh", "Ahuja"],
+            "years": ["2022"],
+            "paper_titles": [],
+        },
+    }
+
+    next_state = system._execute_tools_based_on_intent(state, query_intent)
+    results = next_state["collected_data"]["results"]
+
+    assert results["paper_resolution"]["resolution_strategy"] == "author_year_lookup"
+    assert results["source_paper"]["paper_id"] == "toh-ahuja-2022"
     assert results["get_papers_cited_by_paper"]["count"] == 1
     assert results["get_citation_sentences_from_paper"]["count"] == 1
