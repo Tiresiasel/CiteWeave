@@ -12,6 +12,7 @@ import threading
 import time
 import multiprocessing
 import json
+import signal
 from datetime import datetime, timezone
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from functools import partial
@@ -148,6 +149,10 @@ def main():
                                    help="Clear progress tracking for this directory before starting")
     batch_upload_parser.add_argument("--preserve-order", action="store_true",
                                    help="Process pending PDFs in filesystem discovery order instead of resumable small-first order")
+    batch_upload_parser.add_argument("--skip-failed", action="store_true",
+                                   help="Resume without retrying files already marked failed")
+    batch_upload_parser.add_argument("--file-timeout-seconds", type=int, default=0,
+                                   help="Sequential mode only: fail and continue if one PDF exceeds this many seconds")
 
     # Progress status command
     progress_parser = subparsers.add_parser("progress", help="View batch upload progress status.")
@@ -441,6 +446,8 @@ def handle_batch_upload_command(args):
     force_restart = args.force_restart
     clear_progress = args.clear_progress
     preserve_order = getattr(args, "preserve_order", False)
+    retry_failed = not getattr(args, "skip_failed", False)
+    file_timeout_seconds = max(0, int(getattr(args, "file_timeout_seconds", 0) or 0))
     
     if not os.path.isdir(directory):
         print(f"Error: {directory} is not a valid directory.")
@@ -488,7 +495,7 @@ def handle_batch_upload_command(args):
     # Get pending files based on resume mode.  Pending is content-aware: duplicate
     # paths are aliases of their canonical PDF and are never sent into parsing.
     if resume_mode or not force_restart:
-        pending_files = tracker.get_pending_files(pdf_files, force_restart=force_restart)
+        pending_files = tracker.get_pending_files(pdf_files, force_restart=force_restart, retry_failed=retry_failed)
         pending_files = order_pending_files_for_resumable_batch(pending_files, preserve_order=preserve_order)
         summary = tracker.get_progress_summary()
 
@@ -514,7 +521,7 @@ def handle_batch_upload_command(args):
     if use_sequential:
         print("Using sequential processing (multiprocessing disabled)")
         logging.info("START: Sequential processing mode")
-        process_files_sequentially(pending_files, tracker)
+        process_files_sequentially(pending_files, tracker, file_timeout_seconds=file_timeout_seconds)
         logging.info("FINISH: Sequential processing completed")
     else:
         # Validate processor count
@@ -565,7 +572,15 @@ def order_pending_files_for_resumable_batch(pdf_files, preserve_order=False):
     return sorted(pdf_files, key=sort_key)
 
 
-def process_files_sequentially(pdf_files, tracker):
+class _PerFileTimeout(Exception):
+    pass
+
+
+def _raise_per_file_timeout(signum, frame):
+    raise _PerFileTimeout("PDF processing exceeded configured per-file timeout")
+
+
+def process_files_sequentially(pdf_files, tracker, file_timeout_seconds=0):
     """Process files sequentially while preserving real tracker statistics."""
     print("Starting sequential batch upload...")
     success_count = 0
@@ -577,7 +592,14 @@ def process_files_sequentially(pdf_files, tracker):
         started_at = time.time()
         try:
             print(f"Processing document: {pdf_path}", flush=True)
+            previous_handler = None
+            if file_timeout_seconds:
+                previous_handler = signal.signal(signal.SIGALRM, _raise_per_file_timeout)
+                signal.alarm(file_timeout_seconds)
             results = kernel.upload_document(pdf_path, save_results=True)
+            if file_timeout_seconds:
+                signal.alarm(0)
+                signal.signal(signal.SIGALRM, previous_handler)
             stats = results.get('processing_stats', {})
 
             print("\nProcessing completed successfully!")
@@ -619,6 +641,10 @@ def process_files_sequentially(pdf_files, tracker):
             success_count += 1
 
         except Exception as e:
+            if file_timeout_seconds:
+                signal.alarm(0)
+                if previous_handler is not None:
+                    signal.signal(signal.SIGALRM, previous_handler)
             print(f"Failed to process {pdf_path}: {e}")
             fail_count += 1
             tracker.mark_file_failed(pdf_path, e)

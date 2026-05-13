@@ -57,6 +57,8 @@ def citeweave_command(
     clear_progress: bool,
     processors: int | None,
     sequential: bool,
+    skip_failed: bool,
+    file_timeout_seconds: int | None,
 ) -> List[str]:
     citeweave_bin = root / ".venv" / "bin" / "citeweave"
     if citeweave_bin.exists():
@@ -74,6 +76,10 @@ def citeweave_command(
         command.append("--sequential")
     elif processors is not None:
         command.extend(["--processors", str(processors)])
+    if skip_failed:
+        command.append("--skip-failed")
+    if file_timeout_seconds:
+        command.extend(["--file-timeout-seconds", str(file_timeout_seconds)])
     return command
 
 
@@ -98,6 +104,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--clear-progress", action="store_true", help="Clear batch progress for this source before ingestion.")
     parser.add_argument("--processors", type=int, help="Number of CiteWeave batch-upload workers to use.")
     parser.add_argument("--sequential", action="store_true", help="Force sequential CiteWeave batch-upload processing.")
+    parser.add_argument("--skip-failed", action="store_true", help="Do not retry files already marked failed by a previous run.")
+    parser.add_argument("--file-timeout-seconds", type=int, help="Sequential mode only: fail and continue if one PDF exceeds this many seconds.")
     return parser.parse_args()
 
 
@@ -116,6 +124,8 @@ def main() -> int:
             clear_progress=args.clear_progress,
             processors=args.processors,
             sequential=args.sequential,
+            skip_failed=args.skip_failed,
+            file_timeout_seconds=args.file_timeout_seconds,
         )
         report = build_report(args.source, source_dir, pdfs, command, args.dry_run)
 

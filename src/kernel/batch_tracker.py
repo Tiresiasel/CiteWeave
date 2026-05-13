@@ -282,12 +282,14 @@ class BatchUploadTracker:
     def is_file_duplicate(self, pdf_path: str) -> bool:
         return self.progress_data.get(str(pdf_path), {}).get("status") == _STATUS_DUPLICATE
 
-    def get_pending_files(self, all_files, force_restart: bool = False):
+    def get_pending_files(self, all_files, force_restart: bool = False, retry_failed: bool = True):
         if force_restart:
             return [pdf_path for pdf_path in all_files if not self.is_file_duplicate(pdf_path)]
         return [
             pdf_path for pdf_path in all_files
-            if not self.is_file_completed(pdf_path) and not self.is_file_duplicate(pdf_path)
+            if not self.is_file_completed(pdf_path)
+            and not self.is_file_duplicate(pdf_path)
+            and (retry_failed or not self.is_file_failed(pdf_path))
         ]
 
     def completed_entries(self) -> Dict[str, Any]:

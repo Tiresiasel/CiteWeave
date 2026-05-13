@@ -247,6 +247,29 @@ def test_content_deduplication_marks_duplicate_paths_without_deleting_files():
         assert duplicate.exists()
 
 
+def test_get_pending_files_can_skip_previous_failures():
+    batch_tracker = _load_module(
+        BATCH_TRACKER_PATH,
+        "batch_tracker_skip_failed",
+        module_name=f"src.kernel.batch_tracker_skip_failed_{uuid.uuid4().hex}",
+    )
+
+    with tempfile.TemporaryDirectory() as tmpdir:
+        pdf_dir = Path(tmpdir) / "papers"
+        pdf_dir.mkdir()
+        failed = pdf_dir / "failed.pdf"
+        pending = pdf_dir / "pending.pdf"
+        failed.write_bytes(b"%PDF failed")
+        pending.write_bytes(b"%PDF pending")
+
+        tracker = batch_tracker.BatchUploadTracker(str(pdf_dir), tracker_file=str(Path(tmpdir) / "tracker.json"))
+        tracker.mark_file_failed(str(failed), "timeout")
+
+        all_files = [str(failed), str(pending)]
+        assert tracker.get_pending_files(all_files) == all_files
+        assert tracker.get_pending_files(all_files, retry_failed=False) == [str(pending)]
+
+
 def test_kernel_batch_upload_processes_only_unique_pdf_content():
     batch_tracker = _load_module(
         BATCH_TRACKER_PATH,

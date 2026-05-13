@@ -9,6 +9,10 @@
 - **privacy-aware diagnostics**: paper index snapshots now omit raw `pdf_path` values, making local corpus checks safer to share in automation output.
 - **test coverage**: added CLI regression coverage for JSON output and empty-result guidance.
 
+## **2026-05-13**
+- **resumable Zotero ingestion hardening**: added sequential per-file timeout support plus `--skip-failed` resume controls so one pathological PDF cannot trap a long batch in a restart loop.
+- **test coverage**: added regression coverage for failed-file skipping and Zotero sync forwarding of resume safety flags.
+
 ## **2026-05-12**
 - **citation-analysis paper resolution**: added deterministic author+year fallback for queries like “Toh and Ahuja 2022” when title lookup fails, avoiding incorrect latest-upload fallback and resolving the cited/source paper from intersected author matches.
 - **test coverage**: added regression coverage for author-year citation extraction routing.
