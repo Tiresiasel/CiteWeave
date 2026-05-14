@@ -1,5 +1,9 @@
 # Development Logs
 
+## **2026-05-14**
+- **paper index PDF-status filtering**: added `papers --pdf-status {all,available,missing}` so local corpus audits can isolate entries that are query-ready versus metadata-only without exposing absolute PDF paths.
+- **test coverage**: added regression coverage for privacy-safe PDF-status filtering in the paper index snapshot and CLI JSON output.
+
 ## **2026-05-11**
 - **OCR availability diagnostics**: PDF processing now distinguishes missing Python OCR packages from a missing `tesseract` binary, so scanned-PDF failures point to the actual setup gap instead of silently advertising OCR as available.
 - **test coverage**: added focused regression coverage for OCR availability reason messages.

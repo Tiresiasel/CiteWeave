@@ -167,6 +167,12 @@ def main():
     papers_parser.add_argument("--author", default="", help="Filter papers by author name using the author index.")
     papers_parser.add_argument("--limit", type=int, default=20, help="Maximum papers to display (default: 20; use 0 for all matches).")
     papers_parser.add_argument("--json", action="store_true", help="Print machine-readable paper index results as JSON.")
+    papers_parser.add_argument(
+        "--pdf-status",
+        choices=["all", "available", "missing"],
+        default="all",
+        help="Filter by whether an indexed paper has an associated PDF path (default: all).",
+    )
 
     # Routes command
     routes_parser = subparsers.add_parser("routes", help="Show active route configuration.")
@@ -718,6 +724,7 @@ def handle_papers_command(args):
         search=getattr(args, "search", "") or "",
         author=getattr(args, "author", "") or "",
         limit=max(0, getattr(args, "limit", 20)),
+        pdf_status=getattr(args, "pdf_status", "all") or "all",
     )
 
     if getattr(args, "json", False):
@@ -729,6 +736,8 @@ def handle_papers_command(args):
         print(f"Search filter: {snapshot['search_filter']}")
     if snapshot["author_filter"]:
         print(f"Author filter: {snapshot['author_filter']}")
+    if snapshot.get("pdf_status_filter", "all") != "all":
+        print(f"PDF status filter: {snapshot['pdf_status_filter']}")
     print(f"Matches: {snapshot['total_matches']} | Displayed: {snapshot['entries_returned']}")
 
     if not snapshot["papers"]:
