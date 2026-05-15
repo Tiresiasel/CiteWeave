@@ -37,10 +37,11 @@ def _load_cli_module():
                 "addon_config_issues": [],
             }
 
-        def paper_index_snapshot(self, search="", author="", limit=20, pdf_status="all"):
+        def paper_index_snapshot(self, search="", author="", title="", limit=20, pdf_status="all"):
             return {
                 "search_filter": search,
                 "author_filter": author,
+                "title_filter": title,
                 "pdf_status_filter": pdf_status,
                 "requested_limit": limit,
                 "total_matches": 0,
@@ -268,10 +269,11 @@ class CliPapersCommandTests(unittest.TestCase):
         cli = _load_cli_module()
 
         class ExpectedKernel:
-            def paper_index_snapshot(self, search="", author="", limit=20, pdf_status="all"):
+            def paper_index_snapshot(self, search="", author="", title="", limit=20, pdf_status="all"):
                 return {
                     "search_filter": search,
                     "author_filter": author,
+                    "title_filter": title,
                     "pdf_status_filter": pdf_status,
                     "requested_limit": limit,
                     "total_matches": 1,
@@ -293,7 +295,7 @@ class CliPapersCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_papers_command(Namespace(search="network", author="", limit=5, pdf_status="all", json=True))
+            cli.handle_papers_command(Namespace(search="network", author="", title="", limit=5, pdf_status="all", json=True))
 
         payload = json.loads(buf.getvalue())
         self.assertEqual(payload["search_filter"], "network")
@@ -305,10 +307,11 @@ class CliPapersCommandTests(unittest.TestCase):
         cli = _load_cli_module()
 
         class ExpectedKernel:
-            def paper_index_snapshot(self, search="", author="", limit=20, pdf_status="all"):
+            def paper_index_snapshot(self, search="", author="", title="", limit=20, pdf_status="all"):
                 return {
                     "search_filter": search,
                     "author_filter": author,
+                    "title_filter": title,
                     "pdf_status_filter": pdf_status,
                     "requested_limit": limit,
                     "total_matches": 0,
@@ -320,7 +323,7 @@ class CliPapersCommandTests(unittest.TestCase):
 
         buf = io.StringIO()
         with redirect_stdout(buf):
-            cli.handle_papers_command(Namespace(search="Porter", author="", limit=20, pdf_status="all", json=False))
+            cli.handle_papers_command(Namespace(search="Porter", author="", title="", limit=20, pdf_status="all", json=False))
 
         output = buf.getvalue()
         self.assertIn("Local Paper Index", output)

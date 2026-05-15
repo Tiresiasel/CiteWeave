@@ -1,5 +1,9 @@
 # Development Logs
 
+## **2026-05-15**
+- **paper-index title filter**: added `papers --title` and kernel title filtering so a user can quickly check whether a specific article title is in the local database without broad author/journal matches or exposing local PDF paths.
+- **test coverage**: added regression coverage for combined broad search + title filtering in the privacy-safe paper index snapshot.
+
 ## **2026-05-14**
 - **paper index PDF-status filtering**: added `papers --pdf-status {all,available,missing}` so local corpus audits can isolate entries that are query-ready versus metadata-only without exposing absolute PDF paths.
 - **test coverage**: added regression coverage for privacy-safe PDF-status filtering in the paper index snapshot and CLI JSON output.

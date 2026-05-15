@@ -37,3 +37,19 @@ def test_paper_index_snapshot_filters_by_pdf_status_without_exposing_paths(tmp_p
     assert [paper["paper_id"] for paper in missing["papers"]] == ["missing-pdf"]
     assert missing["papers"][0]["pdf_available"] is False
     assert "pdf_path" not in missing["papers"][0]
+
+
+def test_paper_index_snapshot_filters_title_separately_from_broad_search(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    AuthorPaperIndex(index_db_path="data/author_paper_index.db")
+    with sqlite3.connect("data/author_paper_index.db") as conn:
+        cursor = conn.cursor()
+        _insert_paper(cursor, "network-theory", "Network Theory of Organization", None)
+        _insert_paper(cursor, "network-methods", "Relational Network Methods", None)
+        conn.commit()
+
+    snapshot = CiteWeaveKernel().paper_index_snapshot(search="network", title="organization", limit=0)
+
+    assert snapshot["search_filter"] == "network"
+    assert snapshot["title_filter"] == "organization"
+    assert [paper["paper_id"] for paper in snapshot["papers"]] == ["network-theory"]

@@ -368,7 +368,7 @@ class CiteWeaveKernel:
             "estimated_remaining_human": _format_duration(estimated_remaining_seconds),
         }
 
-    def paper_index_snapshot(self, search: str = "", author: str = "", limit: int = 20, pdf_status: str = "all") -> Dict[str, Any]:
+    def paper_index_snapshot(self, search: str = "", author: str = "", title: str = "", limit: int = 20, pdf_status: str = "all") -> Dict[str, Any]:
         """Return a privacy-safe view of locally indexed papers.
 
         The author index may contain absolute local PDF paths. Keep those out of
@@ -379,6 +379,7 @@ class CiteWeaveKernel:
         requested_limit = max(0, limit)
         search_text = (search or "").strip()
         author_text = (author or "").strip()
+        title_text = (title or "").strip()
         pdf_status_filter = (pdf_status or "all").strip().casefold()
         if pdf_status_filter not in {"all", "available", "missing"}:
             pdf_status_filter = "all"
@@ -398,6 +399,14 @@ class CiteWeaveKernel:
                 or needle in str(paper.get("authors") or paper.get("author_name") or "").casefold()
                 or needle in str(paper.get("journal") or "").casefold()
                 or needle in str(paper.get("year") or "").casefold()
+            ]
+
+        if title_text:
+            title_needle = title_text.casefold()
+            raw_papers = [
+                paper
+                for paper in raw_papers
+                if title_needle in str(paper.get("title") or "").casefold()
             ]
 
         if pdf_status_filter == "available":
@@ -425,6 +434,7 @@ class CiteWeaveKernel:
         return {
             "search_filter": search_text,
             "author_filter": author_text,
+            "title_filter": title_text,
             "pdf_status_filter": pdf_status_filter,
             "requested_limit": requested_limit,
             "total_matches": total_matches,
