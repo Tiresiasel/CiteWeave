@@ -1,4 +1,5 @@
 import unittest
+import tempfile
 import uuid
 from pathlib import Path
 
@@ -19,6 +20,9 @@ class DummyTracker:
 
     def mark_file_failed(self, pdf_path, error_msg):
         self.failed.append((pdf_path, str(error_msg)))
+
+    def file_hash_for_path(self, pdf_path):
+        return "hash:example"
 
 
 class FakeKernel:
@@ -99,9 +103,40 @@ class CliBatchUploadSequentialTests(unittest.TestCase):
         self.assertEqual(result_data["sentences_with_citations"], 4)
         self.assertEqual(result_data["total_citations"], 7)
         self.assertEqual(result_data["total_references"], 9)
+        self.assertEqual(result_data["file_hash"], "hash:example")
         self.assertIn("processing_time", result_data)
         self.assertIn("processed_at", result_data)
         self.assertIn("duration_seconds", result_data)
+
+    def test_order_pending_files_sorts_small_first_without_dropping_large_pdfs(self):
+        cli = _load_cli_module()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            large = tmp / "large.pdf"
+            small = tmp / "small.pdf"
+            medium = tmp / "medium.pdf"
+            large.write_bytes(b"x" * 30)
+            small.write_bytes(b"x")
+            medium.write_bytes(b"x" * 10)
+
+            ordered = cli.order_pending_files_for_resumable_batch([str(large), str(small), str(medium)])
+
+        self.assertEqual(ordered, [str(small), str(medium), str(large)])
+
+    def test_order_pending_files_can_preserve_discovery_order(self):
+        cli = _load_cli_module()
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
+            large = tmp / "large.pdf"
+            small = tmp / "small.pdf"
+            large.write_bytes(b"x" * 30)
+            small.write_bytes(b"x")
+
+            ordered = cli.order_pending_files_for_resumable_batch([str(large), str(small)], preserve_order=True)
+
+        self.assertEqual(ordered, [str(large), str(small)])
 
 
 if __name__ == "__main__":

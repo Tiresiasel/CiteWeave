@@ -13,14 +13,85 @@
     "local": {
       "model": "all-MiniLM-L6-v2",
       "vector_size": 384,
-      "normalize": true
+      "normalize": true,
+      "device": "auto",
+      "require_cuda": false,
+      "batch_size": 64,
+      "trust_remote_code": false,
+      "max_seq_length": null,
+      "document_prompt_name": null,
+      "query_prompt_name": null,
+      "document_prompt": null,
+      "query_prompt": null,
+      "model_kwargs": {},
+      "tokenizer_kwargs": {},
+      "encode_kwargs": {}
     },
     "openai": {
       "model": "text-embedding-3-small",
       "vector_size": 1536,
       "dimensions": null,
       "batch_size": 128
-    }
+    },
+    "profiles": {
+      "mini_l6_compat": {
+        "provider": "local",
+        "model": "all-MiniLM-L6-v2",
+        "vector_size": 384,
+        "device": "auto",
+        "batch_size": 64,
+        "normalize": true
+      },
+      "bge_large_en_cuda": {
+        "provider": "local",
+        "model": "BAAI/bge-large-en-v1.5",
+        "vector_size": 1024,
+        "device": "cuda",
+        "require_cuda": true,
+        "batch_size": 32,
+        "normalize": true,
+        "query_prompt": "Represent this sentence for searching relevant passages: "
+      },
+      "qwen3_embedding_4b_cuda": {
+        "provider": "local",
+        "model": "Qwen/Qwen3-Embedding-4B",
+        "vector_size": 2560,
+        "device": "cuda",
+        "require_cuda": true,
+        "batch_size": 8,
+        "normalize": true,
+        "trust_remote_code": true,
+        "max_seq_length": 8192,
+        "model_kwargs": {
+          "torch_dtype": "float16"
+        }
+      },
+      "qwen3_embedding_8b_cuda": {
+        "provider": "local",
+        "model": "Qwen/Qwen3-Embedding-8B",
+        "vector_size": 4096,
+        "device": "cuda",
+        "require_cuda": true,
+        "batch_size": 4,
+        "normalize": true,
+        "trust_remote_code": true,
+        "max_seq_length": 8192,
+        "model_kwargs": {
+          "torch_dtype": "float16"
+        }
+      },
+      "bge_large_en": {
+        "provider": "local",
+        "model": "BAAI/bge-large-en-v1.5",
+        "vector_size": 1024,
+        "device": "auto",
+        "require_cuda": false,
+        "batch_size": 16,
+        "normalize": true,
+        "query_prompt": "Represent this sentence for searching relevant passages: "
+      }
+    },
+    "active_profile": "bge_large_en_cuda"
   },
   "collections": {
     "sentences": {

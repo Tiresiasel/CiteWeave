@@ -37,6 +37,18 @@ def _load_cli_module():
                 "addon_config_issues": [],
             }
 
+        def paper_index_snapshot(self, search="", author="", title="", limit=20, pdf_status="all"):
+            return {
+                "search_filter": search,
+                "author_filter": author,
+                "title_filter": title,
+                "pdf_status_filter": pdf_status,
+                "requested_limit": limit,
+                "total_matches": 0,
+                "entries_returned": 0,
+                "papers": [],
+            }
+
         def query_history_snapshot(self, limit=10, status="all", source="all", confirmation="all", satisfaction="all", since_hours=None, contains="", question_contains="", error_contains="", response_contains="", planned_database="all", planned_method="all", planned_route="all", min_duration_ms=None, max_duration_ms=None, min_response_chars=None, max_response_chars=None, sort_order="recent"):
             return {
                 "log_file": "data/query_history.jsonl",
@@ -250,6 +262,72 @@ class CliRoutesCommandTests(unittest.TestCase):
                 "ok": False,
             },
         )
+
+
+class CliPapersCommandTests(unittest.TestCase):
+    def test_handle_papers_command_supports_json_output_without_pdf_paths(self):
+        cli = _load_cli_module()
+
+        class ExpectedKernel:
+            def paper_index_snapshot(self, search="", author="", title="", limit=20, pdf_status="all"):
+                return {
+                    "search_filter": search,
+                    "author_filter": author,
+                    "title_filter": title,
+                    "pdf_status_filter": pdf_status,
+                    "requested_limit": limit,
+                    "total_matches": 1,
+                    "entries_returned": 1,
+                    "papers": [
+                        {
+                            "paper_id": "paper-1",
+                            "title": "Network Theory of Organization",
+                            "year": 1999,
+                            "journal": "Academy of Management Review",
+                            "authors": "Borgatti, Foster",
+                            "pdf_available": True,
+                            "processed_date": None,
+                        }
+                    ],
+                }
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            cli.handle_papers_command(Namespace(search="network", author="", title="", limit=5, pdf_status="all", json=True))
+
+        payload = json.loads(buf.getvalue())
+        self.assertEqual(payload["search_filter"], "network")
+        self.assertEqual(payload["entries_returned"], 1)
+        self.assertNotIn("pdf_path", payload["papers"][0])
+        self.assertTrue(payload["papers"][0]["pdf_available"])
+
+    def test_handle_papers_command_renders_empty_guidance(self):
+        cli = _load_cli_module()
+
+        class ExpectedKernel:
+            def paper_index_snapshot(self, search="", author="", title="", limit=20, pdf_status="all"):
+                return {
+                    "search_filter": search,
+                    "author_filter": author,
+                    "title_filter": title,
+                    "pdf_status_filter": pdf_status,
+                    "requested_limit": limit,
+                    "total_matches": 0,
+                    "entries_returned": 0,
+                    "papers": [],
+                }
+
+        cli.CiteWeaveKernel = ExpectedKernel
+
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            cli.handle_papers_command(Namespace(search="Porter", author="", title="", limit=20, pdf_status="all", json=False))
+
+        output = buf.getvalue()
+        self.assertIn("Local Paper Index", output)
+        self.assertIn("No indexed papers matched", output)
 
 
 class CliProgressCommandTests(unittest.TestCase):

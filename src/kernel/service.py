@@ -196,6 +196,7 @@ class CiteWeaveKernel:
             tracker.clear_progress(directory)
 
         all_files = [path for path in glob.glob(os.path.join(directory, "**", "*.pdf"), recursive=True) if os.path.isfile(path)]
+        dedupe_summary = tracker.apply_content_deduplication(all_files)
         pending_files = tracker.get_pending_files(all_files, force_restart=force_restart or not resume)
 
         processed = []
@@ -216,6 +217,7 @@ class CiteWeaveKernel:
                     "sentences_with_citations": stats.get("sentences_with_citations", 0),
                     "total_citations": stats.get("total_citations", 0),
                     "total_references": stats.get("total_references", 0),
+                    "file_hash": tracker.file_hash_for_path(pdf_path),
                 }
                 tracker.mark_file_completed(pdf_path, compact)
                 processed.append(compact)
@@ -230,6 +232,7 @@ class CiteWeaveKernel:
             "failed_count": len(failed),
             "processed": processed,
             "failed": failed,
+            "deduplication": dedupe_summary,
             "summary": tracker.get_progress_summary(),
         }
 
@@ -326,6 +329,7 @@ class CiteWeaveKernel:
         summary = tracker.get_progress_summary()
         pending_files = tracker.get_pending_files(all_files, force_restart=False)
         failed_files = summary["failed_files"]
+        duplicate_files = summary.get("duplicate_files", {})
         failed_paths = set(failed_files.keys())
         not_started_files = sorted(pdf_path for pdf_path in all_files if pdf_path not in tracker.progress_data)
         retryable_failed_files = sorted(pdf_path for pdf_path in all_files if pdf_path in failed_paths)
@@ -334,13 +338,18 @@ class CiteWeaveKernel:
         if average_completed_duration_seconds is not None and pending_files:
             estimated_remaining_seconds = round(float(average_completed_duration_seconds) * len(pending_files), 3)
 
+        duplicate_count = summary.get("duplicate", 0)
+        unique_content_count = max(0, len(all_files) - duplicate_count)
         completed_count = summary["completed"]
-        completion_percent = round((completed_count / len(all_files) * 100), 2) if all_files else 0.0
+        completion_percent = round((completed_count / unique_content_count * 100), 2) if unique_content_count else 0.0
 
         return {
             "directory": directory,
             "cleared": clear,
             "total_pdf_files": len(all_files),
+            "unique_content_count": unique_content_count,
+            "duplicate_count": duplicate_count,
+            "duplicate_files": duplicate_files,
             "summary": summary,
             "pending_count": len(pending_files),
             "pending_files": sorted(pending_files),
@@ -357,6 +366,80 @@ class CiteWeaveKernel:
             "average_completed_duration_human": _format_duration(average_completed_duration_seconds),
             "estimated_remaining_seconds": estimated_remaining_seconds,
             "estimated_remaining_human": _format_duration(estimated_remaining_seconds),
+        }
+
+    def paper_index_snapshot(self, search: str = "", author: str = "", title: str = "", limit: int = 20, pdf_status: str = "all") -> Dict[str, Any]:
+        """Return a privacy-safe view of locally indexed papers.
+
+        The author index may contain absolute local PDF paths. Keep those out of
+        CLI/API snapshots by exposing only a boolean PDF-availability flag.
+        """
+        from src.storage.author_paper_index import AuthorPaperIndex
+
+        requested_limit = max(0, limit)
+        search_text = (search or "").strip()
+        author_text = (author or "").strip()
+        title_text = (title or "").strip()
+        pdf_status_filter = (pdf_status or "all").strip().casefold()
+        if pdf_status_filter not in {"all", "available", "missing"}:
+            pdf_status_filter = "all"
+        index = AuthorPaperIndex()
+
+        if author_text:
+            raw_papers = index.find_papers_by_author(author_text)
+        else:
+            raw_papers = index.get_all_papers(limit=None)
+
+        if search_text:
+            needle = search_text.casefold()
+            raw_papers = [
+                paper
+                for paper in raw_papers
+                if needle in str(paper.get("title") or "").casefold()
+                or needle in str(paper.get("authors") or paper.get("author_name") or "").casefold()
+                or needle in str(paper.get("journal") or "").casefold()
+                or needle in str(paper.get("year") or "").casefold()
+            ]
+
+        if title_text:
+            title_needle = title_text.casefold()
+            raw_papers = [
+                paper
+                for paper in raw_papers
+                if title_needle in str(paper.get("title") or "").casefold()
+            ]
+
+        if pdf_status_filter == "available":
+            raw_papers = [paper for paper in raw_papers if paper.get("pdf_path")]
+        elif pdf_status_filter == "missing":
+            raw_papers = [paper for paper in raw_papers if not paper.get("pdf_path")]
+
+        total_matches = len(raw_papers)
+        limited_papers = raw_papers if requested_limit == 0 else raw_papers[:requested_limit]
+        papers = []
+        for paper in limited_papers:
+            authors = paper.get("authors") or paper.get("author_name") or "(unknown)"
+            papers.append(
+                {
+                    "paper_id": paper.get("paper_id"),
+                    "title": paper.get("title") or "(untitled)",
+                    "year": paper.get("year"),
+                    "journal": paper.get("journal"),
+                    "authors": authors,
+                    "pdf_available": bool(paper.get("pdf_path")),
+                    "processed_date": paper.get("processed_date"),
+                }
+            )
+
+        return {
+            "search_filter": search_text,
+            "author_filter": author_text,
+            "title_filter": title_text,
+            "pdf_status_filter": pdf_status_filter,
+            "requested_limit": requested_limit,
+            "total_matches": total_matches,
+            "entries_returned": len(papers),
+            "papers": papers,
         }
 
     def query_history_snapshot(

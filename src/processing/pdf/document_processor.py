@@ -193,6 +193,8 @@ class DocumentProcessor:
         if create_embeddings and self.vector_indexer:
             logging.info("Creating vector embeddings...")
             embedding_stats = self._create_vector_embeddings(paper_id, metadata, sections, structured_paragraphs, sentences_with_citations, paragraph_citation_map)
+            if isinstance(embedding_stats, dict) and embedding_stats.get("error"):
+                raise RuntimeError(f"Vector embedding creation failed: {embedding_stats['error']}")
         
         # Step 8: Convert to parallel structure and unify citation format
         logging.info("Converting to parallel structure with unified citation format...")

@@ -32,8 +32,27 @@ except ImportError:
 try:
     import pytesseract  # OCR for scanned PDFs
     from PIL import Image
-    HAS_OCR = True
+    HAS_PYTESSERACT = True
 except ImportError:
+    HAS_PYTESSERACT = False
+
+HAS_TESSERACT_BINARY = shutil.which("tesseract") is not None if HAS_PYTESSERACT else False
+HAS_OCR = HAS_PYTESSERACT and HAS_TESSERACT_BINARY
+
+
+def _ocr_unavailable_reason() -> str:
+    """Return a user-actionable reason OCR cannot run in this environment."""
+    if not HAS_PYTESSERACT:
+        return "pytesseract package or Pillow is not installed"
+    if not HAS_TESSERACT_BINARY:
+        return "tesseract binary is not installed or not on PATH"
+    return "OCR support is available"
+
+
+if not HAS_PYTESSERACT:
+    # Keep names import-safe for static checks and tests on lean systems.
+    pytesseract = None  # type: ignore[assignment]
+    Image = None  # type: ignore[assignment]
     HAS_OCR = False
 
 logging.basicConfig(level=logging.INFO)
@@ -61,6 +80,8 @@ class PDFProcessor:
         logging.info(f"Available PDF engines: {[name for name, _ in self.available_engines]}")
         if HAS_OCR:
             logging.info("OCR support available for scanned documents")
+        else:
+            logging.info("OCR disabled: %s", _ocr_unavailable_reason())
 
     def _generate_paper_id(self, title: str, year: str) -> str:
         """
@@ -1817,6 +1838,11 @@ class PDFProcessor:
             ocr_engines = [(name, func) for name, func in engines_to_try if "ocr" in name]
             non_ocr_engines = [(name, func) for name, func in engines_to_try if "ocr" not in name]
             engines_to_try = ocr_engines + non_ocr_engines
+        elif is_scanned and not HAS_OCR:
+            logging.warning(
+                "Scanned PDF detected but OCR is unavailable (%s); skipping OCR engine",
+                _ocr_unavailable_reason(),
+            )
         
         for engine_name, engine_func in engines_to_try:
             try:
@@ -2010,7 +2036,9 @@ class PDFProcessor:
                 if HAS_OCR:
                     diagnosis["recommendations"].append("Use pymupdf_ocr engine for best results")
                 else:
-                    diagnosis["recommendations"].append("Install pytesseract for OCR support")
+                    diagnosis["recommendations"].append(
+                        f"Enable OCR support: {_ocr_unavailable_reason()}"
+                    )
                     diagnosis["is_processable"] = False
             
         except Exception as e:

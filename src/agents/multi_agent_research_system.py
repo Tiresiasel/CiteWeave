@@ -3692,6 +3692,82 @@ Please respond with: CONTINUE or EXPAND
             return paper if paper.get("paper_id") else None
         return None
 
+    def _papers_from_lookup_result(self, lookup_result: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """Extract normalized paper candidates from title/author lookup output."""
+        if not isinstance(lookup_result, dict):
+            return []
+        if lookup_result.get("status") == "single_match":
+            paper = dict(lookup_result.get("paper_info") or {})
+            paper["paper_id"] = lookup_result.get("paper_id") or paper.get("paper_id") or paper.get("id")
+            return [paper] if paper.get("paper_id") else []
+        papers = []
+        for candidate in lookup_result.get("candidates") or []:
+            if not isinstance(candidate, dict):
+                continue
+            paper = dict(candidate)
+            paper["paper_id"] = paper.get("paper_id") or paper.get("id")
+            if paper.get("paper_id"):
+                papers.append(paper)
+        return papers
+
+    def _resolve_paper_by_author_year(
+        self,
+        author_names: List[str],
+        years: List[str],
+        title_hint: str,
+        diagnostics: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        """Resolve a paper from author/year clues when title lookup is too sparse.
+
+        User queries often arrive as "Toh and Ahuja 2022". Treating that whole
+        phrase as a title fails, and falling back to the latest upload is worse:
+        it silently answers the wrong paper. Intersect author lookups by paper_id
+        and publication year instead.
+        """
+        clean_authors = [author.strip() for author in author_names if isinstance(author, str) and author.strip()]
+        clean_years = [str(year).strip() for year in years if str(year).strip()]
+        if not clean_authors or not clean_years:
+            return None
+
+        scored: Dict[str, Dict[str, Any]] = {}
+        for year in clean_years:
+            for author in clean_authors:
+                author_result = self.query_agent.get_papers_id_by_author(
+                    author,
+                    title_hint=title_hint or None,
+                    year=year,
+                )
+                diagnostics[f"author_year_lookup:{author[:24]}:{year}"] = author_result
+                for paper in self._papers_from_lookup_result(author_result):
+                    paper_id = paper["paper_id"]
+                    entry = scored.setdefault(
+                        paper_id,
+                        {"paper": paper, "authors": set(), "year": year, "title_score": 0.0},
+                    )
+                    entry["authors"].add(author.lower())
+                    entry["title_score"] = max(
+                        entry["title_score"],
+                        float(paper.get("title_similarity_score") or paper.get("similarity_score") or 0.0),
+                    )
+
+        if not scored:
+            return None
+
+        ranked = sorted(
+            scored.values(),
+            key=lambda item: (len(item["authors"]), item["title_score"]),
+            reverse=True,
+        )
+        best = ranked[0]
+        required_author_hits = len(clean_authors) if len(clean_authors) > 1 else 1
+        if len(best["authors"]) < required_author_hits:
+            return None
+        if len(ranked) > 1:
+            runner_up = ranked[1]
+            if len(best["authors"]) == len(runner_up["authors"]) and best["title_score"] == runner_up["title_score"]:
+                return None
+        return best["paper"]
+
     def _resolve_source_paper_for_query(
         self,
         question: str,
@@ -3704,6 +3780,8 @@ Please respond with: CONTINUE or EXPAND
         entity_type = (query_intent.get("entity_type") or "").strip().lower()
         extracted = query_intent.get("extracted_entities") or {}
         paper_titles = query_intent.get("paper_titles") or extracted.get("paper_titles") or []
+        author_names = query_intent.get("author_names") or extracted.get("author_names") or []
+        years = query_intent.get("years") or extracted.get("years") or []
         diagnostics: Dict[str, Any] = {}
 
         matched_paper = self._paper_from_match(matched_entity)
@@ -3729,6 +3807,17 @@ Please respond with: CONTINUE or EXPAND
             if paper:
                 diagnostics["resolution_strategy"] = "title_lookup"
                 return paper, diagnostics
+
+        if isinstance(author_names, list) and isinstance(years, list):
+            author_year_paper = self._resolve_paper_by_author_year(
+                author_names,
+                years,
+                target_entity or question,
+                diagnostics,
+            )
+            if author_year_paper:
+                diagnostics["resolution_strategy"] = "author_year_lookup"
+                return author_year_paper, diagnostics
 
         uploaded_papers = self.query_agent.list_uploaded_papers(limit=5)
         diagnostics["list_uploaded_papers"] = self._wrap_result(uploaded_papers)
@@ -3823,7 +3912,6 @@ Please respond with: CONTINUE or EXPAND
         matched_entity: Any = None,
     ) -> ResearchState:
         """Deterministically answer incoming-citation questions."""
-        question = state["question"]
         request_id = state.get("request_id")
         collected_data = {"results": {}, "tool_calls": []}
 

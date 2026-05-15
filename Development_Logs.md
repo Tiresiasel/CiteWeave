@@ -1,5 +1,30 @@
 # Development Logs
 
+## **2026-05-15**
+- **paper-index title filter**: added `papers --title` and kernel title filtering so a user can quickly check whether a specific article title is in the local database without broad author/journal matches or exposing local PDF paths.
+- **test coverage**: added regression coverage for combined broad search + title filtering in the privacy-safe paper index snapshot.
+
+## **2026-05-14**
+- **paper index PDF-status filtering**: added `papers --pdf-status {all,available,missing}` so local corpus audits can isolate entries that are query-ready versus metadata-only without exposing absolute PDF paths.
+- **test coverage**: added regression coverage for privacy-safe PDF-status filtering in the paper index snapshot and CLI JSON output.
+
+## **2026-05-11**
+- **OCR availability diagnostics**: PDF processing now distinguishes missing Python OCR packages from a missing `tesseract` binary, so scanned-PDF failures point to the actual setup gap instead of silently advertising OCR as available.
+- **test coverage**: added focused regression coverage for OCR availability reason messages.
+
+## **2026-05-10**
+- **local paper index CLI**: added `papers` to search/list the local author-paper index by title, author, journal, or year while exposing only PDF availability instead of absolute local paths.
+- **privacy-aware diagnostics**: paper index snapshots now omit raw `pdf_path` values, making local corpus checks safer to share in automation output.
+- **test coverage**: added CLI regression coverage for JSON output and empty-result guidance.
+
+## **2026-05-13**
+- **resumable Zotero ingestion hardening**: added sequential per-file timeout support plus `--skip-failed` resume controls so one pathological PDF cannot trap a long batch in a restart loop.
+- **test coverage**: added regression coverage for failed-file skipping and Zotero sync forwarding of resume safety flags.
+
+## **2026-05-12**
+- **citation-analysis paper resolution**: added deterministic author+year fallback for queries like “Toh and Ahuja 2022” when title lookup fails, avoiding incorrect latest-upload fallback and resolving the cited/source paper from intersected author matches.
+- **test coverage**: added regression coverage for author-year citation extraction routing.
+
 ## **2026-05-07**
 - **query-history triage sorting**: added `query-history --sort` for ordering the displayed matching window by recency, age, duration, or response size before `--limit`, so daily audits can inspect slowest, fastest, longest, or shortest responses without post-processing JSONL.
 - **test coverage**: added regression coverage that sorted displays keep full matching-window metrics intact while preserving chronological latest-query diagnostics.

@@ -1,189 +1,185 @@
 # CiteWeave
 
-**A local citation intelligence stack operated through OpenClaw.**
+**Turn a Zotero library into a local citation intelligence system.**
 
-CiteWeave turns academic PDFs into a searchable research system. OpenClaw is the entrypoint: it helps deploy the stack, keeps a Zotero library synced, and gives the user a natural-language interface for upload, diagnosis, querying, and maintenance. CiteWeave owns the local infrastructure behind that interface: PDF extraction, citation parsing, embeddings, Neo4j, Qdrant, GROBID, and the research query kernel.
+Academic PDFs are full of arguments, citations, methods, and theory trails. Most of that structure is invisible until you start reading by hand. CiteWeave extracts it, indexes it, and makes it searchable: not as another chat wrapper, but as a local research stack with a graph, vector indexes, citation contexts, and a query kernel built for scholarly work.
 
 [![Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 ---
 
-## Start here
+## What it is
 
-This README is for human readers: what the project is, what it can do, and how the pieces fit.
+CiteWeave ingests academic PDFs and builds a local research database around them:
 
-If you are **OpenClaw** or an operator deploying CiteWeave, read:
+- **PDF extraction** with GROBID and local PDF parsers;
+- **citation parsing** from in-text citations to reference entries;
+- **Neo4j graph storage** for papers, citations, paragraphs, sentences, and relationships;
+- **Qdrant vector indexes** for semantic retrieval over sentences, paragraphs, sections, and citations;
+- **local or API-based embeddings**;
+- **a research query kernel** that combines graph, vector, author, citation, and PDF-content routes.
 
-- [`docs/openclaw/README.md`](docs/openclaw/README.md) — OpenClaw operating index;
-- [`docs/openclaw/DEPLOYMENT.md`](docs/openclaw/DEPLOYMENT.md) — step-by-step local deployment;
-- [`docs/openclaw/PACKAGE_INTERFACE.md`](docs/openclaw/PACKAGE_INTERFACE.md) — actions, interfaces, and query-routing logic.
+The result is a system you can ask questions like:
 
-That separation is intentional. README explains the product. `docs/openclaw/` explains how to operate it.
+- “Which papers build on Teece 1997, and how do they use it?”
+- “Find work on multimarket competition and summarize the main theoretical split.”
+- “What does this paper cite when it discusses competitive response?”
+- “Which references are still unresolved or missing from my library?”
 
----
-
-## What CiteWeave does
-
-CiteWeave builds a local research database from academic PDFs. Once deployed, an OpenClaw user can ask it to:
-
-- keep a Zotero library synced into CiteWeave;
-- upload individual PDFs or batch-ingest PDF folders;
-- diagnose PDF extraction quality before ingestion;
-- build and query a Neo4j citation graph;
-- build and query Qdrant semantic vector indexes;
-- retrieve evidence from graph, vector, author, and PDF-content routes;
-- answer literature, author, citation, argument, and compound research questions;
-- inspect health, routes, ingestion progress, unresolved citations, and query history.
-
-Typical use cases:
-
-- literature reviews;
-- citation tracing;
-- theory lineage;
-- author and paper comparison;
-- unresolved-reference cleanup;
-- “where did this idea come from?” research.
+This is the useful part: CiteWeave does not just store PDFs. It tries to preserve the scholarly structure inside them. A PDF folder is a pile. A citation graph with retrievable passages is a research instrument.
 
 ---
 
-## Product model
+## Why OpenClaw is involved
 
-CiteWeave is designed as an **OpenClaw Package**.
+CiteWeave is designed to run as a local research package operated through [OpenClaw](https://github.com/openclaw/openclaw).
 
-OpenClaw provides:
+OpenClaw provides the conversational entrypoint and operational loop: deployment checks, Zotero sync scheduling, upload requests, progress monitoring, diagnostics, and user-facing research questions.
 
-- the user-facing natural-language entrypoint;
-- deployment coordination;
-- Docker Compose stack startup for local infrastructure;
-- recurring Zotero ingestion automation;
-- operation selection: upload, sync, diagnose, query, health, progress, telemetry;
-- agent-facing calls into CiteWeave.
+CiteWeave owns the actual research machinery: ingestion, extraction, citation analysis, graph/vector storage, and answer synthesis.
 
-CiteWeave provides:
+A good rule of thumb:
 
-- Zotero/PDF ingestion;
-- PDF parsing and citation extraction;
-- Neo4j graph storage;
-- Qdrant vector storage;
-- local or OpenAI embeddings;
-- GROBID-backed metadata and structure extraction;
-- research query planning and answer synthesis.
+> OpenClaw decides what the user is asking to do. CiteWeave decides how the research evidence should be retrieved.
 
-The boundary matters:
+For normal research questions, OpenClaw should pass the full question to CiteWeave rather than manually poking Neo4j or Qdrant.
 
-> OpenClaw decides what operation the user wants. CiteWeave decides how to retrieve and synthesize research evidence.
-
-OpenClaw is not the database layer. It is the entrypoint and coordinator for a local research stack.
-
----
-
-## Architecture
-
-```text
-Human researcher
-    │
-    ▼
-OpenClaw
-    │  natural-language entrypoint, deployment coordination,
-    │  Zotero sync scheduling, operation selection
-    ▼
-CiteWeave OpenClaw adapter
-    │  src/adapters/openclaw_facade.py
-    ▼
-CiteWeave kernel
-    │  upload, diagnose, route, query, progress, telemetry
-    ▼
-Local research infrastructure
-    ├── Docker Compose stack
-    │   ├── Neo4j citation graph
-    │   ├── Qdrant vector indexes
-    │   └── GROBID PDF extraction
-    ├── Zotero PDF source
-    └── Embeddings
-        ├── local SentenceTransformers   default
-        └── OpenAI Embeddings            optional
+```python
+facade.query("Which papers discuss platform competition?", confirmation="continue")
 ```
 
-The CLI still exists, but it is an operational adapter. It is useful for verification and debugging; it is not the product center.
+---
+
+## How it works
+
+```text
+Zotero library / PDF folder
+        │
+        ▼
+PDF extraction + metadata
+        │
+        ▼
+Citation and structure parsing
+        │
+        ├── Neo4j graph
+        │     papers, citations, paragraphs, sentences, relationships
+        │
+        ├── Qdrant vector indexes
+        │     sentences, paragraphs, sections, citations
+        │
+        └── Processed local artifacts
+              metadata, JSONL, original PDFs, diagnostics
+        │
+        ▼
+Research query kernel
+        │
+        ▼
+OpenClaw conversational interface
+```
+
+The CLI still exists for maintenance and debugging, but the intended product flow is through the OpenClaw facade.
 
 ---
 
-## Zotero as the persistent data source
+## What you can do with it
 
-A normal deployment starts by telling OpenClaw where the user's Zotero library lives. CiteWeave then treats that library as the continuing PDF source.
+### Keep a Zotero library indexed
 
-OpenClaw persists the source path as:
+Point CiteWeave at a Zotero library and it will discover PDFs under `storage/`, process them, and track resumable progress.
 
 ```env
 CITEWEAVE_ZOTERO_LIBRARY_DIR=/path/to/Zotero
 ```
 
-OpenClaw brings up the local service layer through Docker Compose, then schedules recurring ingestion through:
+```bash
+.venv/bin/python scripts/sync_zotero_pdfs.py --source "$CITEWEAVE_ZOTERO_LIBRARY_DIR" --json
+```
+
+### Upload or diagnose individual PDFs
 
 ```bash
-.venv/bin/python scripts/sync_zotero_pdfs.py --json
+.venv/bin/citeweave upload ./papers/example.pdf
+.venv/bin/citeweave diagnose ./papers/example.pdf
 ```
 
-The sync script resolves Zotero `storage/`, discovers PDFs recursively, and delegates to CiteWeave's resumable batch uploader. This lets the local research database grow continuously as the Zotero library changes.
+### Ask research questions
 
-For the exact setup procedure, see [`docs/openclaw/DEPLOYMENT.md`](docs/openclaw/DEPLOYMENT.md).
-
----
-
-## Query model
-
-OpenClaw should not manually query Neo4j or Qdrant for normal research questions. It should pass the user's research question to CiteWeave:
-
-```python
-facade.query(question, confirmation="continue")
+```bash
+.venv/bin/citeweave query "Which papers discuss competitive dynamics and platform strategy?"
 ```
 
-CiteWeave then decides which internal routes to use:
+### Monitor ingestion
 
-- semantic vector search;
-- graph citation traversal;
-- author and paper lookup;
-- extracted PDF content;
-- unresolved citation tracking;
-- final answer synthesis.
-
-For operational requests, OpenClaw calls the specific action instead: `upload_pdf`, `batch_upload`, `diagnose_pdf`, `progress`, `health`, `routes`, `query_history`, or `list_pending_citations`.
-
-Full interface documentation: [`docs/openclaw/PACKAGE_INTERFACE.md`](docs/openclaw/PACKAGE_INTERFACE.md).
+```bash
+.venv/bin/citeweave progress /path/to/Zotero/storage
+```
 
 ---
 
-## Embeddings
+## Local infrastructure
 
-CiteWeave currently supports two embedding schemes:
+A typical local deployment uses Docker Compose for:
 
-| Provider | Default? | Model | Vector size | API key |
-|---|---:|---|---:|---|
-| `local` | yes | `all-MiniLM-L6-v2` | 384 | no |
-| `openai` | no | `text-embedding-3-small` | 1536 | yes |
+- **Neo4j** — citation graph and structured research entities;
+- **Qdrant** — semantic vector search;
+- **GROBID** — scholarly PDF metadata and reference extraction.
 
-Default local mode keeps installation self-contained. OpenAI embeddings can be enabled when the user is ready to migrate the vector index.
+Deployment details live in [`docs/openclaw/DEPLOYMENT.md`](docs/openclaw/DEPLOYMENT.md). The short version:
 
-Switching providers changes vector dimensions, so existing Qdrant collections must be recreated or migrated before mixing providers. Databases do tend to remember their shape. Annoying, but useful.
+```bash
+bash scripts/bootstrap_openclaw.sh
+bash scripts/deploy_local_stack.sh
+bash scripts/deployment_check.sh
+```
+
+Use those scripts rather than hand-assembling services unless you are debugging. Future-you has enough problems.
 
 ---
 
-## Documentation map
+## Embeddings and vector rebuilds
 
-| Document | Audience | Purpose |
-|---|---|---|
-| [`README.md`](README.md) | Human reader | Product overview and architecture |
-| [`README.zh.md`](README.zh.md) | Chinese human reader | Chinese overview |
-| [`docs/openclaw/README.md`](docs/openclaw/README.md) | OpenClaw / operator | Operational entrypoint |
-| [`docs/openclaw/DEPLOYMENT.md`](docs/openclaw/DEPLOYMENT.md) | OpenClaw / operator | Local deployment and Zotero sync |
-| [`docs/openclaw/PACKAGE_INTERFACE.md`](docs/openclaw/PACKAGE_INTERFACE.md) | OpenClaw / integrator | Actions, interfaces, query logic |
-| [`docs/KERNEL_AND_OPENCLAW.md`](docs/KERNEL_AND_OPENCLAW.md) | Developer | Kernel/adapter architecture |
+CiteWeave supports local SentenceTransformers embeddings and OpenAI-compatible embedding providers. The current local configuration can be selected through `config/qdrant_config.json` and environment variables such as:
+
+```env
+CITEWEAVE_EMBEDDING_PROVIDER=local
+CITEWEAVE_EMBEDDING_PROFILE=bge_large_en
+CITEWEAVE_EMBEDDING_DEVICE=auto
+```
+
+Important operational rule:
+
+> Changing the base embedding model, provider, or vector dimension requires a full vector rebuild and full corpus re-ingest.
+
+Do **not** resume old ingestion progress after changing embeddings. Old vectors live in the old embedding space. Even if two models produce vectors with the same dimension, their distances are not comparable. Mixing them in one Qdrant collection makes retrieval invalid in the quiet, expensive way.
+
+Required rebuild sequence:
+
+1. Stop active ingestion.
+2. Update and verify the embedding configuration.
+3. Recreate or migrate the Qdrant collections.
+4. Clear batch progress for the affected source.
+5. Re-ingest the full corpus from scratch.
+6. Run representative queries before trusting the index.
+
+More detail: [`docs/openclaw/DEPLOYMENT.md#9-embedding-configuration`](docs/openclaw/DEPLOYMENT.md#9-embedding-configuration).
+
+---
+
+## Documentation
+
+- [`docs/openclaw/README.md`](docs/openclaw/README.md) — operating CiteWeave through OpenClaw;
+- [`docs/openclaw/DEPLOYMENT.md`](docs/openclaw/DEPLOYMENT.md) — local deployment, Zotero sync, health checks, rebuild procedures;
+- [`docs/openclaw/PACKAGE_INTERFACE.md`](docs/openclaw/PACKAGE_INTERFACE.md) — facade methods, intent routing, output expectations;
+- [`docs/KERNEL_AND_OPENCLAW.md`](docs/KERNEL_AND_OPENCLAW.md) — kernel/adapter architecture;
+- [`docs/data_structures/README.md`](docs/data_structures/README.md) — graph and vector data model.
+
+Chinese overview: [`README.zh.md`](README.zh.md).
 
 ---
 
 ## Development
 
-For development gates, run:
+Useful gates before pushing:
 
 ```bash
 .venv/bin/python -m ruff check src tests scripts/sync_zotero_pdfs.py
@@ -193,7 +189,7 @@ python3 -m compileall -q src tests scripts/sync_zotero_pdfs.py
 python3 scripts/repo_privacy_audit.py
 ```
 
-Expected privacy result:
+Expected privacy audit result:
 
 ```text
 PRIVACY_AUDIT_OK

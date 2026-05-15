@@ -137,8 +137,9 @@ That means:
 | “Use my Zotero library”, “set data source”, “keep this synced” | Set `CITEWEAVE_ZOTERO_LIBRARY_DIR`; dry-run `scripts/sync_zotero_pdfs.py`; schedule it. |
 | “Upload this paper”, “ingest this PDF” | `upload_pdf(pdf_path)` |
 | “Upload my papers folder”, “sync Zotero”, “import my library” | `batch_upload(directory)` or scheduled `scripts/sync_zotero_pdfs.py` |
+| “I changed the embedding model/provider/dimension” | Stop ingestion, recreate/migrate Qdrant vector collections, clear progress, then full `batch_upload(..., force_restart=True)` |
 | “Is this PDF readable?”, “why did extraction fail?” | `diagnose_pdf(pdf_path)` |
-| “What has finished?”, “what failed?”, “continue upload” | `progress(directory)` then `batch_upload(directory, resume=True)` |
+| “What has finished?”, “what failed?”, “continue upload” | `progress(directory)` then `batch_upload(directory, resume=True)` only if the embedding configuration is unchanged |
 | “Which papers discuss X?”, “what does author Y argue?”, “trace citations from A to B” | `query(question)` |
 | “Which interface should be used?”, “what routes exist?” | `routes()` |
 | “Is CiteWeave healthy?” | `health()` |
@@ -158,6 +159,10 @@ OpenClaw should pass the user's research question intact to `query(question)` fo
 | Paper-specific query | “What is the main argument of this paper?” | PDF content + metadata |
 | Comparative query | “Compare Porter and Teece on strategy.” | author/paper lookup + graph/vector synthesis |
 | Compound query | “Find papers on X, group by author, and show citation evidence.” | multiple internal routes, sufficiency assessment, response generation |
+
+### Embedding rebuild rule
+
+Changing the base embedding model, embedding provider, or vector dimension invalidates the existing Qdrant vector space. OpenClaw must treat that as a destructive rebuild operation: get explicit user confirmation, stop active ingestion, recreate or migrate vector collections, clear batch progress for the affected corpus, and run a full re-ingest. Resuming from old progress after an embedding change is not valid.
 
 OpenClaw should not pre-split compound research questions into several low-level DB calls by default. The safer first move is:
 
