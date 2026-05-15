@@ -1,7 +1,7 @@
 [project]
 name = "citeweave"
 version = "0.1.0"
-description = "Citation-aware academic knowledge graph and RAG system"
+description = "Personal research-memory retrieval over claims, evidence, and citations"
 authors = [
     {name = "Yinji Zhou"}
 ]

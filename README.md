@@ -4,7 +4,7 @@
 
 # CiteWeave
 
-**Personal literature retrieval for the papers you have read, collected, and cared about.**
+**Weave your research memory together through the claims, evidence, and citations you have read.**
 
 [![Apache 2.0](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
@@ -14,9 +14,9 @@
 
 Literature search often begins with a half-memory: a sentence you once underlined, a citation you vaguely remember, a method you know someone used, or a debate you remember but cannot locate.
 
-CiteWeave is a personal literature retrieval library for that kind of search.
+CiteWeave is a personal literature retrieval library that weaves those fragments into a searchable research memory.
 
-It helps you find the paper hiding inside your own reading history, then rebuild the logic around it. CiteWeave parses your PDFs into structured scholarly units: papers, sections, paragraphs, sentences, citation contexts, and references. It stores citation relationships in Neo4j, semantic representations in Qdrant, and processed artifacts locally, so an agent can search by keyword, argument, citation context, and conceptual proximity.
+It helps you find the paper hiding inside your own reading history, then rebuild the claims, evidence, and citation paths around it. CiteWeave parses your PDFs into structured scholarly units: papers, sections, paragraphs, sentences, citation contexts, and references. It stores citation relationships in Neo4j, semantic representations in Qdrant, and processed artifacts locally, so an agent can search by keyword, argument, citation context, and conceptual proximity.
 
 CiteWeave searches inward across the literature you have read, collected, and cared about. It makes your personal research memory searchable: recover the exact argument, trace the citation path, and assemble a coherent scholarly line from your own corpus.
 
