@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Continuously ingest PDFs from a Zotero data directory.
 
-This script is intended to be called by OpenClaw automation. It treats a Zotero
-library as a data source, resolves the PDF-bearing storage directory, and then
-runs CiteWeave's resumable batch ingestion over that directory.
+This is the Zotero-specific compatibility entrypoint. New AI-facing installers
+should prefer scripts/sync_literature_pdfs.py, which handles Zotero, Mendeley,
+EndNote, generic PDF folders, and single-PDF dry runs.
 """
 
 from __future__ import annotations

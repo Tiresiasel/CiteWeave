@@ -1,5 +1,9 @@
 # OpenClaw Deployment Guide for CiteWeave
 
+This guide covers OpenClaw runtime deployment details. The shared deployment
+guide for Codex, OpenClaw, Claude Code, and custom agents is
+[`../DEPLOYMENT.md`](../DEPLOYMENT.md).
+
 This is the step-by-step local deployment guide OpenClaw should follow when installing and operating CiteWeave.
 
 The top-level README is intentionally human-oriented. This file is operational.
@@ -83,7 +87,8 @@ The bootstrap script is the all-in-one path OpenClaw should use for first deploy
 
 ## 4. Deploy the local database/service stack
 
-The database and local service layer is intentionally a Docker Compose boundary. OpenClaw should not manually install Neo4j, Qdrant, or GROBID.
+The database and local service layer is a Docker Compose boundary. OpenClaw uses
+that boundary to start Neo4j, Qdrant, and GROBID.
 
 Use:
 

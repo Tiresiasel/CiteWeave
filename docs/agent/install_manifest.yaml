@@ -1,0 +1,215 @@
+schema_version: 1
+purpose: AI-facing CiteWeave installation choices, prompts, config patches, commands, and validation checks.
+language: en
+
+state_file: config/install_session.local.json
+env_file: .env
+apply_script: scripts/apply_install_choices.py
+
+global_rules:
+  - Ask the user only the prompts listed here unless a required value is missing.
+  - Apply choices with scripts/apply_install_choices.py whenever possible.
+  - Store installation decisions in config/install_session.local.json.
+  - Store runtime settings in .env.
+  - Do not ask a separate Query LLM Mode question.
+  - If embedding provider, model, or dimensions change, require explicit full rebuild confirmation before resuming ingestion.
+  - Recurring sync must check for active ingestion and must never use --force-restart or --clear-progress unless rebuilding.
+
+steps:
+  agent_detection:
+    prompt: "Detected agent: {agent}. Use this as your Research Agent?"
+    choices:
+      yes:
+        label: "Yes"
+        state_patch:
+          research_agent: "{detected_agent}"
+        command_template: ".venv/bin/python scripts/apply_install_choices.py --research-agent \"{detected_agent}\""
+      no:
+        label: "No"
+        next_prompt: "Choose your Research Agent."
+    fallback_prompt:
+      prompt: "Choose your Research Agent."
+      choices:
+        openclaw:
+          label: "OpenClaw"
+          env_patch:
+            CITEWEAVE_RESEARCH_AGENT: "OpenClaw"
+            CITEWEAVE_QUERY_ORCHESTRATION: "openclaw"
+            CITEWEAVE_LLM_PROVIDER: "openclaw"
+            CITEWEAVE_LLM_MODEL: "openclaw/default"
+            CITEWEAVE_LLM_API_BASE: "http://localhost:18789/v1"
+            CITEWEAVE_LLM_API_KEY: "not-needed-for-openclaw"
+          state_patch:
+            research_agent: "OpenClaw"
+            scheduler_adapter: "openclaw_automation"
+        codex:
+          label: "Codex"
+          env_patch:
+            CITEWEAVE_RESEARCH_AGENT: "Codex"
+            CITEWEAVE_QUERY_ORCHESTRATION: "agent_managed"
+          state_patch:
+            research_agent: "Codex"
+            scheduler_adapter: "codex_heartbeat"
+        claude_code:
+          label: "Claude Code"
+          env_patch:
+            CITEWEAVE_RESEARCH_AGENT: "Claude Code"
+            CITEWEAVE_QUERY_ORCHESTRATION: "agent_managed"
+          state_patch:
+            research_agent: "Claude Code"
+            scheduler_adapter: "launchd"
+        others:
+          label: "Others (experimental; provide an agent command or path)"
+          env_patch:
+            CITEWEAVE_RESEARCH_AGENT: "Others"
+            CITEWEAVE_QUERY_ORCHESTRATION: "agent_managed"
+          state_patch:
+            research_agent: "Others"
+            scheduler_adapter: "custom_agent"
+
+  source:
+    prompt: "Choose your reference manager or literature source."
+    helper_text: "CiteWeave will recursively scan the selected location and index every PDF file found in its subfolders."
+    choices:
+      zotero:
+        label: "Zotero"
+        source_location_prompt: "Choose source location."
+        source_location_choices: ["Default Location", "Custom Location", "PDF Folder"]
+        env_patch:
+          CITEWEAVE_REFERENCE_MANAGER: "zotero"
+          CITEWEAVE_LITERATURE_SOURCE_DIR: "{source_dir}"
+          CITEWEAVE_ZOTERO_LIBRARY_DIR: "{source_dir}"
+        state_patch:
+          reference_manager: "zotero"
+          source_location_mode: "{source_location_mode}"
+          resolved_pdf_source: "{resolved_pdf_source}"
+      mendeley:
+        label: "Mendeley"
+        source_location_prompt: "Choose source location."
+        source_location_choices: ["Default Location", "Custom Location", "PDF Folder"]
+        env_patch:
+          CITEWEAVE_REFERENCE_MANAGER: "mendeley"
+          CITEWEAVE_LITERATURE_SOURCE_DIR: "{source_dir}"
+        state_patch:
+          reference_manager: "mendeley"
+          source_location_mode: "{source_location_mode}"
+          resolved_pdf_source: "{resolved_pdf_source}"
+      endnote:
+        label: "EndNote"
+        source_location_prompt: "Choose source location."
+        source_location_choices: ["Default Location", "Custom Location", "PDF Folder"]
+        env_patch:
+          CITEWEAVE_REFERENCE_MANAGER: "endnote"
+          CITEWEAVE_LITERATURE_SOURCE_DIR: "{source_dir}"
+        state_patch:
+          reference_manager: "endnote"
+          source_location_mode: "{source_location_mode}"
+          resolved_pdf_source: "{resolved_pdf_source}"
+      pdf_folder:
+        label: "PDF Folder"
+        env_patch:
+          CITEWEAVE_REFERENCE_MANAGER: "pdf_folder"
+          CITEWEAVE_LITERATURE_SOURCE_DIR: "{source_dir}"
+        state_patch:
+          reference_manager: "pdf_folder"
+          source_location_mode: "pdf_folder"
+          resolved_pdf_source: "{source_dir}"
+      single_pdf_test:
+        label: "Single PDF Test"
+        prompt: "Choose one PDF for a smoke test before indexing a full library."
+        state_patch:
+          install_mode: "single_pdf_test"
+          single_pdf_path: "{single_pdf_path}"
+          sync:
+            enabled: false
+        validation:
+          - "Upload returns a paper id."
+          - "data/papers/<paper_id>/processed_document.json exists."
+          - "Qdrant contains vectors for the paper."
+          - "Neo4j contains a Paper node for the paper."
+
+  embedding:
+    prompt: "Choose embedding mode for vector-level literature retrieval."
+    choices:
+      local:
+        label: "Local"
+        models:
+          bge_large_en:
+            label: "BAAI/bge-large-en-v1.5 (recommended, 1024 dimensions)"
+            env_patch:
+              CITEWEAVE_EMBEDDING_PROVIDER: "local"
+              CITEWEAVE_EMBEDDING_PROFILE: "bge_large_en"
+              CITEWEAVE_EMBEDDING_MODEL: "BAAI/bge-large-en-v1.5"
+              CITEWEAVE_EMBEDDING_DIMENSIONS: "1024"
+              CITEWEAVE_EMBEDDING_BATCH_SIZE: "16"
+          mini_l6_compat:
+            label: "all-MiniLM-L6-v2 (fast local trial, 384 dimensions)"
+            env_patch:
+              CITEWEAVE_EMBEDDING_PROVIDER: "local"
+              CITEWEAVE_EMBEDDING_PROFILE: "mini_l6_compat"
+              CITEWEAVE_EMBEDDING_MODEL: "all-MiniLM-L6-v2"
+              CITEWEAVE_EMBEDDING_DIMENSIONS: "384"
+          other:
+            label: "Others (experimental automatic setup)"
+            required_fields: ["model_name", "dimensions", "device", "trust_remote_code"]
+            requires_validation: "embedding_smoke_test"
+      api:
+        label: "API"
+        provider_prompt: "Choose API Provider."
+        api_key_prompt: "Enter API Key."
+        model_prompt: "Choose embedding model."
+        providers:
+          openai:
+            label: "OpenAI"
+            models:
+              text-embedding-3-small:
+                dimensions: 1536
+              text-embedding-3-large:
+                dimensions: 3072
+          openai_compatible:
+            label: "Other OpenAI-compatible API"
+            required_fields: ["base_url", "model_name", "dimensions", "api_key"]
+            requires_validation: "embedding_smoke_test"
+
+  sync:
+    prompt: "Choose how often CiteWeave should update the literature index."
+    choices:
+      every_5_minutes:
+        label: "Every 5 minutes"
+        interval_minutes: 5
+      every_30_minutes:
+        label: "Every half hour"
+        interval_minutes: 30
+      daily:
+        label: "Daily"
+        requires_field: "daily_time"
+      custom:
+        label: "Others (enter a custom schedule)"
+        requires_field: "custom_schedule"
+    state_patch:
+      sync:
+        enabled: true
+        skip_failed: true
+        processors: 10
+        resume_only: true
+    scheduler_rule: "Check for active ingestion first. Never start a second ingest. Never use --force-restart or --clear-progress unless the user explicitly confirms a rebuild."
+
+commands:
+  install:
+    - "bash scripts/bootstrap_local.sh"
+    - "bash scripts/deployment_check.sh"
+  source_dry_run: ".venv/bin/python scripts/sync_literature_pdfs.py --source \"$CITEWEAVE_LITERATURE_SOURCE_DIR\" --reference-manager \"$CITEWEAVE_REFERENCE_MANAGER\" --dry-run --json"
+  full_ingest: ".venv/bin/python scripts/sync_literature_pdfs.py --source \"$CITEWEAVE_LITERATURE_SOURCE_DIR\" --reference-manager \"$CITEWEAVE_REFERENCE_MANAGER\" --json --processors 10 --skip-failed"
+  single_pdf_test: ".venv/bin/citeweave upload \"{single_pdf_path}\""
+
+validation_checks:
+  manifest_parse:
+    command: "python -c 'import yaml; yaml.safe_load(open(\"docs/agent/install_manifest.yaml\"))'"
+  deployment:
+    command: "bash scripts/deployment_check.sh"
+  routes:
+    command: ".venv/bin/citeweave routes --json"
+  health:
+    command: ".venv/bin/citeweave health --json"
+  source_dry_run:
+    command: ".venv/bin/python scripts/sync_literature_pdfs.py --source \"$CITEWEAVE_LITERATURE_SOURCE_DIR\" --dry-run --json"

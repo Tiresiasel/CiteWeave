@@ -324,15 +324,20 @@ section "Embedding mode"
 EMBEDDING_OK=0
 EMBEDDING_PROVIDER="${CITEWEAVE_EMBEDDING_PROVIDER:-local}"
 EMBEDDING_MODEL="${CITEWEAVE_EMBEDDING_MODEL:-}"
+EMBEDDING_PROFILE="${CITEWEAVE_EMBEDDING_PROFILE:-}"
+EMBEDDING_DIMENSIONS="${CITEWEAVE_EMBEDDING_DIMENSIONS:-}"
 
 if [[ "${EMBEDDING_PROVIDER}" == "local" ]]; then
   pass "Mode: local SentenceTransformers"
+  if [[ -n "${EMBEDDING_PROFILE}" ]]; then
+    info "  Profile: ${EMBEDDING_PROFILE}"
+  fi
   info "  Model: ${EMBEDDING_MODEL:-all-MiniLM-L6-v2}"
-  info "  Vector size: 384"
+  info "  Vector size: ${EMBEDDING_DIMENSIONS:-384}"
 elif [[ "${EMBEDDING_PROVIDER}" == "openai" ]]; then
   pass "Mode: OpenAI embeddings"
   info "  Model: ${EMBEDDING_MODEL:-text-embedding-3-small}"
-  info "  Vector size: ${CITEWEAVE_EMBEDDING_DIMENSIONS:-1536}"
+  info "  Vector size: ${EMBEDDING_DIMENSIONS:-1536}"
   if [[ -z "${OPENAI_API_KEY:-}" ]] && [[ -z "${CITEWEAVE_EMBEDDING_API_KEY:-}" ]]; then
     fail "OPENAI_API_KEY / CITEWEAVE_EMBEDDING_API_KEY not set for OpenAI embeddings"
     ((EMBEDDING_OK++))

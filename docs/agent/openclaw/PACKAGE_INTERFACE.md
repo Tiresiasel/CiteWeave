@@ -1,5 +1,9 @@
 # CiteWeave OpenClaw Package Interface
 
+This document describes the OpenClaw adapter contract. The shared Research Agent
+operating contract is
+[`../OPERATING_CONTRACT.md`](../OPERATING_CONTRACT.md).
+
 This document is the operational contract OpenClaw should use when controlling CiteWeave.
 For deployment and Zotero setup, read [`DEPLOYMENT.md`](DEPLOYMENT.md) first.
 
@@ -164,7 +168,7 @@ OpenClaw should pass the user's research question intact to `query(question)` fo
 
 Changing the base embedding model, embedding provider, or vector dimension invalidates the existing Qdrant vector space. OpenClaw must treat that as a destructive rebuild operation: get explicit user confirmation, stop active ingestion, recreate or migrate vector collections, clear batch progress for the affected corpus, and run a full re-ingest. Resuming from old progress after an embedding change is not valid.
 
-OpenClaw should not pre-split compound research questions into several low-level DB calls by default. The safer first move is:
+OpenClaw passes compound research questions to CiteWeave first:
 
 ```python
 facade.query(full_user_question, confirmation="continue")
